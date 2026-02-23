@@ -46,6 +46,9 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [skinType, setSkinType] = useState("");
+  const [concern, setConcern] = useState("");
+  const [budget, setBudget] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -61,13 +64,36 @@ export default function SearchPage() {
     (item) => query.length > 0 && item.text.toLowerCase().includes(query.toLowerCase())
   );
 
+  const buildSearchQuery = useCallback(
+    (rawQuery: string) => {
+      let finalQuery = rawQuery.trim();
+      const lower = finalQuery.toLowerCase();
+
+      if (skinType && !lower.includes(`${skinType} skin`)) {
+        finalQuery += ` for ${skinType} skin`;
+      }
+
+      if (concern && !lower.includes(concern.toLowerCase())) {
+        finalQuery += ` for ${concern}`;
+      }
+
+      if (budget.trim() && !/under\s*\$?\d+/i.test(finalQuery)) {
+        finalQuery += ` under $${budget.trim()}`;
+      }
+
+      return finalQuery.trim();
+    },
+    [skinType, concern, budget]
+  );
+
   const handleSearch = useCallback(
     (searchQuery: string) => {
-      if (searchQuery.trim()) {
-        router.push(`/results?q=${encodeURIComponent(searchQuery.trim())}`);
+      const finalQuery = buildSearchQuery(searchQuery);
+      if (finalQuery) {
+        router.push(`/results?q=${encodeURIComponent(finalQuery)}`);
       }
     },
-    [router]
+    [router, buildSearchQuery]
   );
 
   const handleInputChange = (value: string) => {
@@ -201,6 +227,74 @@ export default function SearchPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Persona filters (MVP) */}
+        <div
+          className={`w-full max-w-[640px] mt-4 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "280ms" }}
+        >
+          <div className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">
+              Personalize your result (MVP)
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label htmlFor="skin-type" className="block text-xs font-medium text-stone-500 mb-1.5">
+                  Skin Type
+                </label>
+                <select
+                  id="skin-type"
+                  value={skinType}
+                  onChange={(e) => setSkinType(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
+                >
+                  <option value="">Any</option>
+                  <option value="dry">Dry</option>
+                  <option value="oily">Oily</option>
+                  <option value="combination">Combination</option>
+                  <option value="sensitive">Sensitive</option>
+                  <option value="normal">Normal</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="concern" className="block text-xs font-medium text-stone-500 mb-1.5">
+                  Concern
+                </label>
+                <select
+                  id="concern"
+                  value={concern}
+                  onChange={(e) => setConcern(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
+                >
+                  <option value="">Any</option>
+                  <option value="acne">Acne</option>
+                  <option value="dryness">Dryness</option>
+                  <option value="redness">Redness</option>
+                  <option value="dark spots">Dark Spots</option>
+                  <option value="dandruff">Dandruff</option>
+                  <option value="sensitivity">Sensitivity</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="budget" className="block text-xs font-medium text-stone-500 mb-1.5">
+                  Budget (optional)
+                </label>
+                <input
+                  id="budget"
+                  type="number"
+                  min="1"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  placeholder="20"
+                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Store tip */}
