@@ -6,24 +6,26 @@ import { Search, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 const EXAMPLE_QUERIES = [
-  { text: "best moisturizer for dry skin" },
-  { text: "best shampoo at Target" },
-  { text: "hair oil at Walmart under $15" },
-  { text: "affordable sunscreen for sensitive skin" },
-  { text: "best headphones under $100" },
-  { text: "protein powder at CVS" },
-  { text: "best foundation at Ulta" },
-  { text: "running shoes for flat feet" },
+  { text: "best moisturizer for dry sensitive skin" },
+  { text: "best sunscreen for acne-prone skin" },
+  { text: "gentle cleanser for oily skin under $15" },
+  { text: "best shampoo for dandruff at Target" },
+  { text: "body wash for sensitive skin" },
+  { text: "fragrance-free moisturizer at Walmart" },
+  { text: "best lip balm for very dry lips" },
+  { text: "deodorant for sensitive skin" },
 ];
 
+
 const POPULAR_SEARCHES = [
-  { emoji: "🧴", label: "Best moisturizer" },
-  { emoji: "🎧", label: "Headphones <$100" },
-  { emoji: "💊", label: "Vitamins at Walmart" },
-  { emoji: "👟", label: "Running shoes" },
-  { emoji: "☀️", label: "Sunscreen SPF 50" },
-  { emoji: "☕", label: "Espresso machine" },
+  { emoji: "🧴", label: "Moisturizer for dry skin" },
+  { emoji: "☀️", label: "Sunscreen for acne-prone skin" },
+  { emoji: "🫧", label: "Gentle cleanser <$15" },
+  { emoji: "🧴", label: "Dandruff shampoo" },
+  { emoji: "🧼", label: "Sensitive skin body wash" },
+  { emoji: "🌿", label: "Fragrance-free deodorant" },
 ];
+
 
 const RECENT_SEARCHES = [
   { query: "best moisturizer for dry skin", time: "2 hours ago" },
@@ -44,6 +46,9 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [skinType, setSkinType] = useState("");
+  const [concern, setConcern] = useState("");
+  const [budget, setBudget] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,13 +64,36 @@ export default function SearchPage() {
     (item) => query.length > 0 && item.text.toLowerCase().includes(query.toLowerCase())
   );
 
+  const buildSearchQuery = useCallback(
+    (rawQuery: string) => {
+      let finalQuery = rawQuery.trim();
+      const lower = finalQuery.toLowerCase();
+
+      if (skinType && !lower.includes(`${skinType} skin`)) {
+        finalQuery += ` for ${skinType} skin`;
+      }
+
+      if (concern && !lower.includes(concern.toLowerCase())) {
+        finalQuery += ` for ${concern}`;
+      }
+
+      if (budget.trim() && !/under\s*\$?\d+/i.test(finalQuery)) {
+        finalQuery += ` under $${budget.trim()}`;
+      }
+
+      return finalQuery.trim();
+    },
+    [skinType, concern, budget]
+  );
+
   const handleSearch = useCallback(
     (searchQuery: string) => {
-      if (searchQuery.trim()) {
-        router.push(`/results?q=${encodeURIComponent(searchQuery.trim())}`);
+      const finalQuery = buildSearchQuery(searchQuery);
+      if (finalQuery) {
+        router.push(`/results?q=${encodeURIComponent(finalQuery)}`);
       }
     },
-    [router]
+    [router, buildSearchQuery]
   );
 
   const handleInputChange = (value: string) => {
@@ -129,7 +157,7 @@ export default function SearchPage() {
           style={{ transitionDelay: "60ms" }}
         >
           <RedditIcon className="w-4 h-4 text-[#FF4500]" />
-          <span className="text-sm font-medium text-stone-600">Powered by Reddit&apos;s honest reviews</span>
+          <span className="text-sm font-medium text-stone-600">Powered by Reddit + Trustpilot reviews</span>
         </div>
 
         <h1
@@ -167,7 +195,7 @@ export default function SearchPage() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-              placeholder="Try: best shampoo at Target under $20"
+              placeholder="Try: best moisturizer for dry skin under $20"
               className="flex-1 bg-transparent outline-none text-stone-900 placeholder-stone-400 text-base"
               aria-label="Search for products"
             />
@@ -199,6 +227,74 @@ export default function SearchPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Persona filters (MVP) */}
+        <div
+          className={`w-full max-w-[640px] mt-4 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "280ms" }}
+        >
+          <div className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">
+              Personalize your result (MVP)
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label htmlFor="skin-type" className="block text-xs font-medium text-stone-500 mb-1.5">
+                  Skin Type
+                </label>
+                <select
+                  id="skin-type"
+                  value={skinType}
+                  onChange={(e) => setSkinType(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
+                >
+                  <option value="">Any</option>
+                  <option value="dry">Dry</option>
+                  <option value="oily">Oily</option>
+                  <option value="combination">Combination</option>
+                  <option value="sensitive">Sensitive</option>
+                  <option value="normal">Normal</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="concern" className="block text-xs font-medium text-stone-500 mb-1.5">
+                  Concern
+                </label>
+                <select
+                  id="concern"
+                  value={concern}
+                  onChange={(e) => setConcern(e.target.value)}
+                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
+                >
+                  <option value="">Any</option>
+                  <option value="acne">Acne</option>
+                  <option value="dryness">Dryness</option>
+                  <option value="redness">Redness</option>
+                  <option value="dark spots">Dark Spots</option>
+                  <option value="dandruff">Dandruff</option>
+                  <option value="sensitivity">Sensitivity</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="budget" className="block text-xs font-medium text-stone-500 mb-1.5">
+                  Budget (optional)
+                </label>
+                <input
+                  id="budget"
+                  type="number"
+                  min="1"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  placeholder="20"
+                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Store tip */}
