@@ -102,7 +102,7 @@ function LoadingState({ query }: { query: string }) {
   const [progress, setProgress] = useState(0);
 
   const steps = [
-    "Searching Reddit discussions...",
+    "Searching Reddit and Trustpilot reviews...",
     "Analyzing 143 posts...",
     "Extracting product mentions...",
     "Calculating scores...",
@@ -130,9 +130,9 @@ function LoadingState({ query }: { query: string }) {
         </svg>
       </div>
 
-      <h2 className="text-xl font-black text-stone-900 mb-2">Analyzing Reddit</h2>
+      <h2 className="text-xl font-black text-stone-900 mb-2">Analyzing Reddit + Trustpilot</h2>
       <p className="text-stone-500 text-sm mb-8 text-center max-w-xs">
-        Finding the best <span className="font-semibold text-stone-700">{query}</span> based on what real Redditors say
+        Finding the best <span className="font-semibold text-stone-700">{query}</span> based on Reddit discussions and Trustpilot reviews
       </p>
 
       {/* Progress bar */}
@@ -340,13 +340,13 @@ function SentimentBar({ sentiment, mentions, redditQuote }: { sentiment: number;
             <path d="M20 10a10 10 0 1 1-20 0 10 10 0 0 1 20 0zm-9.93-1.73c-.3-.03-.58.16-.67.45-.1.3.05.63.35.74.82.3 1.4.95 1.56 1.77a3.2 3.2 0 0 1-3.18 3.77c-.84 0-1.67-.37-2.26-1.02-.55-.6-.8-1.4-.68-2.2.12-.82.7-1.5 1.56-1.92.3-.15.42-.51.27-.82a.6.6 0 0 0-.81-.27c-1.2.59-2 1.6-2.18 2.77-.17 1.12.17 2.26.94 3.1.82.9 1.97 1.39 3.16 1.39 1.19 0 2.29-.48 3.1-1.35a4.4 4.4 0 0 0 1.06-3.34c-.25-1.44-1.2-2.67-2.22-3.07zm-5.48-2.88c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zm8.82 0c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zM10 6.19a2.8 2.8 0 0 0-1.97.8.6.6 0 1 0 .85.85 1.6 1.6 0 0 1 2.24 0 .6.6 0 1 0 .85-.85A2.8 2.8 0 0 0 10 6.19z" />
           </svg>
         </div>
-        <span className="text-xs font-bold text-stone-700">Reddit Community Verdict</span>
+        <span className="text-xs font-bold text-stone-700">Reddit + Trustpilot Verdict</span>
       </div>
       <div className="flex items-center gap-4 mb-2">
         <span className="text-2xl font-black text-green-600">{sentiment}%</span>
         <span className="text-sm text-stone-500">positive sentiment</span>
         <span className="text-sm text-stone-400">•</span>
-        <span className="text-sm text-stone-600 font-semibold">{mentions} Redditors recommend this</span>
+        <span className="text-sm text-stone-600 font-semibold">{mentions} Reviews and mentions support this</span>
       </div>
       <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
         <div
@@ -386,7 +386,7 @@ function WinnerCard({ winner, meta }: { winner: Winner; meta: AnalysisMeta }) {
           </svg>
         </div>
         <span className="text-xs text-stone-500">
-          Analyzed <span className="font-bold text-stone-700">{winner.postsAnalyzed} Reddit discussions</span> in {meta.subreddits.slice(0, 2).join(", ")}
+          Analyzed <span className="font-bold text-stone-700">{winner.postsAnalyzed} Reddit discussions + Trustpilot reviews</span> in {meta.subreddits.slice(0, 2).join(", ")} and Trustpilot
         </span>
       </div>
 
@@ -397,7 +397,7 @@ function WinnerCard({ winner, meta }: { winner: Winner; meta: AnalysisMeta }) {
           <span className="text-2xl">🏆</span>
           <div>
             <p className="text-xs text-stone-400 font-semibold uppercase tracking-wider">Your Answer</p>
-            <p className="text-sm text-stone-500">Reddit&apos;s top pick for your search</p>
+            <p className="text-sm text-stone-500">Top pick based on Reddit + Trustpilot signals</p>
           </div>
         </div>
 

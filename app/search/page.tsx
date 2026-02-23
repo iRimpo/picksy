@@ -6,24 +6,26 @@ import { Search, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 const EXAMPLE_QUERIES = [
-  { text: "best moisturizer for dry skin" },
-  { text: "best shampoo at Target" },
-  { text: "hair oil at Walmart under $15" },
-  { text: "affordable sunscreen for sensitive skin" },
-  { text: "best headphones under $100" },
-  { text: "protein powder at CVS" },
-  { text: "best foundation at Ulta" },
-  { text: "running shoes for flat feet" },
+  { text: "best moisturizer for dry sensitive skin" },
+  { text: "best sunscreen for acne-prone skin" },
+  { text: "gentle cleanser for oily skin under $15" },
+  { text: "best shampoo for dandruff at Target" },
+  { text: "body wash for sensitive skin" },
+  { text: "fragrance-free moisturizer at Walmart" },
+  { text: "best lip balm for very dry lips" },
+  { text: "deodorant for sensitive skin" },
 ];
 
+
 const POPULAR_SEARCHES = [
-  { emoji: "🧴", label: "Best moisturizer" },
-  { emoji: "🎧", label: "Headphones <$100" },
-  { emoji: "💊", label: "Vitamins at Walmart" },
-  { emoji: "👟", label: "Running shoes" },
-  { emoji: "☀️", label: "Sunscreen SPF 50" },
-  { emoji: "☕", label: "Espresso machine" },
+  { emoji: "🧴", label: "Moisturizer for dry skin" },
+  { emoji: "☀️", label: "Sunscreen for acne-prone skin" },
+  { emoji: "🫧", label: "Gentle cleanser <$15" },
+  { emoji: "🧴", label: "Dandruff shampoo" },
+  { emoji: "🧼", label: "Sensitive skin body wash" },
+  { emoji: "🌿", label: "Fragrance-free deodorant" },
 ];
+
 
 const RECENT_SEARCHES = [
   { query: "best moisturizer for dry skin", time: "2 hours ago" },
@@ -129,7 +131,7 @@ export default function SearchPage() {
           style={{ transitionDelay: "60ms" }}
         >
           <RedditIcon className="w-4 h-4 text-[#FF4500]" />
-          <span className="text-sm font-medium text-stone-600">Powered by Reddit&apos;s honest reviews</span>
+          <span className="text-sm font-medium text-stone-600">Powered by Reddit + Trustpilot reviews</span>
         </div>
 
         <h1
@@ -167,7 +169,7 @@ export default function SearchPage() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-              placeholder="Try: best shampoo at Target under $20"
+              placeholder="Try: best moisturizer for dry skin under $20"
               className="flex-1 bg-transparent outline-none text-stone-900 placeholder-stone-400 text-base"
               aria-label="Search for products"
             />
