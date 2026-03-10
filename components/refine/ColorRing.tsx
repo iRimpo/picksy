@@ -1,7 +1,5 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-
 const SEGMENT_COLORS = [
   "#4ade80",  // green
   "#fb923c",  // orange
@@ -16,85 +14,61 @@ interface ColorRingProps {
 
 export default function ColorRing({ labels, selected, onSelect }: ColorRingProps) {
   return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 100,
-        right: 20,
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        alignItems: "flex-end",
-        zIndex: 25,
-      }}
-    >
+    <div style={{ padding: "12px 16px 4px" }}>
       <span style={{
-        color: "rgba(255,255,255,0.4)",
+        display: "block",
+        color: "rgba(255,255,255,0.45)",
         fontSize: 10,
         letterSpacing: "0.1em",
         textTransform: "uppercase",
         fontWeight: 600,
-        marginBottom: 2,
+        marginBottom: 8,
       }}>
         Priority
       </span>
 
-      {labels.map((label, i) => {
-        const isSelected = selected === i;
-        return (
-          <motion.button
-            key={label}
-            onClick={() => onSelect(i)}
-            whileTap={{ scale: 0.9 }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-            }}
-          >
-            <AnimatePresence>
-              {isSelected && (
-                <motion.span
-                  initial={{ opacity: 0, x: 6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 6 }}
-                  style={{
-                    color: "white",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: "0.03em",
-                    textShadow: "0 1px 6px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  {label}
-                </motion.span>
-              )}
-            </AnimatePresence>
-
-            <motion.div
-              animate={{
-                scale: isSelected ? 1.25 : 1,
-                boxShadow: isSelected
-                  ? `0 0 12px ${SEGMENT_COLORS[i]}99, 0 0 4px ${SEGMENT_COLORS[i]}`
-                  : "0 2px 6px rgba(0,0,0,0.3)",
-              }}
-              transition={{ duration: 0.2 }}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {labels.map((label, i) => {
+          const isSelected = selected === i;
+          const color = SEGMENT_COLORS[i] ?? SEGMENT_COLORS[0];
+          return (
+            <button
+              key={label}
+              onClick={() => onSelect(i)}
               style={{
-                width: isSelected ? 20 : 16,
-                height: isSelected ? 20 : 16,
-                borderRadius: "50%",
-                background: SEGMENT_COLORS[i] ?? "#fb923c",
-                border: isSelected ? "2px solid rgba(255,255,255,0.8)" : "2px solid rgba(255,255,255,0.2)",
-                transition: "width 0.2s, height 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                minWidth: 80,
+                padding: "7px 14px",
+                borderRadius: 100,
+                border: isSelected ? `1.5px solid ${color}` : "1.5px solid rgba(255,255,255,0.15)",
+                background: isSelected ? `${color}28` : "rgba(255,255,255,0.06)",
+                cursor: "pointer",
+                transition: "all 0.2s",
               }}
-            />
-          </motion.button>
-        );
-      })}
+            >
+              <div style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: color,
+                flexShrink: 0,
+                boxShadow: isSelected ? `0 0 6px ${color}` : "none",
+                transition: "box-shadow 0.2s",
+              }} />
+              <span style={{
+                fontSize: 13,
+                fontWeight: isSelected ? 600 : 400,
+                color: isSelected ? "white" : "rgba(255,255,255,0.6)",
+                whiteSpace: "nowrap",
+              }}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

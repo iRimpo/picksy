@@ -12,24 +12,9 @@ interface PreferenceReadoutProps {
 
 export default function PreferenceReadout({ preferences, query, onConfirm, onSkip }: PreferenceReadoutProps) {
   return (
-    <motion.div
-      initial={{ y: 60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.3, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 30,
-        padding: "16px 20px 24px",
-        background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
-      }}
-    >
+    <div style={{ padding: "16px 0 8px" }}>
       {/* Chips row */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14, justifyContent: "center" }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, justifyContent: "center" }}>
         <AnimatePresence mode="popLayout">
           {preferences.values.map((pv) => (
             <motion.span
@@ -40,16 +25,15 @@ export default function PreferenceReadout({ preferences, query, onConfirm, onSki
               exit={{ opacity: 0, scale: 0.8, y: -6 }}
               transition={{ duration: 0.2 }}
               style={{
-                background: "rgba(255,255,255,0.12)",
-                border: "1px solid rgba(255,255,255,0.2)",
+                background: "white",
+                border: "1px solid #e7e5e4",
                 borderRadius: 100,
                 padding: "4px 12px",
                 fontSize: 12,
-                color: "rgba(255,255,255,0.85)",
+                color: "#44403c",
                 fontWeight: 500,
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
                 whiteSpace: "nowrap",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
               }}
             >
               {pv.label}
@@ -74,7 +58,7 @@ export default function PreferenceReadout({ preferences, query, onConfirm, onSki
             fontWeight: 700,
             cursor: "pointer",
             letterSpacing: "0.01em",
-            boxShadow: "0 4px 20px rgba(234,88,12,0.4)",
+            boxShadow: "0 4px 20px rgba(234,88,12,0.35)",
           }}
         >
           Analyze for {query.split(" ").slice(-1)[0]}
@@ -85,17 +69,17 @@ export default function PreferenceReadout({ preferences, query, onConfirm, onSki
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.5)",
+            color: "#78716c",
             fontSize: 13,
             cursor: "pointer",
             padding: "8px 4px",
             textDecoration: "underline",
-            textDecorationColor: "rgba(255,255,255,0.25)",
+            textDecorationColor: "#d6d3d1",
           }}
         >
           Skip refinement
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

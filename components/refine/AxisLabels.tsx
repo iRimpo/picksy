@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import type { QueryParameter } from "@/lib/types/refine";
 
 interface AxisLabelsProps {
@@ -11,61 +10,49 @@ interface AxisLabelsProps {
 }
 
 export default function AxisLabels({ xParam, yParam, orbX, orbY }: AxisLabelsProps) {
-  // Brightness based on orb proximity to that edge
-  const leftOpacity = 0.4 + (1 - orbX) * 0.5;
-  const rightOpacity = 0.4 + orbX * 0.5;
-  const topOpacity = 0.4 + (1 - orbY) * 0.5;
-  const bottomOpacity = 0.4 + orbY * 0.5;
+  const leftOpacity = 0.55 + (1 - orbX) * 0.45;
+  const rightOpacity = 0.55 + orbX * 0.45;
+  const topOpacity = 0.55 + (1 - orbY) * 0.45;
+  const bottomOpacity = 0.55 + orbY * 0.45;
 
-  const labelBase: React.CSSProperties = {
-    position: "absolute",
+  const pillBase: React.CSSProperties = {
+    background: "rgba(255,255,255,0.15)",
+    backdropFilter: "blur(4px)",
+    WebkitBackdropFilter: "blur(4px)",
+    borderRadius: 100,
+    padding: "3px 10px",
+    fontSize: 13,
     color: "white",
-    fontFamily: "var(--font-serif), 'Instrument Serif', Georgia, serif",
-    fontSize: "clamp(11px, 1.4vw, 14px)",
-    fontStyle: "italic",
-    letterSpacing: "0.04em",
+    fontWeight: 500,
+    letterSpacing: "0.03em",
     userSelect: "none",
     pointerEvents: "none",
-    textShadow: "0 1px 8px rgba(0,0,0,0.4)",
+    transition: "opacity 0.3s",
+    whiteSpace: "nowrap",
+    position: "absolute",
   };
 
   return (
     <>
       {/* X-axis: left */}
-      <motion.span
-        animate={{ opacity: leftOpacity }}
-        transition={{ duration: 0.3 }}
-        style={{ ...labelBase, left: 20, top: "50%", transform: "translateY(-50%) rotate(-90deg)", transformOrigin: "center" }}
-      >
+      <span style={{ ...pillBase, left: 12, top: "50%", transform: "translateY(-50%)", opacity: leftOpacity }}>
         {xParam.minLabel}
-      </motion.span>
+      </span>
 
       {/* X-axis: right */}
-      <motion.span
-        animate={{ opacity: rightOpacity }}
-        transition={{ duration: 0.3 }}
-        style={{ ...labelBase, right: 20, top: "50%", transform: "translateY(-50%) rotate(90deg)", transformOrigin: "center" }}
-      >
+      <span style={{ ...pillBase, right: 12, top: "50%", transform: "translateY(-50%)", opacity: rightOpacity }}>
         {xParam.maxLabel}
-      </motion.span>
+      </span>
 
       {/* Y-axis: top */}
-      <motion.span
-        animate={{ opacity: topOpacity }}
-        transition={{ duration: 0.3 }}
-        style={{ ...labelBase, top: 28, left: "50%", transform: "translateX(-50%)", textAlign: "center" }}
-      >
+      <span style={{ ...pillBase, top: 14, left: "50%", transform: "translateX(-50%)", opacity: topOpacity }}>
         {yParam.minLabel}
-      </motion.span>
+      </span>
 
       {/* Y-axis: bottom */}
-      <motion.span
-        animate={{ opacity: bottomOpacity }}
-        transition={{ duration: 0.3 }}
-        style={{ ...labelBase, bottom: 28, left: "50%", transform: "translateX(-50%)", textAlign: "center" }}
-      >
+      <span style={{ ...pillBase, bottom: 14, left: "50%", transform: "translateX(-50%)", opacity: bottomOpacity }}>
         {yParam.maxLabel}
-      </motion.span>
+      </span>
 
       {/* Axis lines (subtle) */}
       <div style={{
