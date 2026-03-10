@@ -91,7 +91,8 @@ interface AnalysisOutput {
 
 async function analyzeWithGemini(
   query: string,
-  results: SearchResult[]
+  results: SearchResult[],
+  preferencesSummary?: string
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -117,9 +118,13 @@ async function analyzeWithGemini(
       .filter(Boolean)
   )) as string[];
 
+  const preferencesBlock = preferencesSummary
+    ? `\nUSER PREFERENCES (collected via interactive refinement):\n${preferencesSummary}\n\nUse these preferences to bias your recommendation toward products that match.\n`
+    : "";
+
   const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and Trustpilot reviews.
 
-A user searched for: "${query}"
+A user searched for: "${query}"${preferencesBlock}
 
 REDDIT RESULTS (${redditResults.length} found):
 ${formatResults(redditResults)}
@@ -280,7 +285,7 @@ const FALLBACK: AnalysisOutput = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, store: storeOverride } = await req.json();
+    const { query, store: storeOverride, preferences } = await req.json();
 
     if (!query || typeof query !== "string") {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
@@ -290,11 +295,19 @@ export async function POST(req: NextRequest) {
     const detectedStore = storeOverride || detectStore(query);
     const budget = detectBudget(query);
 
+    const preferencesSummary: string | undefined =
+      preferences && typeof preferences === "object" && typeof preferences.summary === "string"
+        ? preferences.summary
+        : undefined;
+
+    // Enrich Tavily query with preference terms if present
+    const searchQuery = preferencesSummary ? `${query} ${preferencesSummary}` : query;
+
     // 1. Search Reddit + Trustpilot via Tavily
-    const results = await fetchSearchResults(query);
+    const results = await fetchSearchResults(searchQuery);
 
     // 2. Use Gemini to analyze results and generate recommendation
-    const analysis = await analyzeWithGemini(query, results);
+    const analysis = await analyzeWithGemini(query, results, preferencesSummary);
 
     // 3. Fall back to mock only if everything fails
     const output = analysis || FALLBACK;

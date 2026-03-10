@@ -637,6 +637,7 @@ function ResultsContent() {
   const query = searchParams.get("q") || "";
   const storeParam = searchParams.get("store") || "";
   const zipParam = searchParams.get("zip") || "";
+  const preferencesParam = searchParams.get("preferences") || "";
 
   const [flowState, setFlowState] = useState<FlowState>("loading");
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -661,10 +662,18 @@ function ResultsContent() {
   async function runAnalysis(overrideStore?: string) {
     setFlowState("loading");
     try {
+      const preferences = preferencesParam
+        ? JSON.parse(decodeURIComponent(preferencesParam))
+        : null;
+
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, store: overrideStore || storeParam || null }),
+        body: JSON.stringify({
+          query,
+          store: overrideStore || storeParam || null,
+          ...(preferences ? { preferences } : {}),
+        }),
       });
       if (!res.ok) throw new Error("Analysis failed");
       const data: AnalysisResult = await res.json();

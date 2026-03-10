@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { isVagueQuery } from "@/lib/query-decoder";
 
 const EXAMPLE_QUERIES = [
   { text: "best moisturizer for dry sensitive skin" },
@@ -89,7 +90,10 @@ export default function SearchPage() {
   const handleSearch = useCallback(
     (searchQuery: string) => {
       const finalQuery = buildSearchQuery(searchQuery);
-      if (finalQuery) {
+      if (!finalQuery) return;
+      if (isVagueQuery(finalQuery)) {
+        router.push(`/refine?q=${encodeURIComponent(finalQuery)}`);
+      } else {
         router.push(`/results?q=${encodeURIComponent(finalQuery)}`);
       }
     },
