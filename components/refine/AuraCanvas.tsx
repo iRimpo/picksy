@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { DecodedQuery, OrbState, QueryParameter } from "@/lib/types/refine";
 import { resolvePreferences, getColorConfig } from "@/lib/query-decoder";
 import GlassOrb from "./GlassOrb";
-import AxisLabels from "./AxisLabels";
+import AxisLabels, { type AxisLabelsHandle } from "./AxisLabels";
 import ColorRing from "./ColorRing";
 import PreferenceReadout from "./PreferenceReadout";
 
@@ -44,22 +44,28 @@ interface AuraCanvasProps {
 
 export default function AuraCanvas({ decoded }: AuraCanvasProps) {
   const router = useRouter();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef    = useRef<HTMLDivElement>(null);
   const containerRectRef = useRef<DOMRect | null>(null);
-  const spotlightRef = useRef<HTMLDivElement>(null);
-  const crosshairHRef = useRef<HTMLDivElement>(null);
-  const crosshairVRef = useRef<HTMLDivElement>(null);
-  const dragLabelRef = useRef<HTMLDivElement>(null);
+  const spotlightRef    = useRef<HTMLDivElement>(null);
+  const crosshairHRef   = useRef<HTMLDivElement>(null);
+  const crosshairVRef   = useRef<HTMLDivElement>(null);
+  const dragLabelRef    = useRef<HTMLDivElement>(null);
+  const axisLabelsRef   = useRef<AxisLabelsHandle>(null);
 
-  // Refs for direct DOM updates (avoid stale closures)
-  const orbXRef = useRef(0.5);
-  const orbYRef = useRef(0.5);
+  // Position / color refs — source of truth during drag, never cause re-renders
+  const orbXRef       = useRef(0.5);
+  const orbYRef       = useRef(0.5);
   const colorIndexRef = useRef(1);
-  const xParamRef = useRef<QueryParameter | null>(null);
-  const yParamRef = useRef<QueryParameter | null>(null);
+  const xParamRef     = useRef<QueryParameter | null>(null);
+  const yParamRef     = useRef<QueryParameter | null>(null);
+
+  // Keep param refs in sync (decoded is stable between renders)
+  xParamRef.current = decoded.parameters.find((p) => p.axis === "x") ?? null;
+  yParamRef.current = decoded.parameters.find((p) => p.axis === "y") ?? null;
 
   const { labels: colorLabels, keys: colorKeys } = getColorConfig(decoded.original);
 
+  // React state — only updated on drag END and discrete interactions
   const [orbState, setOrbState] = useState<OrbState>({
     x: 0.5,
     y: 0.5,
@@ -70,20 +76,16 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
   const [showHint, setShowHint] = useState(true);
   const hasInteracted = useRef(false);
 
-  // Keep param refs fresh
-  xParamRef.current = decoded.parameters.find((p) => p.axis === "x") ?? null;
-  yParamRef.current = decoded.parameters.find((p) => p.axis === "y") ?? null;
-
-  // Cache container rect on mount and on resize
+  // Cache container rect; refresh on resize (never during drag)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     containerRectRef.current = el.getBoundingClientRect();
-    const observer = new ResizeObserver(() => {
+    const ro = new ResizeObserver(() => {
       containerRectRef.current = el.getBoundingClientRect();
     });
-    observer.observe(el);
-    return () => observer.disconnect();
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   useEffect(() => {
@@ -91,7 +93,6 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
     return () => clearTimeout(t);
   }, []);
 
-  // Set initial spotlight background after mount
   useEffect(() => {
     const el = spotlightRef.current;
     if (el) {
@@ -100,6 +101,7 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
     }
   }, []);
 
+  // ─── Drag handlers — zero React state updates, pure DOM ───────────────────
   const handleDrag = useCallback((x: number, y: number) => {
     if (!hasInteracted.current) {
       hasInteracted.current = true;
@@ -108,48 +110,56 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
     orbXRef.current = x;
     orbYRef.current = y;
 
-    // Bypass React — mutate DOM directly for zero-lag spotlight
+    // Spotlight
     const el = spotlightRef.current;
     if (el) {
       const tint = COLOR_TINTS[colorIndexRef.current] ?? COLOR_TINTS[1];
       el.style.background = `radial-gradient(circle at ${x * 100}% ${y * 100}%, ${tint} 0%, transparent 55%)`;
     }
 
-    // Crosshair reposition (direct DOM, zero reflow)
+    // Axis label opacities
+    axisLabelsRef.current?.update(x, y);
+
+    // Crosshair
     const hLine = crosshairHRef.current;
     const vLine = crosshairVRef.current;
-    if (hLine) hLine.style.top = `${y * 100}%`;
+    if (hLine) hLine.style.top  = `${y * 100}%`;
     if (vLine) vLine.style.left = `${x * 100}%`;
 
-    // Label reposition + content
+    // Floating label
     const label = dragLabelRef.current;
     if (label) {
       const xLabel = xParamRef.current?.resolve(x) ?? "";
       const yLabel = yParamRef.current?.resolve(y) ?? "";
       label.textContent = `${xLabel}  ·  ${yLabel}`;
       label.style.left = `${Math.min(x * 100, 75)}%`;
-      label.style.top = `${Math.max(y * 100 - 14, 4)}%`;
+      label.style.top  = `${Math.max(y * 100 - 14, 4)}%`;
     }
-
-    setOrbState((prev) => ({ ...prev, x, y }));
-  }, []); // stable: only uses refs
+    // No setOrbState here — zero React renders during drag
+  }, []);
 
   const handleDragStart = useCallback(() => {
     const hLine = crosshairHRef.current;
     const vLine = crosshairVRef.current;
     const label = dragLabelRef.current;
-    if (hLine) hLine.style.opacity = "1";
-    if (vLine) vLine.style.opacity = "1";
-    if (label) label.style.opacity = "1";
+    if (hLine)  hLine.style.opacity  = "1";
+    if (vLine)  vLine.style.opacity  = "1";
+    if (label)  label.style.opacity  = "1";
   }, []);
 
   const handleDragEnd = useCallback(() => {
+    // Hide indicators
     const hLine = crosshairHRef.current;
     const vLine = crosshairVRef.current;
     const label = dragLabelRef.current;
-    if (hLine) hLine.style.opacity = "0";
-    if (vLine) vLine.style.opacity = "0";
-    if (label) label.style.opacity = "0";
+    if (hLine)  hLine.style.opacity  = "0";
+    if (vLine)  vLine.style.opacity  = "0";
+    if (label)  label.style.opacity  = "0";
+
+    // Flush final position to React state once (updates chips + buttons)
+    const x = orbXRef.current;
+    const y = orbYRef.current;
+    setOrbState((prev) => ({ ...prev, x, y }));
   }, []);
 
   const handleOrbTap = useCallback(() => {
@@ -164,13 +174,11 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
       const tint = COLOR_TINTS[index] ?? COLOR_TINTS[1];
       el.style.background = `radial-gradient(circle at ${orbXRef.current * 100}% ${orbYRef.current * 100}%, ${tint} 0%, transparent 55%)`;
     }
-  }, []); // stable: only uses refs
+  }, []);
 
   const preferences = resolvePreferences(orbState, decoded, colorKeys);
-
   const xParam = decoded.parameters.find((p) => p.axis === "x")!;
   const yParam = decoded.parameters.find((p) => p.axis === "y")!;
-
   const palette = CATEGORY_PALETTES[decoded.category] ?? CATEGORY_PALETTES.General;
 
   function handleConfirm() {
@@ -202,48 +210,29 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
           `,
         }}
       >
-        {/* Spotlight layer — mutated directly, never via React state */}
+        {/* Spotlight — direct DOM, never React */}
         <div
           ref={spotlightRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            mixBlendMode: "soft-light",
-            pointerEvents: "none",
-          }}
+          style={{ position: "absolute", inset: 0, mixBlendMode: "soft-light", pointerEvents: "none" }}
         />
 
-        {/* Crosshair horizontal line */}
+        {/* Crosshair H */}
         <div
           ref={crosshairHRef}
           style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: "50%",
-            height: 1,
+            position: "absolute", left: 0, right: 0, top: "50%", height: 1,
             background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0.3) 80%, transparent)",
-            opacity: 0,
-            transition: "opacity 0.25s",
-            pointerEvents: "none",
-            zIndex: 15,
+            opacity: 0, transition: "opacity 0.25s", pointerEvents: "none", zIndex: 15,
           }}
         />
 
-        {/* Crosshair vertical line */}
+        {/* Crosshair V */}
         <div
           ref={crosshairVRef}
           style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: "50%",
-            width: 1,
+            position: "absolute", top: 0, bottom: 0, left: "50%", width: 1,
             background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0.3) 80%, transparent)",
-            opacity: 0,
-            transition: "opacity 0.25s",
-            pointerEvents: "none",
-            zIndex: 15,
+            opacity: 0, transition: "opacity 0.25s", pointerEvents: "none", zIndex: 15,
           }}
         />
 
@@ -251,33 +240,18 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
         <div
           ref={dragLabelRef}
           style={{
-            position: "absolute",
-            zIndex: 25,
-            pointerEvents: "none",
-            background: "rgba(0,0,0,0.55)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            color: "white",
-            fontSize: 11,
-            fontWeight: 500,
-            padding: "4px 10px",
-            borderRadius: 100,
-            whiteSpace: "nowrap",
-            opacity: 0,
-            transition: "opacity 0.25s",
-            left: "50%",
-            top: "36%",
+            position: "absolute", zIndex: 25, pointerEvents: "none",
+            background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            color: "white", fontSize: 11, fontWeight: 500,
+            padding: "4px 10px", borderRadius: 100, whiteSpace: "nowrap",
+            opacity: 0, transition: "opacity 0.25s",
+            left: "50%", top: "36%",
           }}
         />
 
-        {/* Axis labels */}
+        {/* Axis labels — imperative updates, no re-renders */}
         {xParam && yParam && (
-          <AxisLabels
-            xParam={xParam}
-            yParam={yParam}
-            orbX={orbState.x}
-            orbY={orbState.y}
-          />
+          <AxisLabels ref={axisLabelsRef} xParam={xParam} yParam={yParam} />
         )}
 
         {/* Orb */}
@@ -294,36 +268,24 @@ export default function AuraCanvas({ decoded }: AuraCanvasProps) {
 
         {/* First-load hint */}
         {showHint && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -110px)",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: 13,
-              letterSpacing: "0.04em",
-              pointerEvents: "none",
-              textAlign: "center",
-              textShadow: "0 1px 8px rgba(0,0,0,0.5)",
-            }}
-          >
+          <div style={{
+            position: "absolute", top: "50%", left: "50%",
+            transform: "translate(-50%, -110px)",
+            color: "rgba(255,255,255,0.5)", fontSize: 13, letterSpacing: "0.04em",
+            pointerEvents: "none", textAlign: "center", textShadow: "0 1px 8px rgba(0,0,0,0.5)",
+          }}>
             Drag the orb to tune your preferences
           </div>
         )}
       </div>
 
-      {/* Priority row — horizontal pills, below drag area */}
-      <ColorRing
-        labels={colorLabels}
-        selected={orbState.colorIndex}
-        onSelect={handleColorSelect}
-      />
+      {/* Priority row */}
+      <ColorRing labels={colorLabels} selected={orbState.colorIndex} onSelect={handleColorSelect} />
 
       {/* Divider */}
       <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 16px" }} />
 
-      {/* Preference readout — light styling, not overlaid */}
+      {/* Preference readout — only re-renders on drag end */}
       <div style={{ background: "#fafaf9", padding: "0 16px" }}>
         <PreferenceReadout
           preferences={preferences}
