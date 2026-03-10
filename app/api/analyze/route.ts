@@ -3,61 +3,57 @@ import { NextRequest, NextResponse } from "next/server";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
-// ─── Reddit Types ──────────────────────────────────────────────────────────────
+// ─── Search Result Type ────────────────────────────────────────────────────────
 
-interface RedditPost {
+interface SearchResult {
   title: string;
-  selftext: string;
-  subreddit: string;
-  score: number;
-  num_comments: number;
+  content: string;
+  url: string;
+  source: "reddit" | "trustpilot" | "other";
 }
 
-// ─── Reddit Scraping ───────────────────────────────────────────────────────────
+// ─── Tavily Search (Reddit + Trustpilot) ───────────────────────────────────────
 
-async function fetchRedditPosts(query: string): Promise<RedditPost[]> {
-  const searches = [query, `best ${query}`];
-  const allPosts: RedditPost[] = [];
+async function fetchSearchResults(query: string): Promise<SearchResult[]> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return [];
 
-  for (const q of searches) {
-    try {
-      const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(q)}&sort=relevance&t=year&limit=10&type=link`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "Picksy/1.0 (student project)" },
-        cache: "no-store",
-      });
-      if (!res.ok) continue;
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: `${query} reviews recommendations`,
+        search_depth: "basic",
+        include_domains: ["reddit.com", "trustpilot.com"],
+        max_results: 15,
+      }),
+      cache: "no-store",
+    });
 
-      const data = await res.json();
-      const posts = (data.data?.children || []).map(
-        (child: { data: Record<string, unknown> }) => ({
-          title: String(child.data.title || ""),
-          selftext: String(child.data.selftext || "").slice(0, 400),
-          subreddit: String(child.data.subreddit || ""),
-          score: Number(child.data.score) || 0,
-          num_comments: Number(child.data.num_comments) || 0,
-        })
-      );
-      allPosts.push(...posts);
-    } catch {
-      // continue with other search variant
-    }
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    return (data.results || []).map((r: { title?: string; content?: string; url?: string }) => {
+      const url = String(r.url || "");
+      const source = url.includes("reddit.com")
+        ? "reddit"
+        : url.includes("trustpilot.com")
+        ? "trustpilot"
+        : "other";
+      return {
+        title: String(r.title || ""),
+        content: String(r.content || "").slice(0, 500),
+        url,
+        source,
+      } as SearchResult;
+    });
+  } catch (err) {
+    console.error("Tavily search failed:", err);
+    return [];
   }
-
-  // Deduplicate by title
-  const seen = new Set<string>();
-  return allPosts.filter((p) => {
-    if (!p.title || seen.has(p.title)) return false;
-    seen.add(p.title);
-    return true;
-  });
 }
-
-// ─── Trustpilot placeholder ────────────────────────────────────────────────────
-// TODO: When TRUSTPILOT_API_KEY is available, replace this with real brand
-// review fetching from the Trustpilot Consumer API (developers.trustpilot.com).
-// The Gemini prompt already instructs the model to include Trustpilot-style
-// brand trust signals from its training knowledge until then.
 
 // ─── Gemini Full Analysis ──────────────────────────────────────────────────────
 
@@ -95,34 +91,46 @@ interface AnalysisOutput {
 
 async function analyzeWithGemini(
   query: string,
-  posts: RedditPost[]
+  results: SearchResult[]
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
-  const postsText =
-    posts.length > 0
-      ? posts
-          .map(
-            (p, i) =>
-              `[${i + 1}] r/${p.subreddit} (${p.score} upvotes, ${p.num_comments} comments)\nTitle: ${p.title}\n${p.selftext ? `Content: ${p.selftext}` : ""}`
-          )
-          .join("\n\n")
-      : "No Reddit posts fetched — use your training knowledge about this product category.";
+  const redditResults = results.filter((r) => r.source === "reddit");
+  const trustpilotResults = results.filter((r) => r.source === "trustpilot");
 
-  const subredditsSeen = Array.from(new Set(posts.map((p) => `r/${p.subreddit}`).filter(Boolean)));
+  const formatResults = (items: SearchResult[]) =>
+    items.length > 0
+      ? items.map((r, i) => `[${i + 1}] ${r.title}\n${r.content}`).join("\n\n")
+      : "None found.";
 
-  const prompt = `You are the recommendation engine for Picksy, a product research tool.
+  const sourcesSeen = Array.from(new Set(
+    results
+      .map((r) => {
+        if (r.source === "reddit") {
+          const match = r.url.match(/reddit\.com\/r\/([^/]+)/);
+          return match ? `r/${match[1]}` : null;
+        }
+        if (r.source === "trustpilot") return "Trustpilot";
+        return null;
+      })
+      .filter(Boolean)
+  )) as string[];
+
+  const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and Trustpilot reviews.
 
 A user searched for: "${query}"
 
-Reddit posts found (${posts.length} posts):
-${postsText}
+REDDIT RESULTS (${redditResults.length} found):
+${formatResults(redditResults)}
+
+TRUSTPILOT RESULTS (${trustpilotResults.length} found):
+${formatResults(trustpilotResults)}
 
 Your job:
-1. Identify the most recommended product based on the Reddit posts above (or your training knowledge if no posts).
-2. Consider both Reddit community consensus AND general brand trustworthiness (similar to Trustpilot brand signals).
-3. Do NOT bias toward any specific store. Focus on the best product regardless of where it's sold.
+1. Identify the most recommended product based on the Reddit and Trustpilot content above.
+2. If no results were found, use your training knowledge about this product category.
+3. Do NOT bias toward any specific store. Focus on the best product based on community trust and reviews.
 4. Return ONLY valid JSON matching this exact structure — no markdown, no explanation, just JSON:
 
 {
@@ -136,8 +144,8 @@ Your job:
     "scoreLabel": "Strong Pick",
     "sentiment": 89,
     "mentions": 34,
-    "postsAnalyzed": ${posts.length},
-    "whyItWon": "2 sentences explaining why this product won based on Reddit discussions and community trust.",
+    "postsAnalyzed": ${results.length},
+    "whyItWon": "2 sentences explaining why this product won based on Reddit and Trustpilot signals.",
     "pros": ["Pro 1", "Pro 2", "Pro 3"],
     "cons": ["Con 1", "Con 2"],
     "buyLinks": [
@@ -145,7 +153,7 @@ Your job:
       { "store": "Target", "price": 20.99 },
       { "store": "Walmart", "price": 18.97 }
     ],
-    "redditQuote": "A short quote capturing the overall Reddit + review sentiment"
+    "redditQuote": "A short quote capturing the overall Reddit + Trustpilot sentiment"
   },
   "alternatives": [
     {
@@ -160,7 +168,7 @@ Your job:
       "whyNotWinner": "Why this is a solid option but not the top pick"
     }
   ],
-  "subreddits": ${JSON.stringify(subredditsSeen.length > 0 ? subredditsSeen : ["r/BuyItForLife", "r/frugal"])}
+  "subreddits": ${JSON.stringify(sourcesSeen.length > 0 ? sourcesSeen : ["r/BuyItForLife", "r/frugal"])}
 }
 
 Rules:
@@ -197,8 +205,7 @@ Rules:
     const candidates = payload?.candidates;
     if (!Array.isArray(candidates) || candidates.length === 0) return null;
 
-    const text: string =
-      candidates[0]?.content?.parts?.[0]?.text?.trim() || "";
+    const text: string = candidates[0]?.content?.parts?.[0]?.text?.trim() || "";
     if (!text) return null;
 
     const parsed = JSON.parse(text);
@@ -228,7 +235,7 @@ function detectBudget(query: string): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
-// ─── Fallback mock (last resort if both Reddit and Gemini fail) ────────────────
+// ─── Fallback mock (last resort if Tavily + Gemini both fail) ─────────────────
 
 const FALLBACK: AnalysisOutput = {
   winner: {
@@ -283,15 +290,14 @@ export async function POST(req: NextRequest) {
     const detectedStore = storeOverride || detectStore(query);
     const budget = detectBudget(query);
 
-    // 1. Fetch real Reddit posts
-    const posts = await fetchRedditPosts(query);
+    // 1. Search Reddit + Trustpilot via Tavily
+    const results = await fetchSearchResults(query);
 
-    // 2. Use Gemini to analyze posts and generate recommendation
-    const analysis = await analyzeWithGemini(query, posts);
+    // 2. Use Gemini to analyze results and generate recommendation
+    const analysis = await analyzeWithGemini(query, results);
 
     // 3. Fall back to mock only if everything fails
     const output = analysis || FALLBACK;
-
     const { winner, alternatives, subreddits } = output;
 
     // 4. If a store was mentioned, find matching buy link price
@@ -299,8 +305,7 @@ export async function POST(req: NextRequest) {
       const storeLink = winner.buyLinks?.find(
         (l) => l.store.toLowerCase() === detectedStore.toLowerCase()
       );
-      (winner as Record<string, unknown>).storePrice =
-        storeLink?.price || winner.price;
+      (winner as Record<string, unknown>).storePrice = storeLink?.price || winner.price;
       (winner as Record<string, unknown>).storeName = detectedStore;
       (winner as Record<string, unknown>).inStock = true;
 
@@ -313,6 +318,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const redditCount = results.filter((r) => r.source === "reddit").length;
+    const trustpilotCount = results.filter((r) => r.source === "trustpilot").length;
+
     return NextResponse.json({
       winner,
       alternatives,
@@ -322,7 +330,9 @@ export async function POST(req: NextRequest) {
         store: detectedStore,
         budget,
         subreddits,
-        postsAnalyzed: posts.length,
+        postsAnalyzed: results.length,
+        redditResults: redditCount,
+        trustpilotResults: trustpilotCount,
         mode: detectedStore ? "store-specific" : "general",
         llmProvider: analysis ? "gemini" : "mock",
         llmUsed: !!analysis,
