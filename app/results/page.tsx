@@ -7,6 +7,8 @@ import {
   Search, ArrowLeft, ChevronDown, ChevronUp, ExternalLink,
   MapPin, CheckCircle, AlertCircle, X, Loader2,
 } from "lucide-react";
+import { track } from "@/lib/analytics";
+import { usePageView } from "@/lib/hooks/use-page-view";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -528,6 +530,17 @@ function WinnerCard({ winner, meta }: { winner: Winner; meta: AnalysisMeta }) {
                 {winner.buyLinks.map((link) => (
                   <button
                     key={link.store}
+                    onClick={() =>
+                      track("buy_click", {
+                        page: "results",
+                        query: meta.query,
+                        product_name: winner.name,
+                        store_name: link.store,
+                        price: link.price,
+                        score: winner.score,
+                        properties: { position: "top_pick" },
+                      })
+                    }
                     className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-stone-50 transition-colors border-b border-stone-50 last:border-0"
                   >
                     <span className="font-bold text-stone-900 text-sm">{link.store}</span>
@@ -551,13 +564,22 @@ function WinnerCard({ winner, meta }: { winner: Winner; meta: AnalysisMeta }) {
 
 // ─── Alternatives Section ──────────────────────────────────────────────────────
 
-function AlternativesSection({ alternatives }: { alternatives: Alternative[] }) {
+function AlternativesSection({ alternatives, query }: { alternatives: Alternative[]; query: string }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-10">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          if (!expanded) {
+            track("alternatives_expanded", {
+              page: "results",
+              query,
+              properties: { count: alternatives.length },
+            });
+          }
+          setExpanded(!expanded);
+        }}
         className="w-full flex items-center justify-between px-5 py-4 bg-white rounded-2xl border border-stone-100 hover:border-stone-200 transition-all shadow-sm"
       >
         <div className="text-left">
@@ -639,6 +661,8 @@ function ResultsContent() {
   const zipParam = searchParams.get("zip") || "";
   const preferencesParam = searchParams.get("preferences") || "";
 
+  usePageView("results", { query });
+
   const [flowState, setFlowState] = useState<FlowState>("loading");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [stores, setStores] = useState<StoreLocation[]>([]);
@@ -679,6 +703,19 @@ function ResultsContent() {
       const data: AnalysisResult = await res.json();
       setResult(data);
       setFlowState("result");
+      track("search_result_viewed", {
+        page: "results",
+        query,
+        product_name: data.winner.name,
+        score: data.winner.score,
+        properties: {
+          brand: data.winner.brand,
+          price: data.winner.price,
+          sentiment: data.winner.sentiment,
+          alternatives_count: data.alternatives.length,
+          analysis_time_ms: data.meta.analysisTimeMs,
+        },
+      });
     } catch {
       setFlowState("error");
     }
@@ -822,7 +859,7 @@ function ResultsContent() {
             <div key={result.winner.id} className="anim-plop">
               <WinnerCard winner={result.winner as Winner} meta={result.meta} />
             </div>
-            <AlternativesSection alternatives={result.alternatives as Alternative[]} />
+            <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
             {/* Search again */}
             <div className="w-full max-w-2xl mx-auto text-center pb-8">

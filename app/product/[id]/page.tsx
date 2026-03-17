@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { products } from "@/lib/data/products";
 import { useAnimateIn } from "@/lib/hooks/use-animate-in";
+import { track } from "@/lib/analytics";
+import { usePageView } from "@/lib/hooks/use-page-view";
 
 function ScoreGauge({ score, label }: { score: number; label: string }) {
   const [mounted, setMounted] = useState(false);
@@ -80,6 +82,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   useAnimateIn();
   const { id } = use(params);
   const product = products.find((p) => p.id === id) || products[0];
+
+  usePageView("product_detail", {
+    product_name: product.name,
+    product_id: id,
+  });
   const [saved, setSaved] = useState(false);
   const [showWhereToBuy, setShowWhereToBuy] = useState(false);
   const [expandedTranscripts, setExpandedTranscripts] = useState<number[]>([]);
@@ -170,6 +177,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   {product.retailers.map((r) => (
                     <button
                       key={r.name}
+                      onClick={() =>
+                        track("buy_click", {
+                          page: "product_detail",
+                          product_name: product.name,
+                          store_name: r.name,
+                          price: r.price,
+                          score: product.score,
+                          properties: { product_id: id, position: "product_detail" },
+                        })
+                      }
                       className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 transition-colors"
                     >
                       <span className="font-medium text-stone-900 text-sm">{r.name}</span>
@@ -599,7 +616,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {saved ? "💖 Saved" : "🤍 Save"}
             </button>
             <button
-              onClick={() => setShowWhereToBuy(!showWhereToBuy)}
+              onClick={() => {
+                if (!showWhereToBuy) {
+                  track("buy_click", {
+                    page: "product_detail",
+                    product_name: product.name,
+                    score: product.score,
+                    properties: { product_id: id, position: "sticky_footer", action: "open_where_to_buy" },
+                  });
+                }
+                setShowWhereToBuy(!showWhereToBuy);
+              }}
               className="bg-orange-600 hover:bg-orange-700 text-white transition px-6 py-2.5 rounded-xl text-sm font-bold text-white"
             >
               Where to Buy &rarr;

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Search, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { isVagueQuery } from "@/lib/query-decoder";
+import { track } from "@/lib/analytics";
+import { usePageView } from "@/lib/hooks/use-page-view";
 
 const CATEGORIES = [
   { emoji: "💧", label: "Moisturizer", query: "best moisturizer" },
@@ -54,6 +56,8 @@ export default function SearchPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  usePageView("search");
+
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 60);
@@ -86,13 +90,24 @@ export default function SearchPage() {
     (searchQuery: string) => {
       const finalQuery = buildSearchQuery(searchQuery);
       if (!finalQuery) return;
+      track("search_submitted", {
+        page: "search",
+        query: finalQuery,
+        properties: {
+          raw_query: searchQuery,
+          skin_type: skinType || null,
+          concern: concern || null,
+          budget: budget || null,
+        },
+      });
       if (isVagueQuery(finalQuery)) {
+        track("refine_started", { page: "search", query: finalQuery });
         router.push(`/refine?q=${encodeURIComponent(finalQuery)}`);
       } else {
         router.push(`/results?q=${encodeURIComponent(finalQuery)}`);
       }
     },
-    [router, buildSearchQuery]
+    [router, buildSearchQuery, skinType, concern, budget]
   );
 
   const handleInputChange = (value: string) => {
@@ -263,9 +278,14 @@ export default function SearchPage() {
           {SKIN_TYPES.map((type) => (
             <button
               key={type}
-              onClick={() =>
-                setSkinType(skinType === type.toLowerCase() ? "" : type.toLowerCase())
-              }
+              onClick={() => {
+                const next = skinType === type.toLowerCase() ? "" : type.toLowerCase();
+                setSkinType(next);
+                track("filter_applied", {
+                  page: "search",
+                  properties: { filter_type: "skin_type", value: next || null },
+                });
+              }}
               className={filterChip(skinType === type.toLowerCase())}
             >
               {type}
@@ -277,9 +297,14 @@ export default function SearchPage() {
           {CONCERNS.map((c) => (
             <button
               key={c}
-              onClick={() =>
-                setConcern(concern === c.toLowerCase() ? "" : c.toLowerCase())
-              }
+              onClick={() => {
+                const next = concern === c.toLowerCase() ? "" : c.toLowerCase();
+                setConcern(next);
+                track("filter_applied", {
+                  page: "search",
+                  properties: { filter_type: "concern", value: next || null },
+                });
+              }}
               className={filterChip(concern === c.toLowerCase())}
             >
               {c}
@@ -313,7 +338,13 @@ export default function SearchPage() {
             {CATEGORIES.map((cat, i) => (
               <button
                 key={cat.label}
-                onClick={() => handleSearch(cat.query)}
+                onClick={() => {
+                  track("category_click", {
+                    page: "search",
+                    properties: { category: cat.label, query: cat.query },
+                  });
+                  handleSearch(cat.query);
+                }}
                 className={`flex flex-col items-center justify-center gap-2.5 py-6 bg-white border border-stone-200 rounded-2xl hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                 style={{ transitionDelay: `${320 + i * 40}ms` }}
               >
@@ -336,7 +367,14 @@ export default function SearchPage() {
             {BUDGET_OPTIONS.map((opt) => (
               <button
                 key={opt.label}
-                onClick={() => setBudget(opt.value === "" ? "" : budget === opt.value ? "" : opt.value)}
+                onClick={() => {
+                  const next = opt.value === "" ? "" : budget === opt.value ? "" : opt.value;
+                  setBudget(next);
+                  track("filter_applied", {
+                    page: "search",
+                    properties: { filter_type: "budget", value: next || null },
+                  });
+                }}
                 className={`py-3 rounded-2xl text-sm font-medium border transition-all active:scale-95 ${
                   (opt.value !== "" && budget === opt.value)
                     ? "bg-orange-500 text-white border-orange-500 shadow-sm"
