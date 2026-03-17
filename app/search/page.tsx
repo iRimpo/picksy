@@ -6,6 +6,25 @@ import { Search, Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { isVagueQuery } from "@/lib/query-decoder";
 
+const CATEGORIES = [
+  { emoji: "💧", label: "Moisturizer", query: "best moisturizer" },
+  { emoji: "✨", label: "Serum", query: "best serum" },
+  { emoji: "🧼", label: "Face Wash", query: "best face wash" },
+  { emoji: "☀️", label: "Sunscreen", query: "best sunscreen" },
+  { emoji: "🌿", label: "Toner", query: "best toner" },
+  { emoji: "👁️", label: "Eye Cream", query: "best eye cream" },
+];
+
+const BUDGET_OPTIONS = [
+  { label: "Under $15", value: "15" },
+  { label: "Under $25", value: "25" },
+  { label: "Under $40", value: "40" },
+  { label: "Any budget", value: "" },
+];
+
+const SKIN_TYPES = ["Dry", "Oily", "Combination", "Sensitive", "Normal"];
+const CONCERNS = ["Acne", "Dryness", "Redness", "Dark Spots", "Dandruff"];
+
 const EXAMPLE_QUERIES = [
   { text: "best moisturizer for dry sensitive skin" },
   { text: "best sunscreen for acne-prone skin" },
@@ -17,30 +36,11 @@ const EXAMPLE_QUERIES = [
   { text: "deodorant for sensitive skin" },
 ];
 
-
-const POPULAR_SEARCHES = [
-  { emoji: "🧴", label: "Moisturizer for dry skin" },
-  { emoji: "☀️", label: "Sunscreen for acne-prone skin" },
-  { emoji: "🫧", label: "Gentle cleanser <$15" },
-  { emoji: "🧴", label: "Dandruff shampoo" },
-  { emoji: "🧼", label: "Sensitive skin body wash" },
-  { emoji: "🌿", label: "Fragrance-free deodorant" },
-];
-
-
 const RECENT_SEARCHES = [
   { query: "best moisturizer for dry skin", time: "2 hours ago" },
   { query: "shampoo at Target under $15", time: "Yesterday" },
   { query: "wireless headphones", time: "3 days ago" },
 ];
-
-function RedditIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" className={className} fill="currentColor" aria-hidden>
-      <path d="M20 10a10 10 0 1 1-20 0 10 10 0 0 1 20 0zm-9.93-1.73c-.3-.03-.58.16-.67.45-.1.3.05.63.35.74.82.3 1.4.95 1.56 1.77a3.2 3.2 0 0 1-3.18 3.77c-.84 0-1.67-.37-2.26-1.02-.55-.6-.8-1.4-.68-2.2.12-.82.7-1.5 1.56-1.92.3-.15.42-.51.27-.82a.6.6 0 0 0-.81-.27c-1.2.59-2 1.6-2.18 2.77-.17 1.12.17 2.26.94 3.1.82.9 1.97 1.39 3.16 1.39 1.19 0 2.29-.48 3.1-1.35a4.4 4.4 0 0 0 1.06-3.34c-.25-1.44-1.2-2.67-2.22-3.07zm-5.48-2.88c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zm8.82 0c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zM10 6.19a2.8 2.8 0 0 0-1.97.8.6.6 0 1 0 .85.85 1.6 1.6 0 0 1 2.24 0 .6.6 0 1 0 .85-.85A2.8 2.8 0 0 0 10 6.19z" />
-    </svg>
-  );
-}
 
 export default function SearchPage() {
   const router = useRouter();
@@ -54,7 +54,6 @@ export default function SearchPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Staggered entrance
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 60);
@@ -69,19 +68,15 @@ export default function SearchPage() {
     (rawQuery: string) => {
       let finalQuery = rawQuery.trim();
       const lower = finalQuery.toLowerCase();
-
       if (skinType && !lower.includes(`${skinType} skin`)) {
         finalQuery += ` for ${skinType} skin`;
       }
-
       if (concern && !lower.includes(concern.toLowerCase())) {
         finalQuery += ` for ${concern}`;
       }
-
-      if (budget.trim() && !/under\s*\$?\d+/i.test(finalQuery)) {
-        finalQuery += ` under $${budget.trim()}`;
+      if (budget && !/under\s*\$?\d+/i.test(finalQuery)) {
+        finalQuery += ` under $${budget}`;
       }
-
       return finalQuery.trim();
     },
     [skinType, concern, budget]
@@ -127,70 +122,90 @@ export default function SearchPage() {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
-  // Shared animation base
   const base = "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]";
 
+  const filterChip = (active: boolean) =>
+    `px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 cursor-pointer ${
+      active
+        ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+        : "bg-white border-stone-200 text-stone-600 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50"
+    }`;
+
   return (
-    <div className="min-h-screen bg-stone-50 relative overflow-hidden">
-      {/* Subtle gradient blob */}
+    <div className="min-h-screen bg-[#f5f0ea] relative overflow-hidden">
+      {/* Warm gradient bloom */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full -z-10 pointer-events-none"
-        style={{ background: "rgba(254,215,170,0.15)", filter: "blur(100px)" }}
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full -z-10 pointer-events-none"
+        style={{ background: "rgba(254,215,170,0.22)", filter: "blur(120px)" }}
       />
 
       {/* Header */}
       <header
-        className={`relative z-10 flex items-center justify-between px-6 py-5 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+        className={`relative z-10 flex items-center px-6 py-5 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
       >
-        <Link href="/" className="flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors">
-          <ArrowLeft size={18} />
-          <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ fontFamily: "var(--font-serif), Georgia, serif" }}>
-            P
-          </div>
-          <span className="font-bold text-stone-900 text-lg tracking-tight">Picksy</span>
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 text-stone-400 hover:text-stone-700 transition-colors text-sm font-medium"
+        >
+          <ArrowLeft size={16} />
+          Home
         </Link>
       </header>
 
       {/* Main */}
-      <main className="relative z-10 flex flex-col items-center justify-center px-4 pt-12 md:pt-20 pb-20">
+      <main className="relative z-10 flex flex-col items-center px-4 pt-2 pb-24">
 
-        {/* Reddit badge */}
+        {/* Cursive wordmark */}
         <div
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-8 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "60ms" }}
+          className={`mb-7 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "40ms" }}
         >
-          <RedditIcon className="w-4 h-4 text-[#FF4500]" />
-          <span className="text-sm font-medium text-stone-600">Powered by Reddit + Trustpilot reviews</span>
+          <span
+            className="text-5xl text-[#5c2200]"
+            style={{
+              fontFamily: "var(--font-serif), Georgia, 'Times New Roman', serif",
+              fontStyle: "italic",
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Picksy
+          </span>
         </div>
 
+        {/* Heading */}
         <h1
-          className={`font-serif text-5xl md:text-6xl text-stone-900 text-center leading-tight mb-4 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}
-          style={{ fontFamily: "var(--font-serif), Georgia, serif", transitionDelay: "120ms" }}
+          className={`text-4xl md:text-5xl font-bold text-stone-900 text-center leading-tight mb-2 max-w-xl ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "100ms" }}
         >
-          What are you <span className="italic text-stone-500">overthinking</span> today?
+          What are you{" "}
+          <em className="not-italic text-stone-400">overthinking</em>{" "}
+          today?
         </h1>
 
         <p
-          className={`text-stone-500 text-lg mb-10 text-center max-w-md ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "180ms" }}
+          className={`text-stone-500 text-base mb-8 text-center ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "160ms" }}
         >
-          One search. One clear answer. No more 15-tab research marathons.
+          One search. One clear answer.
         </p>
 
         {/* Search bar */}
         <div
-          className={`w-full max-w-[640px] relative ${base} ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
-          style={{ transitionDelay: "240ms" }}
+          className={`w-full max-w-[680px] relative ${base} ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+          style={{ transitionDelay: "220ms" }}
         >
           <div
-            className={`flex items-center gap-3 bg-white border-2 rounded-full px-5 h-16 transition-all duration-300 shadow-sm ${
+            className={`flex items-center gap-3 bg-white rounded-full px-5 h-[60px] transition-all duration-300 ${
               isFocused
-                ? "border-orange-500 shadow-orange-100 shadow-lg"
-                : "border-stone-200"
+                ? "shadow-[0_0_0_2px_theme(colors.orange.400)] shadow-orange-100"
+                : "shadow-[0_1px_4px_rgba(0,0,0,0.08)] border border-stone-200"
             }`}
           >
-            <Search size={20} className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-orange-500" : "text-stone-400"}`} />
+            <Search
+              size={20}
+              className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-orange-500" : "text-stone-400"}`}
+            />
             <input
               ref={inputRef}
               type="text"
@@ -199,31 +214,35 @@ export default function SearchPage() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-              placeholder="Try: best moisturizer for dry skin under $20"
+              placeholder="Search for a product..."
               className="flex-1 bg-transparent outline-none text-stone-900 placeholder-stone-400 text-base"
               aria-label="Search for products"
             />
-            <button
-              onClick={() => handleSearch(query)}
-              disabled={!query.trim()}
-              className="shrink-0 bg-stone-900 text-white px-5 py-2.5 rounded-full text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-800 transition-all flex items-center gap-1.5 group active:scale-95"
-            >
-              Search
-              <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-            </button>
+            {query.trim() && (
+              <button
+                onClick={() => handleSearch(query)}
+                className="shrink-0 bg-stone-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-stone-700 transition-all flex items-center gap-1.5 group active:scale-95"
+              >
+                Search
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
           </div>
 
-          {/* Autocomplete */}
+          {/* Autocomplete dropdown */}
           {showAutocomplete && filteredExamples.length > 0 && (
             <div
               ref={dropdownRef}
-              className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-50 anim-plop"
+              className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-50"
             >
               {filteredExamples.slice(0, 5).map((item) => (
                 <button
                   key={item.text}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-stone-50 transition-colors text-left border-b border-stone-50 last:border-0"
-                  onMouseDown={(e) => { e.preventDefault(); handleSearch(item.text); }}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-stone-50 transition-colors text-left border-b border-stone-100 last:border-0"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSearch(item.text);
+                  }}
                 >
                   <Search size={13} className="text-stone-400 shrink-0" />
                   <span className="text-stone-700 text-sm">{item.text}</span>
@@ -233,106 +252,98 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* Persona filters (MVP) */}
+        {/* Skin type chips */}
         <div
-          className={`w-full max-w-[640px] mt-4 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "280ms" }}
+          className={`w-full max-w-[680px] mt-3 flex items-center gap-2 flex-wrap ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "260ms" }}
         >
-          <div className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">
-              Personalize your result (MVP)
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label htmlFor="skin-type" className="block text-xs font-medium text-stone-500 mb-1.5">
-                  Skin Type
-                </label>
-                <select
-                  id="skin-type"
-                  value={skinType}
-                  onChange={(e) => setSkinType(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
-                >
-                  <option value="">Any</option>
-                  <option value="dry">Dry</option>
-                  <option value="oily">Oily</option>
-                  <option value="combination">Combination</option>
-                  <option value="sensitive">Sensitive</option>
-                  <option value="normal">Normal</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="concern" className="block text-xs font-medium text-stone-500 mb-1.5">
-                  Concern
-                </label>
-                <select
-                  id="concern"
-                  value={concern}
-                  onChange={(e) => setConcern(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
-                >
-                  <option value="">Any</option>
-                  <option value="acne">Acne</option>
-                  <option value="dryness">Dryness</option>
-                  <option value="redness">Redness</option>
-                  <option value="dark spots">Dark Spots</option>
-                  <option value="dandruff">Dandruff</option>
-                  <option value="sensitivity">Sensitivity</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="budget" className="block text-xs font-medium text-stone-500 mb-1.5">
-                  Budget (optional)
-                </label>
-                <input
-                  id="budget"
-                  type="number"
-                  min="1"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="20"
-                  className="w-full h-11 rounded-xl border border-stone-200 px-3 text-sm text-stone-700 bg-white outline-none focus:border-orange-400"
-                />
-              </div>
-            </div>
-          </div>
+          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0">
+            Skin:
+          </span>
+          {SKIN_TYPES.map((type) => (
+            <button
+              key={type}
+              onClick={() =>
+                setSkinType(skinType === type.toLowerCase() ? "" : type.toLowerCase())
+              }
+              className={filterChip(skinType === type.toLowerCase())}
+            >
+              {type}
+            </button>
+          ))}
+          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0 ml-2">
+            Concern:
+          </span>
+          {CONCERNS.map((c) => (
+            <button
+              key={c}
+              onClick={() =>
+                setConcern(concern === c.toLowerCase() ? "" : c.toLowerCase())
+              }
+              className={filterChip(concern === c.toLowerCase())}
+            >
+              {c}
+            </button>
+          ))}
         </div>
 
         {/* Store tip */}
         <p
-          className={`text-xs text-stone-400 mt-3 text-center ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "300ms" }}
+          className={`text-[11px] text-stone-400 mt-2 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "280ms" }}
         >
-          Tip: Include a store name for local prices —{" "}
+          Tip: Include a store for local prices —{" "}
           <button
             onClick={() => handleSearch("best shampoo at Walmart")}
-            className="text-orange-600 font-semibold hover:underline"
+            className="text-orange-500 font-semibold hover:underline"
           >
             &ldquo;best shampoo at Walmart&rdquo;
           </button>
         </p>
 
-        {/* Popular searches */}
+        {/* Popular Categories */}
         <div
-          className={`mt-10 w-full max-w-[640px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "360ms" }}
+          className={`mt-10 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "320ms" }}
         >
-          <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 px-1">
-            Popular right now
+          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 text-center">
+            Popular Categories
           </h3>
-          <div className="flex items-center gap-2 flex-wrap">
-            {POPULAR_SEARCHES.map((item, i) => (
+          <div className="grid grid-cols-3 gap-3">
+            {CATEGORIES.map((cat, i) => (
               <button
-                key={item.label}
-                onClick={() => handleSearch(item.label)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-full text-sm text-stone-600 font-medium transition-all hover:border-orange-300 hover:text-orange-700 hover:bg-orange-50 hover:-translate-y-0.5 active:scale-95 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-                style={{ transitionDelay: `${360 + i * 50}ms` }}
+                key={cat.label}
+                onClick={() => handleSearch(cat.query)}
+                className={`flex flex-col items-center justify-center gap-2.5 py-6 bg-white border border-stone-200 rounded-2xl hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                style={{ transitionDelay: `${320 + i * 40}ms` }}
               >
-                <span>{item.emoji}</span>
-                <span>{item.label}</span>
+                <span className="text-3xl leading-none">{cat.emoji}</span>
+                <span className="text-sm font-medium text-stone-700">{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Budget */}
+        <div
+          className={`mt-8 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "560ms" }}
+        >
+          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 text-center">
+            Budget
+          </h3>
+          <div className="grid grid-cols-4 gap-3">
+            {BUDGET_OPTIONS.map((opt) => (
+              <button
+                key={opt.label}
+                onClick={() => setBudget(opt.value === "" ? "" : budget === opt.value ? "" : opt.value)}
+                className={`py-3 rounded-2xl text-sm font-medium border transition-all active:scale-95 ${
+                  (opt.value !== "" && budget === opt.value)
+                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                    : "bg-white border-stone-200 text-stone-700 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50"
+                }`}
+              >
+                {opt.label}
               </button>
             ))}
           </div>
@@ -340,22 +351,22 @@ export default function SearchPage() {
 
         {/* Recent searches */}
         <div
-          className={`mt-10 w-full max-w-[640px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "660ms" }}
+          className={`mt-10 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "620ms" }}
         >
-          <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 px-1">
-            Recent searches
+          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-3 px-1">
+            Recent Searches
           </h3>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {RECENT_SEARCHES.map((item, i) => (
               <button
                 key={item.query}
                 onClick={() => handleSearch(item.query)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white hover:border hover:border-stone-200 hover:shadow-sm transition-all text-left group ${base} ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3"}`}
-                style={{ transitionDelay: `${660 + i * 60}ms` }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white hover:shadow-sm transition-all text-left group ${base} ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3"}`}
+                style={{ transitionDelay: `${620 + i * 60}ms` }}
               >
                 <Clock size={14} className="text-stone-300 shrink-0" />
-                <span className="text-stone-600 text-sm flex-1 group-hover:text-stone-900 transition-colors">
+                <span className="text-stone-500 text-sm flex-1 group-hover:text-stone-800 transition-colors">
                   {item.query}
                 </span>
                 <span className="text-stone-300 text-xs">{item.time}</span>
@@ -363,6 +374,14 @@ export default function SearchPage() {
             ))}
           </div>
         </div>
+
+        {/* Footer attribution */}
+        <p
+          className={`mt-12 text-sm text-stone-400 text-center ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "780ms" }}
+        >
+          ✨ Powered by 12,000+ Reddit discussions &amp; Trustpilot reviews
+        </p>
       </main>
     </div>
   );
