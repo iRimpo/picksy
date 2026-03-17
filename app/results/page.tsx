@@ -255,7 +255,8 @@ function StoreSelector({ stores, onSelect }: { stores: StoreLocation[]; onSelect
 
 // ─── Winner Card ───────────────────────────────────────────────────────────────
 
-function WinnerCard({ winner, meta }: { winner: Winner; meta: AnalysisMeta }) {
+function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null }) {
+  const [imgError, setImgError] = useState(false);
   const lowestPrice = winner.buyLinks.length > 0
     ? Math.min(...winner.buyLinks.map((l) => l.price))
     : winner.price;
@@ -293,18 +294,34 @@ function WinnerCard({ winner, meta }: { winner: Winner; meta: AnalysisMeta }) {
 
         {/* Left: image + thumbnails */}
         <div>
-          <div className="w-full aspect-square rounded-2xl bg-white border border-stone-100 flex items-center justify-center overflow-hidden">
-            <span className="text-8xl">{winner.emoji}</span>
+          <div className="w-full aspect-square rounded-2xl bg-white border border-stone-100 overflow-hidden flex items-center justify-center">
+            {imageUrl && !imgError ? (
+              <img
+                src={imageUrl}
+                alt={winner.name}
+                className="w-full h-full object-contain p-4"
+                onError={() => setImgError(true)}
+              />
+            ) : imageUrl === null ? (
+              /* Pulse skeleton while image is loading */
+              <div className="w-full h-full bg-stone-100 animate-pulse rounded-2xl" />
+            ) : (
+              <span className="text-8xl">{winner.emoji}</span>
+            )}
           </div>
           <div className="flex gap-2 mt-3">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className={`w-[72px] h-[72px] rounded-xl bg-white border flex items-center justify-center cursor-pointer transition-colors ${
+                className={`w-[72px] h-[72px] rounded-xl bg-white border overflow-hidden flex items-center justify-center cursor-pointer transition-colors ${
                   i === 0 ? "border-orange-400 shadow-sm" : "border-stone-200 hover:border-stone-300"
                 }`}
               >
-                <span className="text-2xl">{winner.emoji}</span>
+                {imageUrl && !imgError ? (
+                  <img src={imageUrl} alt="" className="w-full h-full object-contain p-1" aria-hidden />
+                ) : (
+                  <span className="text-2xl">{winner.emoji}</span>
+                )}
               </div>
             ))}
           </div>
@@ -556,6 +573,7 @@ function ResultsContent() {
 
   const [flowState, setFlowState] = useState<FlowState>("loading");
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [productImageUrl, setProductImageUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState(query);
@@ -622,6 +640,17 @@ function ResultsContent() {
       setStores([]);
     }
   }
+
+  // Fetch product image once we have a winner
+  useEffect(() => {
+    if (!result?.winner) return;
+    setProductImageUrl(null); // reset / show skeleton
+    const q = encodeURIComponent(`${result.winner.brand} ${result.winner.name} product`);
+    fetch(`/api/product-image?q=${q}`)
+      .then((r) => r.json())
+      .then((data) => setProductImageUrl(data.imageUrl ?? ""))
+      .catch(() => setProductImageUrl(""));
+  }, [result?.winner?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!query) { router.push("/search"); return; }
@@ -713,7 +742,7 @@ function ResultsContent() {
 
         {flowState === "result" && result && (
           <>
-            <WinnerCard winner={result.winner as Winner} meta={result.meta} />
+            <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
             <div className="max-w-4xl mx-auto text-center pb-8">
