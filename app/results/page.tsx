@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
+import { getStoreUrl } from "@/lib/retailers";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -343,8 +344,11 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
             {winner.buyLinks.slice(0, 3).map((link) => {
               const isBest = link.price === lowestPrice;
               return (
-                <button
+                <a
                   key={link.store}
+                  href={getStoreUrl(link.store, winner.name, winner.brand)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() =>
                     track("buy_click", {
                       page: "results",
@@ -356,7 +360,7 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
                       properties: { position: "top_pick" },
                     })
                   }
-                  className={`relative rounded-xl border p-3 flex items-center gap-2 hover:shadow-md transition-all text-left group ${
+                  className={`relative rounded-xl border p-3 flex items-center gap-2 hover:shadow-md transition-all group ${
                     isBest
                       ? "border-teal-200 bg-teal-50/60 hover:border-teal-300"
                       : "border-stone-200 bg-white hover:border-stone-300"
@@ -377,7 +381,7 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
                     </p>
                   </div>
                   <ExternalLink size={12} className="text-stone-400 shrink-0 group-hover:text-stone-600 transition-colors" />
-                </button>
+                </a>
               );
             })}
           </div>

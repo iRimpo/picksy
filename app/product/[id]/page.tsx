@@ -10,6 +10,7 @@ import { products } from "@/lib/data/products";
 import { useAnimateIn } from "@/lib/hooks/use-animate-in";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
+import { getStoreUrl } from "@/lib/retailers";
 
 function ScoreGauge({ score, label }: { score: number; label: string }) {
   const [mounted, setMounted] = useState(false);
@@ -175,8 +176,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {showWhereToBuy && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-100 rounded-xl shadow-lg overflow-hidden z-30">
                   {product.retailers.map((r) => (
-                    <button
+                    <a
                       key={r.name}
+                      href={getStoreUrl(r.name, product.name, product.brand)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={() =>
                         track("buy_click", {
                           page: "product_detail",
@@ -187,14 +191,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           properties: { product_id: id, position: "product_detail" },
                         })
                       }
-                      className="w-full flex items-center justify-between px-5 py-3 hover:bg-stone-50 transition-colors"
+                      className="flex items-center justify-between px-5 py-3 hover:bg-stone-50 transition-colors"
                     >
                       <span className="font-medium text-stone-900 text-sm">{r.name}</span>
                       <span className="flex items-center gap-2 text-sm">
                         <span className="font-bold text-stone-900">${r.price.toFixed(2)}</span>
                         <ExternalLink size={14} className="text-stone-400" />
                       </span>
-                    </button>
+                    </a>
                   ))}
                   <p className="px-5 py-2 text-[10px] text-stone-300 border-t border-stone-50">
                     We earn from qualifying purchases
