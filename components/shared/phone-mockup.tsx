@@ -26,21 +26,21 @@ export function PhoneMockup() {
           {/* Search bar */}
           <div className="bg-white/10 rounded-xl px-3 py-2 flex items-center gap-2 text-sm mb-4">
             <Search size={14} className="text-white/40" />
-            <span className="text-white/40">CeraVe moisturizer...</span>
+            <span className="text-white/40">best wireless headphones...</span>
           </div>
           {/* Result card */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/10 mb-3">
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-sm">
-                CeraVe Moisturizing Cream
+                Sony WH-1000XM5
               </span>
             </div>
             <div className="flex items-center gap-2 mb-3">
               <div className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-0.5 rounded-full">
-                87% Positive
+                94% Positive
               </div>
               <div className="bg-brand-cyan/20 text-brand-cyan text-xs font-bold px-2 py-0.5 rounded-full">
-                142 Reviews
+                1,247 Reviews
               </div>
             </div>
             {/* Mini transcript */}
@@ -48,10 +48,10 @@ export function PhoneMockup() {
               <div className="flex items-center gap-1 mb-1">
                 <Play size={10} className="text-brand-pink" />
                 <span className="font-semibold text-white/90">
-                  @skincarebyjess
+                  @mkbhd
                 </span>
               </div>
-              &ldquo;My skin has NEVER looked better...&rdquo;
+              &ldquo;Best noise cancellation I&apos;ve tested...&rdquo;
             </div>
           </div>
           {/* Hype badge */}

@@ -28,18 +28,18 @@ export function getStoreUrl(store: string, productName: string, brand: string): 
       return `https://www.target.com/s?searchTerm=${q}`;
     case "walmart":
       return `https://www.walmart.com/search?q=${q}`;
-    case "sephora":
-      return `https://www.sephora.com/search?keyword=${q}`;
-    case "ulta":
-      return `https://www.ulta.com/search?search=${q}`;
-    case "cvs":
-      return `https://www.cvs.com/search?searchTerm=${q}`;
-    case "walgreens":
-      return `https://www.walgreens.com/search/results.jsp?Ntt=${q}`;
-    case "iherb":
-      return `https://www.iherb.com/search?kw=${q}`;
-    case "dermstore":
-      return `https://www.dermstore.com/search?q=${q}`;
+    case "best buy":
+    case "bestbuy":
+      return `https://www.bestbuy.com/site/searchpage.jsp?st=${q}`;
+    case "b&h":
+    case "b&h photo":
+    case "bhphoto":
+      return `https://www.bhphotovideo.com/c/search?Ntt=${q}`;
+    case "newegg":
+      return `https://www.newegg.com/p/pl?d=${q}`;
+    case "micro center":
+    case "microcenter":
+      return `https://www.microcenter.com/search/search_results.aspx?Ntx=mode+MatchAllPartial&Ntk=all&N=4294967288&myStore=false&query=${q}`;
     default:
       // Generic Google Shopping fallback
       return `https://www.google.com/search?q=${encodeURIComponent(`buy ${brand} ${productName}`)}&tbm=shop`;

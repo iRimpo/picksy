@@ -12,24 +12,17 @@ import PreferenceReadout from "./PreferenceReadout";
 // ─── Lightened gradient palettes (+30% lightness) ─────────────────────────────
 
 const CATEGORY_PALETTES: Record<string, string[]> = {
-  Sunscreen:    ["#3a6a9f", "#4a9a7a", "#d9a0ff", "#f08040"],
-  Moisturizer:  ["#4a9a7a", "#3a6a9f", "#f5d88a", "#f59e7a"],
-  Cleanser:     ["#1e607a", "#3abcdc", "#f5d88a", "#f59e7a"],
-  Shampoo:      ["#9a4a9c", "#2a5a8c", "#f5c07a", "#7ab87a"],
   Headphones:   ["#2a2a5a", "#2a4ab8", "#ff7ab8", "#8af0ff"],
+  Laptop:       ["#1a3a5a", "#2a6a9a", "#8ad4f0", "#f0e87a"],
+  TV:           ["#1a1a3a", "#3a2a6a", "#8a6af0", "#f06a8a"],
+  Smartphone:   ["#2a3a5a", "#1a5a8a", "#6af0d8", "#f0a06a"],
+  Keyboard:     ["#1a2a4a", "#4a2a6a", "#a06af0", "#f0f06a"],
+  Mouse:        ["#2a1a4a", "#4a3a7a", "#c86af0", "#6af0c8"],
+  Monitor:      ["#1a2a3a", "#2a4a6a", "#6aaaf0", "#f0c86a"],
+  Speaker:      ["#3a1a4a", "#6a2a4a", "#f06ac8", "#6af0f0"],
+  Camera:       ["#1a2a2a", "#2a5a4a", "#6af0a0", "#f0c84a"],
+  Tablet:       ["#2a2a4a", "#3a4a7a", "#8a9af0", "#f0a88a"],
   General:      ["#5a4a3a", "#7a6a64", "#f09040", "#fdb870"],
-  DryShampoo:   ["#6a6a3a", "#4a4a6a", "#f0f0c8", "#c8c8f0"],
-  EyeCream:     ["#4a6a3a", "#3a5a5a", "#f0f0b8", "#b8f0f0"],
-  HairOil:      ["#6a5a3a", "#4a6a3a", "#f0e0b8", "#d0f0b8"],
-  BodyWash:     ["#3a7a8a", "#2a5a7a", "#a8e4f0", "#f0c87a"],
-  BodyLotion:   ["#5a7a5a", "#3a5a7a", "#c8f0d8", "#c8d8f0"],
-  FaceOil:      ["#7a5a3a", "#5a3a6a", "#f0d8b8", "#d8b8f0"],
-  Deodorant:    ["#5a8a5a", "#3a6a5a", "#c8f0c8", "#f0e8c8"],
-  Conditioner:  ["#7a5a8a", "#4a5a8a", "#f0c8f0", "#c8d8f0"],
-  FaceMask:     ["#5a3a6a", "#3a4a7a", "#f0b8d8", "#b8c8f0"],
-  Serum:        ["#3a5a7a", "#5a3a6a", "#f0d8b8", "#d8b8f0"],
-  Toner:        ["#3a6a6a", "#5a5a3a", "#c8f0e8", "#f0e8c8"],
-  LipBalm:      ["#8a3a5a", "#5a3a4a", "#f0c8d8", "#f0d8c8"],
 };
 
 const COLOR_TINTS = [

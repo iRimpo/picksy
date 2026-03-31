@@ -14,10 +14,9 @@ const PREFER_CDN = [
   "m.media-amazon.com",
   "i5.walmartimages.com",
   "target.scene7.com",
-  "media.ulta.com",
-  "media.sephora.com",
-  "images.dermstore.com",
-  "images.lookfantastic.com",
+  "pisces.bbystatic.com",
+  "static.bhphoto.com",
+  "c1.neweggimages.com",
   "cloudfront.net",
 ];
 
@@ -81,7 +80,7 @@ async function fetchViaTavily(query: string): Promise<string | null> {
   const passes = [
     {
       query: `${query}`,
-      include_domains: ["amazon.com", "walmart.com", "target.com", "sephora.com", "ulta.com", "walgreens.com", "cvs.com"],
+      include_domains: ["amazon.com", "walmart.com", "target.com", "bestbuy.com", "bhphotovideo.com", "newegg.com"],
     },
     {
       query: `${query} product photo`,

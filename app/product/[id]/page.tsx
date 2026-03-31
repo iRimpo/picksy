@@ -460,10 +460,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <h3 className="text-2xl font-black text-stone-900 mb-6">Who Recommends This?</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
             {([
-              { platform: "Reddit", sub: "r/SkincareAddiction", icon: "💬", comment: "Holy grail for dry skin. Cheap and actually works." },
-              { platform: "TikTok", sub: "#SkincareRoutine", icon: "🎵", comment: "Mixed reviews on texture, but most love results." },
-              { platform: "YouTube", sub: "Expert Reviews", icon: "📺", comment: "Dr. Dray recommends for barrier repair." },
-              { platform: "Instagram", sub: "#Skincare", icon: "📸", comment: "Aesthetic posts showing before/after results." },
+              { platform: "Reddit", sub: "r/headphones", icon: "💬", comment: "Best ANC you can buy. Nothing touches it on a plane." },
+              { platform: "TikTok", sub: "#TechReviews", icon: "🎵", comment: "Mixed on price, but the sound quality praise is near-universal." },
+              { platform: "YouTube", sub: "Expert Reviews", icon: "📺", comment: "MKBHD gave it the top spot in his ANC headphone tier list." },
+              { platform: "Instagram", sub: "#TechSetup", icon: "📸", comment: "Desk setup posts featuring these as the go-to headphone pick." },
             ] as const).map((item) => {
               const p = product.platforms[item.platform.toLowerCase() as keyof typeof product.platforms];
               return (

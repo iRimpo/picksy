@@ -54,8 +54,18 @@ interface AnalysisMeta {
   budget: number | null;
   subreddits: string[];
   postsAnalyzed: number;
+  redditThreadUrls?: string[];
   mode: "general" | "store-specific";
   analysisTimeMs: number;
+}
+
+interface RedditComment {
+  author: string;
+  body: string;
+  subreddit: string;
+  upvotes: number;
+  avatarUrl: string | null;
+  permalink: string;
 }
 interface AnalysisResult { winner: Winner; alternatives: Alternative[]; meta: AnalysisMeta }
 
@@ -64,14 +74,16 @@ interface AnalysisResult { winner: Winner; alternatives: Alternative[]; meta: An
 function getPageTitle(category: string, query: string): string {
   const src = (category || query).toLowerCase();
   const map: Record<string, string> = {
-    serum: "Top Serums", serums: "Top Serums",
-    moisturizer: "Top Moisturizers", moisturizers: "Top Moisturizers",
-    cleanser: "Top Cleansers", "face wash": "Top Face Washes",
-    sunscreen: "Top Sunscreens", toner: "Top Toners", toners: "Top Toners",
-    shampoo: "Top Shampoos", conditioner: "Top Conditioners",
-    "eye cream": "Top Eye Creams", deodorant: "Top Deodorants",
-    "lip balm": "Top Lip Balms", "body wash": "Top Body Washes",
-    headphones: "Top Headphones",
+    headphones: "Top Headphones", earbuds: "Top Earbuds", earphones: "Top Earphones",
+    laptop: "Top Laptops", laptops: "Top Laptops", notebook: "Top Laptops",
+    tv: "Top TVs", television: "Top TVs", oled: "Top OLED TVs", qled: "Top QLED TVs",
+    smartphone: "Top Smartphones", phone: "Top Smartphones", iphone: "Top iPhones", android: "Top Android Phones",
+    monitor: "Top Monitors", display: "Top Displays",
+    keyboard: "Top Keyboards",
+    mouse: "Top Mice",
+    speaker: "Top Speakers", soundbar: "Top Soundbars",
+    camera: "Top Cameras",
+    tablet: "Top Tablets", ipad: "Top iPads",
   };
   for (const [key, title] of Object.entries(map)) {
     if (src.includes(key)) return title;
@@ -561,9 +573,132 @@ function ErrorState({ query, onRetry }: { query: string; onRetry: () => void }) 
   );
 }
 
+function NotElectronicsState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[50vh] px-4 text-center">
+      <div className="text-5xl mb-4">🔌</div>
+      <h2 className="text-xl font-black text-stone-900 mb-2">Electronics only</h2>
+      <p className="text-stone-500 text-sm mb-6 max-w-sm">{message}</p>
+      <div className="flex flex-col gap-3 mb-6 text-left w-full max-w-xs">
+        <p className="text-xs font-bold text-stone-400 uppercase tracking-wider text-center">Try one of these</p>
+        {["best wireless headphones for commuting", "gaming laptop under $1000", "best 4K TV for the living room"].map((q) => (
+          <Link
+            key={q}
+            href={`/results?q=${encodeURIComponent(q)}`}
+            className="text-sm text-orange-600 font-medium hover:underline text-center"
+          >
+            &ldquo;{q}&rdquo;
+          </Link>
+        ))}
+      </div>
+      <Link
+        href="/search"
+        className="bg-stone-900 hover:bg-stone-800 transition px-6 py-3 rounded-xl font-bold text-white text-sm"
+      >
+        Try a new search
+      </Link>
+    </div>
+  );
+}
+
+// ─── Reddit Comments Section ──────────────────────────────────────────────────
+
+function RedditAvatar({ avatarUrl, author }: { avatarUrl: string | null; author: string }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = author.replace("[deleted]", "?")[0]?.toUpperCase() ?? "?";
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={author}
+        className="w-9 h-9 rounded-full object-cover shrink-0 bg-stone-100"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="w-9 h-9 rounded-full bg-[#FF4500] flex items-center justify-center shrink-0 text-white text-sm font-bold">
+      {initial}
+    </div>
+  );
+}
+
+function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
+  const [comments, setComments] = useState<RedditComment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (threadUrls.length === 0) { setLoading(false); return; }
+    const encoded = encodeURIComponent(JSON.stringify(threadUrls));
+    fetch(`/api/reddit-comments?urls=${encoded}`)
+      .then((r) => r.json())
+      .then((data) => { setComments(data.comments || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [threadUrls]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!loading && comments.length === 0) return null;
+
+  return (
+    <div className="max-w-4xl mx-auto mb-8">
+      <h3 className="text-base font-semibold text-stone-900 mb-4 flex items-center gap-2">
+        <svg viewBox="0 0 20 20" className="w-5 h-5 text-[#FF4500]" fill="currentColor">
+          <path d="M20 10a10 10 0 1 1-20 0 10 10 0 0 1 20 0zm-9.93-1.73c-.3-.03-.58.16-.67.45-.1.3.05.63.35.74.82.3 1.4.95 1.56 1.77a3.2 3.2 0 0 1-3.18 3.77c-.84 0-1.67-.37-2.26-1.02-.55-.6-.8-1.4-.68-2.2.12-.82.7-1.5 1.56-1.92.3-.15.42-.51.27-.82a.6.6 0 0 0-.81-.27c-1.2.59-2 1.6-2.18 2.77-.17 1.12.17 2.26.94 3.1.82.9 1.97 1.39 3.16 1.39 1.19 0 2.29-.48 3.1-1.35a4.4 4.4 0 0 0 1.06-3.34c-.25-1.44-1.2-2.67-2.22-3.07zm-5.48-2.88c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zm8.82 0c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zM10 6.19a2.8 2.8 0 0 0-1.97.8.6.6 0 1 0 .85.85 1.6 1.6 0 0 1 2.24 0 .6.6 0 1 0 .85-.85A2.8 2.8 0 0 0 10 6.19z" />
+        </svg>
+        What Reddit is Saying
+      </h3>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex gap-3 animate-pulse">
+              <div className="w-9 h-9 rounded-full bg-stone-200 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 bg-stone-200 rounded w-1/4" />
+                <div className="h-3 bg-stone-200 rounded w-full" />
+                <div className="h-3 bg-stone-200 rounded w-3/4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {comments.map((comment, i) => (
+            <a
+              key={i}
+              href={comment.permalink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-white rounded-2xl p-4 border border-stone-100 hover:border-stone-200 hover:shadow-sm transition-all"
+            >
+              <div className="flex items-start gap-3">
+                <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="text-sm font-semibold text-stone-900">u/{comment.author}</span>
+                    <span className="text-xs text-stone-400">in r/{comment.subreddit}</span>
+                    {comment.upvotes > 0 && (
+                      <span className="ml-auto text-xs text-stone-400 flex items-center gap-1">
+                        <TrendingUp size={11} className="text-orange-400" />
+                        {comment.upvotes.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-stone-600 leading-relaxed line-clamp-3">{comment.body}</p>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Results Content ──────────────────────────────────────────────────────
 
-type FlowState = "loading" | "location-prompt" | "store-selection" | "result" | "error";
+type FlowState = "loading" | "location-prompt" | "store-selection" | "result" | "error" | "not-electronics";
 
 function ResultsContent() {
   const router = useRouter();
@@ -577,13 +712,15 @@ function ResultsContent() {
 
   const [flowState, setFlowState] = useState<FlowState>("loading");
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [notElectronicsMessage, setNotElectronicsMessage] = useState("");
+  const [redditThreadUrls, setRedditThreadUrls] = useState<string[]>([]);
   const [productImageUrl, setProductImageUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState(query);
   const [storeContext, setStoreContext] = useState(storeParam);
 
-  const STORE_NAMES = ["Walmart", "Target", "CVS", "Walgreens", "Ulta", "Sephora", "Amazon"];
+  const STORE_NAMES = ["Walmart", "Target", "Amazon", "Best Buy", "Newegg", "B&H", "Micro Center"];
   function detectStoreInQuery(q: string): string | null {
     const lower = q.toLowerCase();
     for (const s of STORE_NAMES) {
@@ -609,9 +746,19 @@ function ResultsContent() {
           ...(preferences ? { preferences } : {}),
         }),
       });
+      if (res.status === 422) {
+        const errData = await res.json();
+        if (errData.reason === "not_electronics") {
+          setNotElectronicsMessage(errData.error || "Picksy is built for electronics and tech products.");
+          setFlowState("not-electronics");
+          return;
+        }
+        throw new Error("Analysis failed");
+      }
       if (!res.ok) throw new Error("Analysis failed");
       const data: AnalysisResult = await res.json();
       setResult(data);
+      setRedditThreadUrls(data.meta.redditThreadUrls || []);
       setFlowState("result");
       track("search_result_viewed", {
         page: "results",
@@ -743,10 +890,12 @@ function ResultsContent() {
       <main className="max-w-5xl mx-auto px-4 py-8">
         {flowState === "loading" && <LoadingState query={query} />}
         {flowState === "error" && <ErrorState query={query} onRetry={() => runAnalysis()} />}
+        {flowState === "not-electronics" && <NotElectronicsState message={notElectronicsMessage} />}
 
         {flowState === "result" && result && (
           <>
             <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} />
+            <RedditCommentsSection threadUrls={redditThreadUrls} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
             <div className="max-w-4xl mx-auto text-center pb-8">

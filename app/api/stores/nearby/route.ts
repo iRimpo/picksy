@@ -12,21 +12,19 @@ const MOCK_STORES: Record<string, object[]> = {
     { id: "tg-2", name: "Target Express", address: "321 Geary St", city: "San Francisco", state: "CA", zip: "94102", distance: 1.1 },
     { id: "tg-3", name: "Target", address: "654 El Camino Real", city: "South San Francisco", state: "CA", zip: "94080", distance: 4.7 },
   ],
-  cvs: [
-    { id: "cvs-1", name: "CVS Pharmacy", address: "100 Powell St", city: "San Francisco", state: "CA", zip: "94102", distance: 0.3 },
-    { id: "cvs-2", name: "CVS Pharmacy", address: "450 Castro St", city: "San Francisco", state: "CA", zip: "94114", distance: 1.6 },
+  "best buy": [
+    { id: "bb-1", name: "Best Buy", address: "1717 Harrison St", city: "San Francisco", state: "CA", zip: "94103", distance: 0.9 },
+    { id: "bb-2", name: "Best Buy", address: "2675 Geary Blvd", city: "San Francisco", state: "CA", zip: "94118", distance: 2.1 },
   ],
-  walgreens: [
-    { id: "wg-1", name: "Walgreens", address: "200 Kearny St", city: "San Francisco", state: "CA", zip: "94108", distance: 0.4 },
-    { id: "wg-2", name: "Walgreens", address: "2300 16th St", city: "San Francisco", state: "CA", zip: "94103", distance: 1.9 },
+  bestbuy: [
+    { id: "bb-1", name: "Best Buy", address: "1717 Harrison St", city: "San Francisco", state: "CA", zip: "94103", distance: 0.9 },
+    { id: "bb-2", name: "Best Buy", address: "2675 Geary Blvd", city: "San Francisco", state: "CA", zip: "94118", distance: 2.1 },
   ],
-  ulta: [
-    { id: "ul-1", name: "Ulta Beauty", address: "845 Market St", city: "San Francisco", state: "CA", zip: "94103", distance: 0.6 },
-    { id: "ul-2", name: "Ulta Beauty", address: "3251 20th Ave", city: "San Francisco", state: "CA", zip: "94132", distance: 3.8 },
+  "micro center": [
+    { id: "mc-1", name: "Micro Center", address: "9895 E. Washington Blvd", city: "Culver City", state: "CA", zip: "90232", distance: 5.4 },
   ],
-  sephora: [
-    { id: "sep-1", name: "Sephora", address: "1 Stockton St", city: "San Francisco", state: "CA", zip: "94108", distance: 0.7 },
-    { id: "sep-2", name: "Sephora inside JCPenney", address: "5560 Bay St", city: "Emeryville", state: "CA", zip: "94608", distance: 5.1 },
+  amazon: [
+    { id: "amz-1", name: "Amazon Fresh", address: "2040 24th Ave E", city: "San Francisco", state: "CA", zip: "94116", distance: 2.3 },
   ],
 };
 

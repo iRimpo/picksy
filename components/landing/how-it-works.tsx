@@ -30,16 +30,16 @@ export function HowItWorks() {
             number="01"
             icon={Search}
             title="Describe What You Need"
-            description='Type naturally: "best moisturizer for dry skin" or "hair oil at Walmart under $15". We understand what you mean.'
+            description='Type naturally: "best wireless headphones for commuting" or "gaming mouse at Best Buy under $50". We understand what you mean.'
           >
             <div className="space-y-2">
               <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center gap-2 border border-gray-100">
                 <Search size={14} className="text-gray-400 shrink-0" />
-                <span className="text-gray-400 text-xs">best moisturizer for dry skin</span>
+                <span className="text-gray-400 text-xs">best wireless headphones for commuting</span>
               </div>
               <div className="bg-gray-50 rounded-xl px-4 py-2.5 flex items-center gap-2 border border-gray-100">
                 <Search size={14} className="text-gray-400 shrink-0" />
-                <span className="text-gray-400 text-xs">hair oil at Walmart under $15</span>
+                <span className="text-gray-400 text-xs">gaming mouse at Best Buy under $50</span>
               </div>
             </div>
           </StepCard>
@@ -51,7 +51,7 @@ export function HowItWorks() {
             number="02"
             icon={BarChart2}
             title="We Read Reddit So You Don't"
-            description="Our AI scans hundreds of Reddit posts across r/SkincareAddiction, r/HairCare, and more — extracting real opinions, not ads."
+            description="Our AI scans hundreds of Reddit posts across r/headphones, r/gadgets, r/buildapc, and more — extracting real opinions, not ads."
           >
             <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 text-left">
               <div className="flex items-center gap-2 mb-2">
@@ -67,9 +67,9 @@ export function HowItWorks() {
                 </div>
               </div>
               <p className="text-xs text-gray-400 italic">
-                &ldquo;This is the holy grail for dry skin...&rdquo;
+                &ldquo;Nothing touches these on a plane. Absolute silence...&rdquo;
               </p>
-              <p className="text-[10px] text-gray-300 mt-1">— r/SkincareAddiction · 247 upvotes</p>
+              <p className="text-[10px] text-gray-300 mt-1">— r/headphones · 1.2k upvotes</p>
             </div>
           </StepCard>
         </div>
@@ -89,8 +89,8 @@ export function HowItWorks() {
               </div>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="text-xs font-black text-gray-900">CeraVe Moisturizing Cream</p>
-                  <p className="text-[10px] text-brand-pink font-semibold">CeraVe · $16.99</p>
+                  <p className="text-xs font-black text-gray-900">Sony WH-1000XM5</p>
+                  <p className="text-[10px] text-brand-pink font-semibold">Sony · $279.99</p>
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-black text-green-600">88</p>

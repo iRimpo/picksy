@@ -9,39 +9,39 @@ import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
 
 const CATEGORIES = [
-  { emoji: "💧", label: "Moisturizer", query: "best moisturizer" },
-  { emoji: "✨", label: "Serum", query: "best serum" },
-  { emoji: "🧼", label: "Face Wash", query: "best face wash" },
-  { emoji: "☀️", label: "Sunscreen", query: "best sunscreen" },
-  { emoji: "🌿", label: "Toner", query: "best toner" },
-  { emoji: "👁️", label: "Eye Cream", query: "best eye cream" },
+  { emoji: "🎧", label: "Headphones", query: "best wireless headphones" },
+  { emoji: "💻", label: "Laptops", query: "best laptop" },
+  { emoji: "📺", label: "TVs", query: "best 4K TV" },
+  { emoji: "📱", label: "Smartphones", query: "best smartphone" },
+  { emoji: "🖥️", label: "Monitors", query: "best monitor" },
+  { emoji: "🖱️", label: "Mice", query: "best wireless mouse" },
 ];
 
 const BUDGET_OPTIONS = [
-  { label: "Under $15", value: "15" },
-  { label: "Under $25", value: "25" },
-  { label: "Under $40", value: "40" },
+  { label: "Under $100", value: "100" },
+  { label: "Under $300", value: "300" },
+  { label: "Under $500", value: "500" },
   { label: "Any budget", value: "" },
 ];
 
-const SKIN_TYPES = ["Dry", "Oily", "Combination", "Sensitive", "Normal"];
-const CONCERNS = ["Acne", "Dryness", "Redness", "Dark Spots", "Dandruff"];
+const USE_CASES = ["Gaming", "Work", "Travel", "Studio", "Everyday"];
+const PRIORITIES = ["Battery Life", "Performance", "Build Quality", "Value", "Portability"];
 
 const EXAMPLE_QUERIES = [
-  { text: "best moisturizer for dry sensitive skin" },
-  { text: "best sunscreen for acne-prone skin" },
-  { text: "gentle cleanser for oily skin under $15" },
-  { text: "best shampoo for dandruff at Target" },
-  { text: "body wash for sensitive skin" },
-  { text: "fragrance-free moisturizer at Walmart" },
-  { text: "best lip balm for very dry lips" },
-  { text: "deodorant for sensitive skin" },
+  { text: "best wireless headphones for commuting" },
+  { text: "gaming laptop under $1000" },
+  { text: "best 4K TV for small room" },
+  { text: "noise cancelling earbuds under $200" },
+  { text: "best mechanical keyboard for typing" },
+  { text: "ultrawide monitor at Best Buy under $500" },
+  { text: "best budget smartphone under $400" },
+  { text: "wireless gaming mouse for large hands" },
 ];
 
 const RECENT_SEARCHES = [
-  { query: "best moisturizer for dry skin", time: "2 hours ago" },
-  { query: "shampoo at Target under $15", time: "Yesterday" },
-  { query: "wireless headphones", time: "3 days ago" },
+  { query: "best wireless headphones for commuting", time: "2 hours ago" },
+  { query: "gaming laptop under $1000", time: "Yesterday" },
+  { query: "best 4K TV for small room", time: "3 days ago" },
 ];
 
 export default function SearchPage() {
@@ -49,8 +49,8 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [skinType, setSkinType] = useState("");
-  const [concern, setConcern] = useState("");
+  const [useCase, setUseCase] = useState("");
+  const [priority, setPriority] = useState("");
   const [budget, setBudget] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -72,18 +72,18 @@ export default function SearchPage() {
     (rawQuery: string) => {
       let finalQuery = rawQuery.trim();
       const lower = finalQuery.toLowerCase();
-      if (skinType && !lower.includes(`${skinType} skin`)) {
-        finalQuery += ` for ${skinType} skin`;
+      if (useCase && !lower.includes(useCase.toLowerCase())) {
+        finalQuery += ` for ${useCase.toLowerCase()}`;
       }
-      if (concern && !lower.includes(concern.toLowerCase())) {
-        finalQuery += ` for ${concern}`;
+      if (priority && !lower.includes(priority.toLowerCase())) {
+        finalQuery += ` with good ${priority.toLowerCase()}`;
       }
       if (budget && !/under\s*\$?\d+/i.test(finalQuery)) {
         finalQuery += ` under $${budget}`;
       }
       return finalQuery.trim();
     },
-    [skinType, concern, budget]
+    [useCase, priority, budget]
   );
 
   const handleSearch = useCallback(
@@ -95,8 +95,8 @@ export default function SearchPage() {
         query: finalQuery,
         properties: {
           raw_query: searchQuery,
-          skin_type: skinType || null,
-          concern: concern || null,
+          use_case: useCase || null,
+          priority: priority || null,
           budget: budget || null,
         },
       });
@@ -107,7 +107,7 @@ export default function SearchPage() {
         router.push(`/results?q=${encodeURIComponent(finalQuery)}`);
       }
     },
-    [router, buildSearchQuery, skinType, concern, budget]
+    [router, buildSearchQuery, useCase, priority, budget]
   );
 
   const handleInputChange = (value: string) => {
@@ -267,47 +267,47 @@ export default function SearchPage() {
           )}
         </div>
 
-        {/* Skin type chips */}
+        {/* Use case + priority chips */}
         <div
           className={`w-full max-w-[680px] mt-3 flex items-center gap-2 flex-wrap ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
           style={{ transitionDelay: "260ms" }}
         >
           <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0">
-            Skin:
+            Use:
           </span>
-          {SKIN_TYPES.map((type) => (
+          {USE_CASES.map((uc) => (
             <button
-              key={type}
+              key={uc}
               onClick={() => {
-                const next = skinType === type.toLowerCase() ? "" : type.toLowerCase();
-                setSkinType(next);
+                const next = useCase === uc.toLowerCase() ? "" : uc.toLowerCase();
+                setUseCase(next);
                 track("filter_applied", {
                   page: "search",
-                  properties: { filter_type: "skin_type", value: next || null },
+                  properties: { filter_type: "use_case", value: next || null },
                 });
               }}
-              className={filterChip(skinType === type.toLowerCase())}
+              className={filterChip(useCase === uc.toLowerCase())}
             >
-              {type}
+              {uc}
             </button>
           ))}
           <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0 ml-2">
-            Concern:
+            Priority:
           </span>
-          {CONCERNS.map((c) => (
+          {PRIORITIES.map((p) => (
             <button
-              key={c}
+              key={p}
               onClick={() => {
-                const next = concern === c.toLowerCase() ? "" : c.toLowerCase();
-                setConcern(next);
+                const next = priority === p.toLowerCase() ? "" : p.toLowerCase();
+                setPriority(next);
                 track("filter_applied", {
                   page: "search",
-                  properties: { filter_type: "concern", value: next || null },
+                  properties: { filter_type: "priority", value: next || null },
                 });
               }}
-              className={filterChip(concern === c.toLowerCase())}
+              className={filterChip(priority === p.toLowerCase())}
             >
-              {c}
+              {p}
             </button>
           ))}
         </div>
@@ -319,10 +319,10 @@ export default function SearchPage() {
         >
           Tip: Include a store for local prices —{" "}
           <button
-            onClick={() => handleSearch("best shampoo at Walmart")}
+            onClick={() => handleSearch("best gaming headset at Best Buy")}
             className="text-orange-500 font-semibold hover:underline"
           >
-            &ldquo;best shampoo at Walmart&rdquo;
+            &ldquo;best gaming headset at Best Buy&rdquo;
           </button>
         </p>
 

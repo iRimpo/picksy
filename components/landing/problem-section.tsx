@@ -12,14 +12,14 @@ const problems = [
     icon: "😰",
     title: "Aisle Paralysis",
     description:
-      "Standing frozen in Target at 7pm, staring at 47 moisturizers, scrolling through reviews on your phone while other shoppers judge you.",
+      "Standing in Best Buy at 7pm, staring at 23 laptops, scrolling through specs on your phone while the sales rep hovers awkwardly nearby.",
     borderColor: "border-brand-cyan/20",
   },
   {
     icon: "💸",
     title: "Viral Regret",
     description:
-      "Bought the hyped product. It sucked. You can't tell paid promos from honest reviews anymore and you're tired of wasting money.",
+      "Bought the hyped gadget. It was mediocre. You can't tell paid tech reviews from honest ones anymore and you're tired of wasting money.",
     borderColor: "border-brand-yellow/20",
   },
 ];

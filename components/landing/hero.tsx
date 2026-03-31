@@ -77,14 +77,14 @@ export function Hero() {
                 <svg viewBox="0 0 24 24" className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2}>
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
-                <span className="text-sm text-gray-400">best moisturizer for dry skin</span>
+                <span className="text-sm text-gray-400">best noise cancelling headphones</span>
               </div>
 
               {/* Reddit scanning animation */}
               <div className="bg-[#FF4500]/5 border border-[#FF4500]/10 rounded-xl p-3 mb-3">
                 <div className="flex items-center gap-2 mb-1.5">
                   <RedditIcon className="w-3.5 h-3.5 text-[#FF4500]" />
-                  <span className="text-[10px] font-bold text-[#FF4500]">Analyzed 143 Reddit discussions</span>
+                  <span className="text-[10px] font-bold text-[#FF4500]">Analyzed 1,247 Reddit discussions</span>
                 </div>
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full rounded-full w-full" style={{ background: "linear-gradient(90deg, #FF4500, #FE2C55)" }} />
@@ -98,11 +98,11 @@ export function Hero() {
                   <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Your Answer</span>
                 </div>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-2xl border border-gray-100">🧴</div>
+                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-2xl border border-gray-100">🎧</div>
                   <div>
-                    <p className="text-xs text-brand-pink font-bold">CeraVe</p>
-                    <p className="text-sm font-black text-gray-900 leading-tight">Moisturizing Cream</p>
-                    <p className="text-base font-black text-gray-900">$16.99</p>
+                    <p className="text-xs text-brand-pink font-bold">Sony</p>
+                    <p className="text-sm font-black text-gray-900 leading-tight">WH-1000XM5</p>
+                    <p className="text-base font-black text-gray-900">$279.99</p>
                   </div>
                   <div className="ml-auto text-center">
                     <p className="text-xl font-black text-green-600">88</p>
@@ -119,7 +119,7 @@ export function Hero() {
                   </div>
                 </div>
                 <div className="space-y-1 mb-3">
-                  {["Super hydrating", "Great value", "Non-greasy"].map((pro) => (
+                  {["Best-in-class ANC", "30hr battery", "Premium sound"].map((pro) => (
                     <div key={pro} className="flex items-center gap-1.5">
                       <span className="text-green-500 text-[10px]">✓</span>
                       <span className="text-[10px] text-gray-600">{pro}</span>

@@ -13,314 +13,9 @@ interface CategoryConfig {
 }
 
 const CATEGORY_CONFIGS: CategoryConfig[] = [
-  // ── Specific multi-word categories first (avoids substring-match false positives) ──
-  {
-    category: "DryShampoo",
-    keywords: ["dry shampoo"],
-    subreddits: ["r/HaircareScience", "r/FancyFollicles"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "hairType", label: "Hair Type", minLabel: "Fine", maxLabel: "Thick/Oily", axis: "y" },
-      { key: "hold", label: "Hold Level", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "scent", label: "Scent", minLabel: "Unscented", maxLabel: "Fragranced", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      hairType: (v) => v < 0.33 ? "fine or thin hair" : v < 0.67 ? "medium hair" : "thick or oily hair",
-      hold: (v) => v < 0.33 ? "light volume boost" : v < 0.67 ? "medium refresh" : "strong hold and texture",
-      scent: (v) => v === 0 ? "unscented" : v === 1 ? "lightly scented" : "fragranced",
-    },
-    colorLabels: ["Volume", "Refresh", "Texture"],
-    colorKeys: ["volume", "refresh", "texture"],
-  },
-  {
-    category: "EyeCream",
-    keywords: ["eye cream", "under eye cream", "eye gel", "eye serum"],
-    subreddits: ["r/SkincareAddiction", "r/30PlusSkincare"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "concern", label: "Concern", minLabel: "Dark Circles", maxLabel: "Wrinkles", axis: "y" },
-      { key: "texture", label: "Texture", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "sensitivity", label: "Sensitivity", minLabel: "Sensitive", maxLabel: "Active Formula", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      concern: (v) => v < 0.33 ? "dark circles" : v < 0.67 ? "puffiness" : "fine lines and wrinkles",
-      texture: (v) => v < 0.33 ? "lightweight gel" : v < 0.67 ? "medium cream" : "rich cream",
-      sensitivity: (v) => v === 0 ? "fragrance-free for sensitive skin" : v === 1 ? "standard formula" : "active-rich formula",
-    },
-    colorLabels: ["Dark Circles", "Puffiness", "Anti-Aging"],
-    colorKeys: ["dark-circles", "puffiness", "anti-aging"],
-  },
-  {
-    category: "HairOil",
-    keywords: ["hair oil", "hair treatment", "hair serum", "argan oil"],
-    subreddits: ["r/HaircareScience", "r/FancyFollicles"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "hairType", label: "Hair Type", minLabel: "Fine", maxLabel: "Thick/Coarse", axis: "y" },
-      { key: "goal", label: "Goal", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "scent", label: "Scent", minLabel: "Unscented", maxLabel: "Strong Scent", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      hairType: (v) => v < 0.33 ? "fine hair" : v < 0.67 ? "medium hair" : "thick or coarse hair",
-      goal: (v) => v < 0.33 ? "shine and smoothness" : v < 0.67 ? "moisture and hydration" : "scalp health and growth",
-      scent: (v) => v === 0 ? "fragrance-free" : v === 1 ? "lightly scented" : "strongly scented",
-    },
-    colorLabels: ["Shine", "Moisture", "Growth"],
-    colorKeys: ["shine", "moisture", "growth"],
-  },
-  {
-    category: "BodyWash",
-    keywords: ["body wash", "body cleanser", "shower gel", "shower wash"],
-    subreddits: ["r/SkincareAddiction", "r/beauty", "r/HaircareScience"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily/Normal", maxLabel: "Dry/Sensitive", axis: "y" },
-      { key: "concern", label: "Feel", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "formula", label: "Formula", minLabel: "Gel", maxLabel: "Cream/Oil", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily or normal skin" : v < 0.67 ? "combination skin" : "dry or sensitive skin",
-      concern: (v) => v < 0.33 ? "sensitive and gentle" : v < 0.67 ? "everyday clean" : "luxurious lather",
-      formula: (v) => v === 0 ? "gel formula" : v === 1 ? "cream formula" : "oil or bar",
-    },
-    colorLabels: ["Sensitive", "Everyday", "Luxurious"],
-    colorKeys: ["sensitive", "everyday", "luxurious"],
-  },
-  {
-    category: "BodyLotion",
-    keywords: ["body lotion", "body moisturizer", "body cream", "body butter"],
-    subreddits: ["r/SkincareAddiction", "r/beauty"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Normal/Oily", maxLabel: "Very Dry", axis: "y" },
-      { key: "scent", label: "Scent", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "thickness", label: "Thickness", minLabel: "Light", maxLabel: "Rich", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "normal or oily skin" : v < 0.67 ? "combination skin" : "dry or very dry skin",
-      scent: (v) => v < 0.33 ? "fragrance-free" : v < 0.67 ? "lightly scented" : "strongly scented",
-      thickness: (v) => v === 0 ? "lightweight lotion" : v === 1 ? "medium cream" : "thick body butter",
-    },
-    colorLabels: ["Unscented", "Light Scent", "Fragranced"],
-    colorKeys: ["unscented", "light-scent", "fragranced"],
-  },
-  {
-    category: "FaceOil",
-    keywords: ["face oil", "facial oil", "rosehip oil", "jojoba"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily", maxLabel: "Dry/Mature", axis: "y" },
-      { key: "concern", label: "Goal", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "absorption", label: "Absorption", minLabel: "Fast", maxLabel: "Rich/Slow", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily or acne-prone skin" : v < 0.67 ? "combination skin" : "dry or mature skin",
-      concern: (v) => v < 0.33 ? "glow and brightening" : v < 0.67 ? "anti-aging and firming" : "barrier repair",
-      absorption: (v) => v === 0 ? "fast-absorbing" : v === 1 ? "medium absorption" : "rich slow-absorbing",
-    },
-    colorLabels: ["Glow", "Anti-Aging", "Barrier"],
-    colorKeys: ["glow", "anti-aging", "barrier"],
-  },
-  {
-    category: "Sunscreen",
-    keywords: ["sunscreen", "sunblock", "spf", "sun protection", "uv protection"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty", "r/sunscreen"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily", maxLabel: "Dry", axis: "y" },
-      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "spfStrength", label: "SPF Strength", minLabel: "SPF 30", maxLabel: "SPF 50+", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily skin" : v < 0.67 ? "combination skin" : "dry skin",
-      priority: (v) => v < 0.33 ? "sensitive/calming" : v < 0.67 ? "brightening" : "anti-aging",
-      spfStrength: (v) => v === 0 ? "SPF 30" : v === 1 ? "SPF 50" : "SPF 50+",
-    },
-    colorLabels: ["Calming", "Brightening", "Anti-Aging"],
-    colorKeys: ["calming", "brightening", "anti-aging"],
-  },
-  {
-    category: "Moisturizer",
-    keywords: ["moisturizer", "moisturiser", "face cream", "face lotion", "facial cream", "hydration cream"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty", "r/30PlusSkincare"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily", maxLabel: "Dry", axis: "y" },
-      { key: "priority", label: "Goal", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "texture", label: "Texture", minLabel: "Lightweight", maxLabel: "Rich", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily skin" : v < 0.67 ? "combination skin" : "dry skin",
-      priority: (v) => v < 0.33 ? "hydrating" : v < 0.67 ? "anti-aging" : "brightening",
-      texture: (v) => v === 0 ? "lightweight gel" : v === 1 ? "medium" : "rich cream",
-    },
-    colorLabels: ["Hydrating", "Anti-Aging", "Brightening"],
-    colorKeys: ["hydrating", "anti-aging", "brightening"],
-  },
-  {
-    category: "Cleanser",
-    keywords: ["cleanser", "face wash", "facial cleanser", "foaming wash", "cleansing"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily/Acne", maxLabel: "Dry/Sensitive", axis: "y" },
-      { key: "concern", label: "Concern", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "texture", label: "Formula", minLabel: "Foam", maxLabel: "Oil/Balm", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily or acne-prone skin" : v < 0.67 ? "combination skin" : "dry or sensitive skin",
-      concern: (v) => v < 0.33 ? "acne/breakouts" : v < 0.67 ? "redness/sensitivity" : "dullness/uneven tone",
-      texture: (v) => v === 0 ? "foaming" : v === 1 ? "gel" : "oil or balm",
-    },
-    colorLabels: ["Acne", "Sensitive", "Brightening"],
-    colorKeys: ["acne", "sensitive", "brightening"],
-  },
-  {
-    category: "Shampoo",
-    keywords: ["shampoo", "hair wash", "scalp wash"],
-    subreddits: ["r/HaircareScience", "r/FancyFollicles", "r/curlyhair"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "hairType", label: "Hair Type", minLabel: "Fine", maxLabel: "Thick/Coarse", axis: "y" },
-      { key: "concern", label: "Concern", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "fragrance", label: "Fragrance", minLabel: "Unscented", maxLabel: "Strong Scent", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "salon quality",
-      hairType: (v) => v < 0.33 ? "fine hair" : v < 0.67 ? "medium hair" : "thick or coarse hair",
-      concern: (v) => v < 0.33 ? "volumizing" : v < 0.67 ? "dandruff control" : "deep moisture",
-      fragrance: (v) => v === 0 ? "fragrance-free" : v === 1 ? "lightly scented" : "strongly scented",
-    },
-    colorLabels: ["Volumizing", "Dandruff", "Moisturizing"],
-    colorKeys: ["volumizing", "dandruff", "moisturizing"],
-  },
-  {
-    category: "Deodorant",
-    keywords: ["deodorant", "antiperspirant", "deo"],
-    subreddits: ["r/SkincareAddiction", "r/naturaldivos", "r/ZeroWaste"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "protection", label: "Protection", minLabel: "Light", maxLabel: "Heavy-Duty", axis: "y" },
-      { key: "formula", label: "Formula", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "scent", label: "Scent", minLabel: "Unscented", maxLabel: "Strong", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      protection: (v) => v < 0.33 ? "light protection" : v < 0.67 ? "moderate protection" : "heavy-duty protection",
-      formula: (v) => v < 0.33 ? "natural formula" : v < 0.67 ? "conventional formula" : "clinical strength",
-      scent: (v) => v === 0 ? "unscented" : v === 1 ? "lightly scented" : "strongly scented",
-    },
-    colorLabels: ["Natural", "Standard", "Clinical"],
-    colorKeys: ["natural", "standard", "clinical"],
-  },
-  {
-    category: "Conditioner",
-    keywords: ["conditioner", "hair conditioner", "deep conditioner"],
-    subreddits: ["r/HaircareScience", "r/curlyhair", "r/FancyFollicles"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "hairType", label: "Hair Type", minLabel: "Fine", maxLabel: "Thick/Coarse", axis: "y" },
-      { key: "concern", label: "Goal", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "treatment", label: "Treatment", minLabel: "Rinse-Out", maxLabel: "Leave-In", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "salon quality",
-      hairType: (v) => v < 0.33 ? "fine hair" : v < 0.67 ? "medium hair" : "thick or coarse hair",
-      concern: (v) => v < 0.33 ? "volumizing" : v < 0.67 ? "moisturizing" : "repair and strengthening",
-      treatment: (v) => v === 0 ? "rinse-out" : v === 1 ? "deep treatment" : "leave-in",
-    },
-    colorLabels: ["Volumizing", "Moisturizing", "Repairing"],
-    colorKeys: ["volumizing", "moisturizing", "repairing"],
-  },
-  {
-    category: "FaceMask",
-    keywords: ["face mask", "sheet mask", "clay mask", "facial mask"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily/Acne", maxLabel: "Dry/Sensitive", axis: "y" },
-      { key: "concern", label: "Concern", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "frequency", label: "Frequency", minLabel: "Weekly", maxLabel: "Daily", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily or acne-prone skin" : v < 0.67 ? "combination skin" : "dry or sensitive skin",
-      concern: (v) => v < 0.33 ? "pore-minimizing" : v < 0.67 ? "brightening and glow" : "deep hydration",
-      frequency: (v) => v === 0 ? "weekly treatment" : v === 1 ? "2-3x per week" : "daily use",
-    },
-    colorLabels: ["Pore Care", "Brightening", "Hydrating"],
-    colorKeys: ["pore-care", "brightening", "hydrating"],
-  },
-  {
-    category: "Serum",
-    keywords: ["serum", "face serum", "vitamin c", "retinol", "hyaluronic acid"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty", "r/30PlusSkincare"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "concern", label: "Concern", minLabel: "Acne/Oily", maxLabel: "Anti-Aging", axis: "y" },
-      { key: "potency", label: "Potency", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily", maxLabel: "Dry", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      concern: (v) => v < 0.33 ? "acne-fighting" : v < 0.67 ? "brightening and even tone" : "anti-aging and firming",
-      potency: (v) => v < 0.33 ? "gentle and beginner-friendly" : v < 0.67 ? "moderate potency" : "high-potency advanced",
-      skinType: (v) => v === 0 ? "oily skin" : v === 1 ? "combination skin" : "dry skin",
-    },
-    colorLabels: ["Gentle", "Moderate", "Advanced"],
-    colorKeys: ["gentle", "moderate", "advanced"],
-  },
-  {
-    category: "Toner",
-    keywords: ["toner", "face toner", "astringent", "toning lotion"],
-    subreddits: ["r/SkincareAddiction", "r/AsianBeauty"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "skinType", label: "Skin Type", minLabel: "Oily/Acne", maxLabel: "Dry/Sensitive", axis: "y" },
-      { key: "concern", label: "Concern", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "alcohol", label: "Formula", minLabel: "Alcohol-Free", maxLabel: "Astringent", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      skinType: (v) => v < 0.33 ? "oily or acne-prone skin" : v < 0.67 ? "combination skin" : "dry or sensitive skin",
-      concern: (v) => v < 0.33 ? "oil balancing" : v < 0.67 ? "pore tightening" : "brightening and glow",
-      alcohol: (v) => v === 0 ? "alcohol-free" : v === 1 ? "low alcohol" : "astringent formula",
-    },
-    colorLabels: ["Balancing", "Pore Care", "Brightening"],
-    colorKeys: ["balancing", "pore-care", "brightening"],
-  },
-  {
-    category: "LipBalm",
-    keywords: ["lip balm", "chapstick", "lip treatment", "lip moisturizer"],
-    subreddits: ["r/SkincareAddiction", "r/beauty"],
-    parameters: [
-      { key: "budget", label: "Budget", minLabel: "Drugstore", maxLabel: "Luxury", axis: "x" },
-      { key: "concern", label: "Concern", minLabel: "Daily Moisture", maxLabel: "Healing", axis: "y" },
-      { key: "flavor", label: "Flavor", minLabel: "", maxLabel: "", axis: "color" },
-      { key: "spf", label: "SPF", minLabel: "No SPF", maxLabel: "SPF 30+", axis: "size" },
-    ],
-    resolvers: {
-      budget: (v) => v < 0.33 ? "drugstore budget" : v < 0.67 ? "mid-range" : "luxury",
-      concern: (v) => v < 0.33 ? "daily moisture" : v < 0.67 ? "intense hydration" : "healing and repair",
-      flavor: (v) => v < 0.33 ? "unflavored" : v < 0.67 ? "fruity" : "mint or cooling",
-      spf: (v) => v === 0 ? "no SPF" : v === 1 ? "SPF 15" : "SPF 30+",
-    },
-    colorLabels: ["Unflavored", "Fruity", "Mint"],
-    colorKeys: ["unflavored", "fruity", "mint"],
-  },
   {
     category: "Headphones",
-    keywords: ["headphones", "earbuds", "earphones", "headset", "over-ear", "in-ear", "wireless headphones"],
+    keywords: ["headphones", "earbuds", "earphones", "headset", "over-ear", "in-ear", "wireless headphones", "noise cancelling", "airpods", "wh-1000"],
     subreddits: ["r/headphones", "r/audiophile", "r/SoundSystem"],
     parameters: [
       { key: "budget", label: "Budget", minLabel: "Budget", maxLabel: "Premium", axis: "x" },
@@ -337,12 +32,183 @@ const CATEGORY_CONFIGS: CategoryConfig[] = [
     colorLabels: ["Bass", "Balanced", "Clarity"],
     colorKeys: ["bass", "balanced", "clarity"],
   },
+  {
+    category: "Laptop",
+    keywords: ["laptop", "notebook", "macbook", "chromebook", "ultrabook", "gaming laptop", "work laptop"],
+    subreddits: ["r/laptops", "r/SuggestALaptop", "r/macbook"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $500", maxLabel: "Premium $1500+", axis: "x" },
+      { key: "useCase", label: "Use Case", minLabel: "Everyday Use", maxLabel: "Pro Work", axis: "y" },
+      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "portability", label: "Portability", minLabel: "Performance", maxLabel: "Ultralight", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $500" : v < 0.67 ? "mid-range $500–$1200" : "premium $1200+",
+      useCase: (v) => v < 0.33 ? "everyday browsing and office tasks" : v < 0.67 ? "developer or creative work" : "video editing or 3D rendering",
+      priority: (v) => v < 0.33 ? "battery life" : v < 0.67 ? "performance" : "display quality",
+      portability: (v) => v === 0 ? "desktop replacement (heavy)" : v === 1 ? "balanced 14–15 inch" : "ultraportable 13 inch",
+    },
+    colorLabels: ["Battery", "Performance", "Display"],
+    colorKeys: ["battery", "performance", "display"],
+  },
+  {
+    category: "TV",
+    keywords: ["tv", "television", "oled", "qled", "smart tv", "4k tv", "8k tv"],
+    subreddits: ["r/4kTV", "r/hometheater", "r/Televisions"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $500", maxLabel: "Premium $2000+", axis: "x" },
+      { key: "size", label: "Screen Size", minLabel: "Small (43\")", maxLabel: "Large (75\"+)", axis: "y" },
+      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "useCase", label: "Primary Use", minLabel: "Movies", maxLabel: "Gaming", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $500" : v < 0.67 ? "mid-range $500–$1500" : "premium $1500+",
+      size: (v) => v < 0.33 ? "43–50 inch" : v < 0.67 ? "55–65 inch" : "75 inch or larger",
+      priority: (v) => v < 0.33 ? "picture quality" : v < 0.67 ? "value" : "gaming features",
+      useCase: (v) => v === 0 ? "movies and streaming" : v === 1 ? "mixed use" : "gaming (120Hz, VRR)",
+    },
+    colorLabels: ["Picture", "Value", "Gaming"],
+    colorKeys: ["picture", "value", "gaming"],
+  },
+  {
+    category: "Smartphone",
+    keywords: ["smartphone", "phone", "iphone", "android", "galaxy", "pixel", "mobile phone"],
+    subreddits: ["r/Android", "r/iphone", "r/smartphones"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $400", maxLabel: "Flagship $900+", axis: "x" },
+      { key: "ecosystem", label: "Ecosystem", minLabel: "Android", maxLabel: "iOS", axis: "y" },
+      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "size", label: "Form Factor", minLabel: "Compact", maxLabel: "Max / Plus", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $400" : v < 0.67 ? "mid-range $400–$800" : "flagship $800+",
+      ecosystem: (v) => v < 0.33 ? "Android preferred" : v < 0.67 ? "no preference" : "iOS / iPhone",
+      priority: (v) => v < 0.33 ? "camera quality" : v < 0.67 ? "battery life" : "performance",
+      size: (v) => v === 0 ? "compact under 6.2 inch" : v === 1 ? "standard 6.2–6.5 inch" : "large 6.7 inch+",
+    },
+    colorLabels: ["Camera", "Battery", "Speed"],
+    colorKeys: ["camera", "battery", "speed"],
+  },
+  {
+    category: "Keyboard",
+    keywords: ["keyboard", "mechanical keyboard", "gaming keyboard", "wireless keyboard"],
+    subreddits: ["r/MechanicalKeyboards", "r/buildapc", "r/gaming"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $50", maxLabel: "Premium $150+", axis: "x" },
+      { key: "useCase", label: "Use Case", minLabel: "Gaming", maxLabel: "Typing / Office", axis: "y" },
+      { key: "switchType", label: "Switch Type", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "size", label: "Layout", minLabel: "60%", maxLabel: "Full Size", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $50" : v < 0.67 ? "mid-range $50–$150" : "premium $150+",
+      useCase: (v) => v < 0.33 ? "gaming" : v < 0.67 ? "mixed gaming and typing" : "productivity and typing",
+      switchType: (v) => v < 0.33 ? "linear (red/speed)" : v < 0.67 ? "tactile (brown/clear)" : "clicky (blue/green)",
+      size: (v) => v === 0 ? "60% or 65% compact" : v === 1 ? "tenkeyless (TKL)" : "full size with numpad",
+    },
+    colorLabels: ["Linear", "Tactile", "Clicky"],
+    colorKeys: ["linear", "tactile", "clicky"],
+  },
+  {
+    category: "Mouse",
+    keywords: ["mouse", "gaming mouse", "wireless mouse", "trackpad", "trackball"],
+    subreddits: ["r/MouseReview", "r/buildapc", "r/gaming"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $30", maxLabel: "Premium $80+", axis: "x" },
+      { key: "useCase", label: "Use Case", minLabel: "Gaming", maxLabel: "Productivity", axis: "y" },
+      { key: "dpi", label: "Sensor / DPI", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "grip", label: "Grip Style", minLabel: "Claw/Fingertip", maxLabel: "Palm", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $30" : v < 0.67 ? "mid-range $30–$80" : "premium $80+",
+      useCase: (v) => v < 0.33 ? "competitive gaming" : v < 0.67 ? "casual gaming" : "office / productivity",
+      dpi: (v) => v < 0.33 ? "standard sensor (up to 3200 DPI)" : v < 0.67 ? "high precision (up to 16000 DPI)" : "ultra-high DPI 25000+",
+      grip: (v) => v === 0 ? "claw or fingertip grip" : v === 1 ? "hybrid grip" : "palm grip",
+    },
+    colorLabels: ["Standard", "Precision", "Ultra"],
+    colorKeys: ["standard", "precision", "ultra"],
+  },
+  {
+    category: "Monitor",
+    keywords: ["monitor", "display", "screen", "4k monitor", "gaming monitor", "ultrawide"],
+    subreddits: ["r/monitors", "r/buildapc", "r/ultrawidemasterrace"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $200", maxLabel: "Premium $600+", axis: "x" },
+      { key: "size", label: "Screen Size", minLabel: "24 inch", maxLabel: "32+ inch", axis: "y" },
+      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "useCase", label: "Use Case", minLabel: "Gaming", maxLabel: "Color Work", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $200" : v < 0.67 ? "mid-range $200–$500" : "premium $500+",
+      size: (v) => v < 0.33 ? "24 inch" : v < 0.67 ? "27 inch" : "32 inch or ultrawide",
+      priority: (v) => v < 0.33 ? "high refresh rate (144Hz+)" : v < 0.67 ? "color accuracy (IPS)" : "resolution (4K)",
+      useCase: (v) => v === 0 ? "competitive gaming" : v === 1 ? "mixed use" : "photo/video editing",
+    },
+    colorLabels: ["Speed", "Accuracy", "Resolution"],
+    colorKeys: ["speed", "accuracy", "resolution"],
+  },
+  {
+    category: "Speaker",
+    keywords: ["speaker", "bluetooth speaker", "soundbar", "home theater speaker", "bookshelf speaker", "smart speaker"],
+    subreddits: ["r/audiophile", "r/SoundSystem", "r/hometheater"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $50", maxLabel: "Premium $300+", axis: "x" },
+      { key: "use", label: "Use", minLabel: "Portable", maxLabel: "Home / Desk", axis: "y" },
+      { key: "priority", label: "Sound Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "form", label: "Form Factor", minLabel: "Compact", maxLabel: "Large", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $50" : v < 0.67 ? "mid-range $50–$200" : "premium $200+",
+      use: (v) => v < 0.33 ? "portable / outdoor" : v < 0.67 ? "desktop / bedroom" : "living room / hi-fi",
+      priority: (v) => v < 0.33 ? "bass-heavy" : v < 0.67 ? "balanced sound" : "audiophile accuracy",
+      form: (v) => v === 0 ? "compact and portable" : v === 1 ? "medium desktop" : "large bookshelf or soundbar",
+    },
+    colorLabels: ["Bass", "Balanced", "Audiophile"],
+    colorKeys: ["bass", "balanced", "audiophile"],
+  },
+  {
+    category: "Camera",
+    keywords: ["camera", "mirrorless camera", "dslr", "point and shoot", "action camera", "gopro", "sony a7"],
+    subreddits: ["r/photography", "r/Cameras", "r/mirrorless"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $500", maxLabel: "Pro $2000+", axis: "x" },
+      { key: "skill", label: "Skill Level", minLabel: "Beginner", maxLabel: "Professional", axis: "y" },
+      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "type", label: "Type", minLabel: "Mirrorless", maxLabel: "Point & Shoot", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $500" : v < 0.67 ? "enthusiast $500–$2000" : "professional $2000+",
+      skill: (v) => v < 0.33 ? "beginner (auto modes)" : v < 0.67 ? "intermediate (manual control)" : "advanced / professional",
+      priority: (v) => v < 0.33 ? "video quality" : v < 0.67 ? "photo quality" : "portability",
+      type: (v) => v === 0 ? "mirrorless (interchangeable lens)" : v === 1 ? "compact with fixed lens" : "action camera",
+    },
+    colorLabels: ["Video", "Photo", "Portable"],
+    colorKeys: ["video", "photo", "portable"],
+  },
+  {
+    category: "Tablet",
+    keywords: ["tablet", "ipad", "android tablet", "drawing tablet", "e-reader", "kindle"],
+    subreddits: ["r/tablets", "r/ipad", "r/Android"],
+    parameters: [
+      { key: "budget", label: "Budget", minLabel: "Under $200", maxLabel: "Premium $700+", axis: "x" },
+      { key: "use", label: "Primary Use", minLabel: "Media / Reading", maxLabel: "Work / Drawing", axis: "y" },
+      { key: "priority", label: "Priority", minLabel: "", maxLabel: "", axis: "color" },
+      { key: "size", label: "Size", minLabel: "Compact (8\")", maxLabel: "Large (12\"+)", axis: "size" },
+    ],
+    resolvers: {
+      budget: (v) => v < 0.33 ? "budget under $200" : v < 0.67 ? "mid-range $200–$600" : "premium $600+",
+      use: (v) => v < 0.33 ? "media consumption and reading" : v < 0.67 ? "mixed productivity" : "drawing, notes, or professional work",
+      priority: (v) => v < 0.33 ? "battery life" : v < 0.67 ? "display quality" : "performance",
+      size: (v) => v === 0 ? "compact 8–10 inch" : v === 1 ? "standard 10–11 inch" : "large 12 inch+",
+    },
+    colorLabels: ["Battery", "Display", "Performance"],
+    colorKeys: ["battery", "display", "performance"],
+  },
 ];
 
 const FALLBACK_CONFIG: CategoryConfig = {
   category: "General",
   keywords: [],
-  subreddits: ["r/BuyItForLife", "r/frugal", "r/ProductReviews"],
+  subreddits: ["r/BuyItForLife", "r/gadgets", "r/tech"],
   parameters: [
     { key: "budget", label: "Budget", minLabel: "Budget", maxLabel: "Premium", axis: "x" },
     { key: "quality", label: "Quality vs Value", minLabel: "Best Value", maxLabel: "Top Quality", axis: "y" },
@@ -362,22 +228,29 @@ const FALLBACK_CONFIG: CategoryConfig = {
 // ─── Specifier patterns (make a query "specific") ──────────────────────────────
 
 const SPECIFIER_PATTERNS = [
-  /\bfor\s+(dry|oily|combination|sensitive|normal|acne[- ]prone|mature)\b/i,
   /under\s*\$?\d+/i,
   /\$\d+/i,
-  /\b(cheap|budget|affordable|luxury|high[- ]end|drugstore|salon)\b/i,
-  /\b(cerave|neutrogena|la roche|aveeno|olay|tarte|fenty|tatcha|drunk elephant|paula|the ordinary|cosrx|innisfree|sony|bose|apple|samsung|jbl|sennheiser|beyerdynamic)\b/i,
-  /\bat\s+(walmart|target|cvs|walgreens|ulta|sephora|amazon)\b/i,
-  /\b(spf\s*\d+|spf\d+)\b/i,
-  /\b(no white cast|no fragrance|fragrance[- ]free|reef[- ]safe|mineral|chemical)\b/i,
+  /\b(cheap|budget|affordable|luxury|high[- ]end|premium|flagship)\b/i,
+  /\b(sony|bose|apple|samsung|lg|logitech|dell|asus|acer|hp|lenovo|microsoft|google|jabra|sennheiser|beyerdynamic|razer|corsair|steelseries|jbl|anker|nikon|canon|fujifilm)\b/i,
+  /\bat\s+(walmart|target|best buy|bestbuy|amazon|newegg|micro center)\b/i,
+  /\b(gaming|studio|office|travel|commuting|wireless|wired|bluetooth|usb[- ]c|4k|8k|hdr|oled|amoled|ips|va)\b/i,
+  /\b(noise[- ]cancell?ing|anc|passive|active)\b/i,
+  /\b(over[- ]ear|in[- ]ear|true wireless|on[- ]ear|earbud)\b/i,
+  /\b(14[- ]?inch|15[- ]?inch|16[- ]?inch|13[- ]?inch|m[123]|m4)\b/i,
+  /\b(144hz|240hz|120hz|60hz|4k|1080p|1440p|ultrawide|curved)\b/i,
 ];
 
-// ─── Broad skincare/hygiene catch-all ──────────────────────────────────────────
+// ─── Broad electronics catch-all ───────────────────────────────────────────────
 
-const HYGIENE_BROAD_KEYWORDS = [
-  "skincare", "skin care", "haircare", "hair care",
-  "wash", "cleanser", "lotion", "cream", "serum", "oil", "balm",
-  "mask", "toner", "moisturizer", "conditioner", "deodorant",
+const ELECTRONICS_BROAD_KEYWORDS = [
+  "tech", "electronics", "gadget", "device",
+  "laptop", "computer", "pc", "desktop",
+  "phone", "mobile",
+  "tv", "television", "display", "screen",
+  "headphones", "earbuds", "speaker", "audio",
+  "keyboard", "mouse", "monitor",
+  "camera", "tablet", "router", "charger",
+  "console", "gaming", "smartwatch", "wearable",
 ];
 
 // ─── Public API ────────────────────────────────────────────────────────────────
@@ -390,9 +263,9 @@ export function isVagueQuery(query: string): boolean {
     c.keywords.some((kw) => lower.includes(kw))
   );
 
-  // Broader hygiene/skincare catch-all if no specific category matched
+  // Broader electronics catch-all if no specific category matched
   if (!matchedCategory) {
-    const isBroadMatch = HYGIENE_BROAD_KEYWORDS.some((kw) => lower.includes(kw));
+    const isBroadMatch = ELECTRONICS_BROAD_KEYWORDS.some((kw) => lower.includes(kw));
     if (!isBroadMatch) return false;
   }
 

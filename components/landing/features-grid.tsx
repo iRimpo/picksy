@@ -6,7 +6,7 @@ const features = [
     icon: MessageCircle,
     title: "Real Reddit Consensus",
     description:
-      "We scan r/SkincareAddiction, r/HairCare, r/BuyItForLife and more. Real people, unfiltered opinions — no sponsored posts, no brand BS.",
+      "We scan r/headphones, r/gadgets, r/buildapc, r/BuyItForLife and more. Real people, unfiltered opinions — no sponsored posts, no brand BS.",
     gradient: "bg-gradient-to-br from-[#FF4500]/10 to-transparent",
   },
   {
@@ -20,7 +20,7 @@ const features = [
     icon: MapPin,
     title: "Store-Specific Results",
     description:
-      "Shopping at Walmart, Target, CVS, or Ulta? Tell us where and we'll show what's available near you, at what price, right now.",
+      "Shopping at Amazon, Best Buy, Target, or Newegg? Tell us where and we'll show what's available near you, at what price, right now.",
     gradient: "bg-gradient-to-br from-brand-cyan/10 to-transparent",
   },
   {

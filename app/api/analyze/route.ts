@@ -3,6 +3,60 @@ import { NextRequest, NextResponse } from "next/server";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
+// ─── Electronics Validation ────────────────────────────────────────────────────
+
+async function validateElectronicsQuery(
+  query: string
+): Promise<{ valid: boolean; message?: string }> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return { valid: true }; // fail-open when no key
+
+  const prompt = `You are a query classifier for an electronics product recommendation app. Determine if the user's query is about consumer electronics or technology products (laptops, headphones, TVs, smartphones, tablets, cameras, speakers, keyboards, mice, monitors, gaming consoles, smartwatches, routers, chargers, etc.). Tech accessories and peripherals also count. Reply with ONLY valid JSON — no markdown, no explanation:
+{"is_electronics": true}
+or
+{"is_electronics": false, "suggestion": "brief suggestion of an electronics query they could try instead"}
+
+User query: "${query}"`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    const res = await fetch(
+      `${GEMINI_API_URL}/models/gemini-2.5-flash-lite:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0, responseMimeType: "application/json" },
+        }),
+        signal: controller.signal,
+        cache: "no-store",
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!res.ok) return { valid: true }; // fail-open on API error
+
+    const payload = await res.json();
+    const text: string = payload?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+    if (!text) return { valid: true };
+
+    const parsed = JSON.parse(text);
+    if (parsed.is_electronics === false) {
+      const suggestion = parsed.suggestion || "wireless headphones or gaming laptop";
+      return {
+        valid: false,
+        message: `Picksy is built for electronics and tech products. Try something like "${suggestion}" instead.`,
+      };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: true }; // fail-open on timeout or parse error
+  }
+}
+
 // ─── Search Result Type ────────────────────────────────────────────────────────
 
 interface SearchResult {
@@ -143,8 +197,8 @@ Your job:
     "id": "product-name-slug",
     "name": "Full Product Name",
     "brand": "Brand Name",
-    "emoji": "🧴",
-    "price": 19.99,
+    "emoji": "🎧",
+    "price": 199.99,
     "score": 87,
     "scoreLabel": "Strong Pick",
     "sentiment": 89,
@@ -154,9 +208,9 @@ Your job:
     "pros": ["Pro 1", "Pro 2", "Pro 3"],
     "cons": ["Con 1", "Con 2"],
     "buyLinks": [
-      { "store": "Amazon", "price": 19.99 },
-      { "store": "Target", "price": 20.99 },
-      { "store": "Walmart", "price": 18.97 }
+      { "store": "Amazon", "price": 199.99 },
+      { "store": "Best Buy", "price": 199.99 },
+      { "store": "Walmart", "price": 189.97 }
     ],
     "redditQuote": "A short quote capturing the overall Reddit + Trustpilot sentiment"
   },
@@ -165,7 +219,7 @@ Your job:
       "id": "alt-product-slug",
       "name": "Alternative Product Name",
       "brand": "Brand",
-      "emoji": "🧴",
+      "emoji": "🎧",
       "score": 74,
       "price": 14.99,
       "mentions": 18,
@@ -226,10 +280,15 @@ Rules:
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function detectStore(query: string): string | null {
-  const STORE_CHAINS = ["walmart", "target", "cvs", "walgreens", "ulta", "sephora", "amazon"];
+  const STORE_CHAINS = ["walmart", "target", "amazon", "best buy", "bestbuy", "newegg", "micro center", "b&h"];
   const q = query.toLowerCase();
   for (const store of STORE_CHAINS) {
-    if (q.includes(store)) return store.charAt(0).toUpperCase() + store.slice(1);
+    if (q.includes(store)) {
+      if (store === "best buy" || store === "bestbuy") return "Best Buy";
+      if (store === "micro center") return "Micro Center";
+      if (store === "b&h") return "B&H";
+      return store.charAt(0).toUpperCase() + store.slice(1);
+    }
   }
   return null;
 }
@@ -244,41 +303,41 @@ function detectBudget(query: string): number | null {
 
 const FALLBACK: AnalysisOutput = {
   winner: {
-    id: "cerave-moisturizing-cream",
-    name: "CeraVe Moisturizing Cream",
-    brand: "CeraVe",
-    emoji: "🧴",
-    price: 16.99,
-    score: 88,
-    scoreLabel: "Real Deal",
-    sentiment: 92,
-    mentions: 247,
+    id: "sony-wh1000xm5",
+    name: "Sony WH-1000XM5",
+    brand: "Sony",
+    emoji: "🎧",
+    price: 279.99,
+    score: 95,
+    scoreLabel: "Best Pick",
+    sentiment: 94,
+    mentions: 1247,
     postsAnalyzed: 0,
     whyItWon:
-      "Consistently recommended across skincare communities for its dermatologist-approved formula and unbeatable price-to-performance ratio.",
-    pros: ["Super hydrating", "Non-comedogenic", "Great value", "Widely available"],
-    cons: ["Jar packaging is less hygienic", "Slight medicinal scent"],
+      "Consistently ranked #1 by r/headphones and tech reviewers for its industry-leading noise cancellation and premium sound quality at a competitive price.",
+    pros: ["Best-in-class ANC", "30-hour battery", "Exceptional sound quality", "Comfortable for all-day wear"],
+    cons: ["Premium price", "No IP water resistance"],
     buyLinks: [
-      { store: "Amazon", price: 16.99 },
-      { store: "Target", price: 16.99 },
-      { store: "Walmart", price: 15.88 },
+      { store: "Amazon", price: 279.99 },
+      { store: "Best Buy", price: 279.99 },
+      { store: "Walmart", price: 269.00 },
     ],
-    redditQuote: '"This is the holy grail. I\'ve tried $80 creams and this beats them all."',
+    redditQuote: '"Nothing touches these on a plane. Absolute silence — worth every penny."',
   },
   alternatives: [
     {
-      id: "la-roche-posay-toleriane",
-      name: "La Roche-Posay Toleriane Double Repair",
-      brand: "La Roche-Posay",
-      emoji: "🧴",
-      score: 85,
-      price: 34.99,
-      mentions: 189,
-      sentiment: 91,
-      whyNotWinner: "Higher quality ingredients but double the price",
+      id: "bose-qc45",
+      name: "Bose QuietComfort 45",
+      brand: "Bose",
+      emoji: "🎧",
+      score: 89,
+      price: 229.99,
+      mentions: 876,
+      sentiment: 90,
+      whyNotWinner: "Excellent ANC and comfort but slightly behind Sony in audio quality",
     },
   ],
-  subreddits: ["r/SkincareAddiction", "r/AsianBeauty"],
+  subreddits: ["r/headphones", "r/audiophile"],
 };
 
 // ─── Route Handler ─────────────────────────────────────────────────────────────
@@ -289,6 +348,15 @@ export async function POST(req: NextRequest) {
 
     if (!query || typeof query !== "string") {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
+    }
+
+    // 0. Validate that the query is electronics-related
+    const validation = await validateElectronicsQuery(query);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.message, reason: "not_electronics" },
+        { status: 422 }
+      );
     }
 
     const startTime = Date.now();
@@ -333,6 +401,10 @@ export async function POST(req: NextRequest) {
 
     const redditCount = results.filter((r) => r.source === "reddit").length;
     const trustpilotCount = results.filter((r) => r.source === "trustpilot").length;
+    const redditThreadUrls = results
+      .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
+      .map((r) => r.url)
+      .slice(0, 5);
 
     return NextResponse.json({
       winner,
@@ -346,6 +418,7 @@ export async function POST(req: NextRequest) {
         postsAnalyzed: results.length,
         redditResults: redditCount,
         trustpilotResults: trustpilotCount,
+        redditThreadUrls,
         mode: detectedStore ? "store-specific" : "general",
         llmProvider: analysis ? "gemini" : "mock",
         llmUsed: !!analysis,
