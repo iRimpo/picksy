@@ -340,6 +340,26 @@ const FALLBACK: AnalysisOutput = {
   subreddits: ["r/headphones", "r/audiophile"],
 };
 
+// ─── Reddit Search Fallback ────────────────────────────────────────────────────
+
+async function fetchRedditThreadsFromSearch(query: string): Promise<string[]> {
+  try {
+    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&type=link&sort=relevance&limit=5`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const children: { data?: { permalink?: string } }[] = data?.data?.children || [];
+    return children
+      .map((c) => (c.data?.permalink ? `https://www.reddit.com${c.data.permalink}` : null))
+      .filter((u): u is string => !!u);
+  } catch {
+    return [];
+  }
+}
+
 // ─── Route Handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -401,10 +421,15 @@ export async function POST(req: NextRequest) {
 
     const redditCount = results.filter((r) => r.source === "reddit").length;
     const trustpilotCount = results.filter((r) => r.source === "trustpilot").length;
-    const redditThreadUrls = results
+    let redditThreadUrls = results
       .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
       .map((r) => r.url)
       .slice(0, 5);
+
+    // Fallback: search Reddit directly if Tavily didn't return any thread URLs
+    if (redditThreadUrls.length === 0) {
+      redditThreadUrls = await fetchRedditThreadsFromSearch(query);
+    }
 
     return NextResponse.json({
       winner,

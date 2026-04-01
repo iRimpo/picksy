@@ -555,12 +555,28 @@ function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; 
           <span className="w-3.5 h-3.5 rounded-full border border-stone-300 inline-flex items-center justify-center text-[8px]">○</span>
           Data Sources:
         </span>
-        {meta.subreddits.slice(0, 4).map((s) => (
-          <span key={s} className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium">
-            r/{s}
-          </span>
-        ))}
-        <span className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium">Trustpilot</span>
+        {meta.subreddits.slice(0, 4).map((s) => {
+          const bare = s.startsWith("r/") ? s.slice(2) : s;
+          return (
+            <a
+              key={s}
+              href={`https://reddit.com/r/${bare}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium hover:bg-stone-200 hover:text-stone-800 transition-colors"
+            >
+              r/{bare}
+            </a>
+          );
+        })}
+        <a
+          href="https://www.trustpilot.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium hover:bg-stone-200 hover:text-stone-800 transition-colors"
+        >
+          Trustpilot
+        </a>
         <span className="text-stone-400">· {winner.postsAnalyzed}+ posts analyzed</span>
       </div>
     </div>
