@@ -560,7 +560,7 @@ function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; 
           return (
             <a
               key={s}
-              href={`https://reddit.com/r/${bare}`}
+              href={`https://reddit.com/r/${bare}/search?q=${encodeURIComponent(meta.query)}&sort=relevance`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium hover:bg-stone-200 hover:text-stone-800 transition-colors"
@@ -570,7 +570,7 @@ function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; 
           );
         })}
         <a
-          href="https://www.trustpilot.com"
+          href={`https://www.trustpilot.com/search?query=${encodeURIComponent(winner.name)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium hover:bg-stone-200 hover:text-stone-800 transition-colors"
