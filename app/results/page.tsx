@@ -673,36 +673,104 @@ function NotElectronicsState({ message }: { message: string }) {
 // ─── Reddit Comments Section ──────────────────────────────────────────────────
 
 const COMMENT_CARD_STYLES = [
-  "bg-white border-brand-pink/25",
-  "bg-[#F0FDF4] border-brand-green/25",
-  "bg-[#FFF8F0] border-brand-yellow/30",
+  "bg-white border-stone-200",
+  "bg-[#F0FDF4] border-brand-green/20",
+  "bg-[#FFF8F0] border-brand-yellow/25",
   "bg-[#EFF6FF] border-blue-200/50",
 ];
 
 const AVATAR_BG_COLORS = ["#FF8FB3", "#4EADFF", "#FFD93D", "#B39DDB", "#2ECC71", "#FFA07A", "#87CEEB", "#FFB347"];
 
-function RedditAvatar({ avatarUrl, author, bg }: { avatarUrl: string | null; author: string; bg?: string }) {
+function detectSentiment(text: string): "positive" | "negative" | "neutral" {
+  const lower = text.toLowerCase();
+  const pos = ["great", "amazing", "love", "best", "excellent", "recommend", "worth it", "impressive",
+    "fantastic", "perfect", "solid", "awesome", "happy", "incredible", "top notch", "5 star", "outstanding"].filter(w => lower.includes(w)).length;
+  const neg = ["bad", "disappointed", "terrible", "not worth", "overpriced", "issues", "problem",
+    "broke", "poor", "waste", "avoid", "returned", "sucks", "horrible", "regret", "cheap", "flimsy"].filter(w => lower.includes(w)).length;
+  if (pos > neg) return "positive";
+  if (neg > pos) return "negative";
+  return "neutral";
+}
+
+function RedditAvatar({ avatarUrl, author, bg, size = 44 }: { avatarUrl: string | null; author: string; bg?: string; size?: number }) {
   const [imgError, setImgError] = useState(false);
   const initial = author.replace("[deleted]", "?")[0]?.toUpperCase() ?? "?";
+  const cls = `rounded-full object-cover shrink-0 border-2 border-white shadow-sm`;
 
   if (avatarUrl && !imgError) {
     return (
       <img
         src={avatarUrl}
         alt={author}
-        className="w-10 h-10 rounded-full object-cover shrink-0"
+        className={cls}
+        style={{ width: size, height: size }}
         onError={() => setImgError(true)}
       />
     );
   }
-
   return (
     <div
-      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-black"
-      style={{ background: bg || "#FF4500" }}
+      className={`${cls} flex items-center justify-center text-white font-black`}
+      style={{ width: size, height: size, background: bg || "#FF4500", fontSize: size * 0.36 }}
     >
       {initial}
     </div>
+  );
+}
+
+// Single comment card — avatar at top, quote below
+function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditComment; index: number; cardOffset?: number }) {
+  const sentiment = detectSentiment(comment.body);
+  const bg = AVATAR_BG_COLORS[(index + cardOffset) % AVATAR_BG_COLORS.length];
+  const cardStyle = COMMENT_CARD_STYLES[(index + cardOffset) % 4];
+
+  return (
+    <a
+      href={comment.permalink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex flex-col rounded-2xl p-4 border hover:shadow-md hover:-translate-y-0.5 transition-all group ${cardStyle}`}
+    >
+      {/* Avatar row — first thing you see */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={bg} size={42} />
+          <div>
+            <p className="text-[13px] font-bold text-stone-800 leading-tight">u/{comment.author}</p>
+            <p className="text-[11px] text-stone-400">r/{comment.subreddit}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {sentiment === "positive" && (
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+              👍 Positive
+            </span>
+          )}
+          {sentiment === "negative" && (
+            <span className="text-[10px] font-bold text-rose-500 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
+              👎 Critical
+            </span>
+          )}
+          {comment.upvotes > 0 && (
+            <span className="text-[10px] font-semibold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+              ▲ {comment.upvotes >= 1000 ? `${(comment.upvotes / 1000).toFixed(1)}k` : comment.upvotes}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Quote */}
+      <div className="flex-1">
+        <span className="text-2xl font-black text-stone-200 leading-none select-none mr-0.5">&ldquo;</span>
+        <p className="inline text-sm text-stone-700 leading-relaxed">{comment.body}</p>
+        <span className="text-2xl font-black text-stone-200 leading-none select-none ml-0.5">&rdquo;</span>
+      </div>
+
+      {/* View thread link */}
+      <p className="text-[10px] text-stone-300 group-hover:text-brand-pink transition-colors mt-3 text-right">
+        View thread →
+      </p>
+    </a>
   );
 }
 
@@ -725,77 +793,76 @@ function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
   const topComments = comments.slice(0, 3);
   const moreComments = comments.slice(3);
 
+  const positiveCount = comments.filter(c => detectSentiment(c.body) === "positive").length;
+  const negativeCount = comments.filter(c => detectSentiment(c.body) === "negative").length;
+
   return (
     <div className="max-w-4xl mx-auto mb-8">
-      {/* Section header with avatar cluster */}
-      <div className="flex items-center gap-4 mb-5">
-        <div className="flex -space-x-2.5">
-          {AVATAR_BG_COLORS.slice(0, 5).map((color, i) => (
-            <div
-              key={i}
-              className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-black shadow-sm"
-              style={{ background: color }}
-            >
-              {["A", "J", "M", "R", "K"][i]}
-            </div>
-          ))}
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2.5">
+            {AVATAR_BG_COLORS.slice(0, 5).map((color, i) => (
+              <div
+                key={i}
+                className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-black shadow-sm"
+                style={{ background: color }}
+              >
+                {["A", "J", "M", "R", "K"][i]}
+              </div>
+            ))}
+          </div>
+          <div>
+            <h3 className="font-heading font-black text-lg text-stone-900">Community says</h3>
+            <p className="text-xs text-stone-400">Real opinions from Reddit</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-heading font-black text-lg text-stone-900">Community says</h3>
-          <p className="text-xs text-stone-400">Real opinions from Reddit</p>
-        </div>
+        {/* Sentiment summary — only once comments loaded */}
+        {!loading && comments.length > 0 && (
+          <div className="hidden sm:flex items-center gap-2 text-xs">
+            <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full font-semibold">
+              👍 {positiveCount} positive
+            </span>
+            {negativeCount > 0 && (
+              <span className="flex items-center gap-1 text-rose-500 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full font-semibold">
+                👎 {negativeCount} critical
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {loading ? (
+        /* Skeleton — avatar at top matches new layout */
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 animate-pulse space-y-2">
-              <div className="h-3 bg-stone-200 rounded w-3/4" />
-              <div className="h-3 bg-stone-200 rounded w-full" />
-              <div className="h-3 bg-stone-200 rounded w-1/2" />
-              <div className="flex gap-2 mt-3">
-                <div className="w-8 h-8 rounded-full bg-stone-200 shrink-0" />
-                <div className="flex-1 space-y-1.5 pt-1">
-                  <div className="h-2.5 bg-stone-200 rounded w-1/2" />
-                  <div className="h-2 bg-stone-200 rounded w-1/3" />
+            <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 animate-pulse">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-11 h-11 rounded-full bg-stone-200 shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-stone-200 rounded w-2/3" />
+                  <div className="h-2.5 bg-stone-200 rounded w-1/3" />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 bg-stone-200 rounded w-full" />
+                <div className="h-3 bg-stone-200 rounded w-5/6" />
+                <div className="h-3 bg-stone-200 rounded w-3/4" />
+                <div className="h-3 bg-stone-200 rounded w-1/2" />
               </div>
             </div>
           ))}
         </div>
       ) : (
         <>
-          {/* Top 3 prominent cards */}
+          {/* Top 3 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             {topComments.map((comment, i) => (
-              <a
-                key={i}
-                href={comment.permalink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`block rounded-2xl p-4 border hover:shadow-md hover:-translate-y-0.5 transition-all ${COMMENT_CARD_STYLES[i % 4]}`}
-              >
-                <div className="text-3xl font-black text-stone-200 leading-none mb-2 select-none">&ldquo;</div>
-                <p className="text-sm text-stone-700 leading-relaxed line-clamp-4 mb-3">{comment.body}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={AVATAR_BG_COLORS[i % AVATAR_BG_COLORS.length]} />
-                    <div>
-                      <p className="text-xs font-bold text-stone-800">u/{comment.author}</p>
-                      <p className="text-[10px] text-stone-400">r/{comment.subreddit}</p>
-                    </div>
-                  </div>
-                  {comment.upvotes > 0 && (
-                    <span className="flex items-center gap-1 text-xs font-bold text-stone-500 bg-stone-100 px-2 py-1 rounded-full shrink-0">
-                      ▲ {comment.upvotes.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              </a>
+              <CommentCard key={i} comment={comment} index={i} />
             ))}
           </div>
 
-          {/* Expandable more comments */}
+          {/* Expandable rest */}
           {moreComments.length > 0 && (
             <>
               <button
@@ -808,11 +875,11 @@ function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
                 >
                   ▾
                 </span>
-                {expanded ? "Show less" : `See ${moreComments.length} more opinions`}
+                {expanded ? "Show less" : `Read ${moreComments.length} more reviews`}
                 {!expanded && (
-                  <span className="flex -space-x-1.5">
-                    {AVATAR_BG_COLORS.slice(0, Math.min(3, moreComments.length)).map((color, i) => (
-                      <div key={i} className="w-5 h-5 rounded-full border border-white" style={{ background: color }} />
+                  <span className="flex -space-x-1.5 ml-1">
+                    {AVATAR_BG_COLORS.slice(0, Math.min(4, moreComments.length)).map((color, i) => (
+                      <div key={i} className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ background: color }} />
                     ))}
                   </span>
                 )}
@@ -820,37 +887,14 @@ function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
 
               <div
                 style={{
-                  maxHeight: expanded ? `${moreComments.length * 240}px` : "0px",
+                  maxHeight: expanded ? `${moreComments.length * 260}px` : "0px",
                   overflow: "hidden",
                   transition: "max-height 0.65s cubic-bezier(0.16,1,0.3,1)",
                 }}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
                   {moreComments.map((comment, i) => (
-                    <a
-                      key={i}
-                      href={comment.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`block rounded-2xl p-4 border hover:shadow-md transition-all ${COMMENT_CARD_STYLES[(i + 3) % 4]}`}
-                    >
-                      <div className="text-3xl font-black text-stone-200 leading-none mb-2 select-none">&ldquo;</div>
-                      <p className="text-sm text-stone-700 leading-relaxed line-clamp-3 mb-3">{comment.body}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={AVATAR_BG_COLORS[(i + 3) % AVATAR_BG_COLORS.length]} />
-                          <div>
-                            <p className="text-xs font-bold text-stone-800">u/{comment.author}</p>
-                            <p className="text-[10px] text-stone-400">r/{comment.subreddit}</p>
-                          </div>
-                        </div>
-                        {comment.upvotes > 0 && (
-                          <span className="flex items-center gap-1 text-xs font-bold text-stone-500 bg-stone-100 px-2 py-1 rounded-full shrink-0">
-                            ▲ {comment.upvotes.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </a>
+                    <CommentCard key={i} comment={comment} index={i} cardOffset={3} />
                   ))}
                 </div>
               </div>
