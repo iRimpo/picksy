@@ -120,17 +120,46 @@ async function fetchCommentsFromThread(threadUrl: string): Promise<RedditComment
   }
 }
 
+async function searchRedditForThreads(query: string): Promise<string[]> {
+  try {
+    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&type=link&sort=relevance&limit=5`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const children: { data?: { permalink?: string } }[] = data?.data?.children || [];
+    return children
+      .map((c) => (c.data?.permalink ? `https://www.reddit.com${c.data.permalink}` : null))
+      .filter((u): u is string => !!u)
+      .slice(0, 3);
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(req: NextRequest) {
   const urlsParam = req.nextUrl.searchParams.get("urls");
-  if (!urlsParam) {
-    return NextResponse.json({ comments: [] });
+  const queryParam = req.nextUrl.searchParams.get("query");
+
+  let threadUrls: string[] = [];
+
+  if (urlsParam) {
+    try {
+      threadUrls = JSON.parse(urlsParam) as string[];
+    } catch {
+      threadUrls = urlsParam.split(",").map((u) => u.trim()).filter(Boolean);
+    }
   }
 
-  let threadUrls: string[];
-  try {
-    threadUrls = JSON.parse(urlsParam) as string[];
-  } catch {
-    threadUrls = urlsParam.split(",").map((u) => u.trim()).filter(Boolean);
+  // Fallback: search Reddit directly if no URLs were provided
+  if (threadUrls.length === 0 && queryParam) {
+    threadUrls = await searchRedditForThreads(queryParam);
+  }
+
+  if (threadUrls.length === 0) {
+    return NextResponse.json({ comments: [], threadUrls: [] });
   }
 
   // Limit to 3 threads to stay under Reddit rate limits
@@ -161,5 +190,5 @@ export async function GET(req: NextRequest) {
     avatarUrl: avatarMap.get(c.author) ?? null,
   }));
 
-  return NextResponse.json({ comments: withAvatars });
+  return NextResponse.json({ comments: withAvatars, threadUrls: limited });
 }

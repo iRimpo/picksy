@@ -790,19 +790,31 @@ function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditCommen
   );
 }
 
-function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
+function RedditCommentsSection({ threadUrls, query }: { threadUrls: string[]; query: string }) {
   const [comments, setComments] = useState<RedditComment[]>([]);
+  const [parsedThreadUrls, setParsedThreadUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    if (threadUrls.length === 0) { setLoading(false); return; }
-    const encoded = encodeURIComponent(JSON.stringify(threadUrls));
-    fetch(`/api/reddit-comments?urls=${encoded}`)
+    let endpoint: string;
+    if (threadUrls.length > 0) {
+      endpoint = `/api/reddit-comments?urls=${encodeURIComponent(JSON.stringify(threadUrls))}`;
+    } else if (query) {
+      endpoint = `/api/reddit-comments?query=${encodeURIComponent(query)}`;
+    } else {
+      setLoading(false);
+      return;
+    }
+    fetch(endpoint)
       .then((r) => r.json())
-      .then((data) => { setComments(data.comments || []); setLoading(false); })
+      .then((data) => {
+        setComments(data.comments || []);
+        setParsedThreadUrls(data.threadUrls || []);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, [threadUrls]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [threadUrls, query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!loading && comments.length === 0) return null;
 
@@ -833,16 +845,36 @@ function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
             <p className="text-xs text-stone-400">Real opinions from Reddit</p>
           </div>
         </div>
-        {/* Sentiment summary — only once comments loaded */}
+        {/* Sentiment summary + source thread links */}
         {!loading && comments.length > 0 && (
-          <div className="hidden sm:flex items-center gap-2 text-xs">
-            <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full font-semibold">
-              👍 {positiveCount} positive
-            </span>
-            {negativeCount > 0 && (
-              <span className="flex items-center gap-1 text-rose-500 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full font-semibold">
-                👎 {negativeCount} critical
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="hidden sm:flex items-center gap-2 text-xs">
+              <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full font-semibold">
+                👍 {positiveCount} positive
               </span>
+              {negativeCount > 0 && (
+                <span className="flex items-center gap-1 text-rose-500 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full font-semibold">
+                  👎 {negativeCount} critical
+                </span>
+              )}
+            </div>
+            {parsedThreadUrls.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {parsedThreadUrls.map((url, i) => {
+                  const sub = url.match(/reddit\.com\/r\/([^/]+)/)?.[1] ?? "reddit";
+                  return (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-stone-400 hover:text-brand-pink transition-colors flex items-center gap-0.5"
+                    >
+                      r/{sub} #{i + 1} ↗
+                    </a>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -1147,7 +1179,7 @@ function ResultsContent() {
         >
           <main className="max-w-5xl mx-auto px-4 py-8">
             <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} />
-            <RedditCommentsSection threadUrls={redditThreadUrls} />
+            <RedditCommentsSection threadUrls={redditThreadUrls} query={query} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
             <div className="max-w-4xl mx-auto text-center pb-8">
