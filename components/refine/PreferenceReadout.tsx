@@ -49,7 +49,7 @@ export default function PreferenceReadout({ preferences, query, onConfirm, onSki
           whileTap={{ scale: 0.97 }}
           whileHover={{ scale: 1.02 }}
           style={{
-            background: "#ea580c",
+            background: "linear-gradient(135deg, #FF6B8A, #2ECC71)",
             color: "white",
             border: "none",
             borderRadius: 100,
@@ -58,7 +58,7 @@ export default function PreferenceReadout({ preferences, query, onConfirm, onSki
             fontWeight: 700,
             cursor: "pointer",
             letterSpacing: "0.01em",
-            boxShadow: "0 4px 20px rgba(234,88,12,0.35)",
+            boxShadow: "0 4px 20px rgba(255,107,138,0.4)",
           }}
         >
           Analyze for {query.split(" ").slice(-1)[0]}

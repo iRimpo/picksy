@@ -2,104 +2,76 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Clock, ArrowLeft, ArrowRight } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { isVagueQuery } from "@/lib/query-decoder";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
+import { PicksyMascot } from "@/components/shared/picksy-mascot";
 
 const CATEGORIES = [
   { emoji: "🎧", label: "Headphones", query: "best wireless headphones" },
   { emoji: "💻", label: "Laptops", query: "best laptop" },
   { emoji: "📺", label: "TVs", query: "best 4K TV" },
-  { emoji: "📱", label: "Smartphones", query: "best smartphone" },
+  { emoji: "📱", label: "Phones", query: "best smartphone" },
   { emoji: "🖥️", label: "Monitors", query: "best monitor" },
   { emoji: "🖱️", label: "Mice", query: "best wireless mouse" },
+  { emoji: "⌨️", label: "Keyboards", query: "best mechanical keyboard" },
+  { emoji: "🔊", label: "Speakers", query: "best Bluetooth speaker" },
 ];
 
-const BUDGET_OPTIONS = [
-  { label: "Under $100", value: "100" },
-  { label: "Under $300", value: "300" },
-  { label: "Under $500", value: "500" },
-  { label: "Any budget", value: "" },
+const SUGGESTIONS = [
+  "best wireless headphones for commuting...",
+  "gaming laptop under $1000...",
+  "best 4K TV for small room...",
+  "noise cancelling earbuds under $200...",
+  "best mechanical keyboard for typing...",
+  "ultrawide monitor under $500...",
+  "best budget smartphone under $400...",
+  "wireless gaming mouse for large hands...",
 ];
 
-const USE_CASES = ["Gaming", "Work", "Travel", "Studio", "Everyday"];
-const PRIORITIES = ["Battery Life", "Performance", "Build Quality", "Value", "Portability"];
-
-const EXAMPLE_QUERIES = [
-  { text: "best wireless headphones for commuting" },
-  { text: "gaming laptop under $1000" },
-  { text: "best 4K TV for small room" },
-  { text: "noise cancelling earbuds under $200" },
-  { text: "best mechanical keyboard for typing" },
-  { text: "ultrawide monitor at Best Buy under $500" },
-  { text: "best budget smartphone under $400" },
-  { text: "wireless gaming mouse for large hands" },
-];
-
-const RECENT_SEARCHES = [
-  { query: "best wireless headphones for commuting", time: "2 hours ago" },
-  { query: "gaming laptop under $1000", time: "Yesterday" },
-  { query: "best 4K TV for small room", time: "3 days ago" },
-];
+const AVATAR_COLORS = ["#FF8FB3", "#4EADFF", "#FFD93D", "#B39DDB", "#2ECC71", "#FFA07A", "#87CEEB"];
+const AVATAR_INITIALS = ["A", "J", "M", "R", "K", "S", "T"];
 
 export default function SearchPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [useCase, setUseCase] = useState("");
-  const [priority, setPriority] = useState("");
-  const [budget, setBudget] = useState("");
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [suggestionVisible, setSuggestionVisible] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   usePageView("search");
 
-  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setLoaded(true), 60);
     return () => clearTimeout(t);
   }, []);
 
-  const filteredExamples = EXAMPLE_QUERIES.filter(
-    (item) => query.length > 0 && item.text.toLowerCase().includes(query.toLowerCase())
-  );
+  // Cycle through animated placeholder suggestions
+  useEffect(() => {
+    if (isFocused || query) return;
+    const interval = setInterval(() => {
+      setSuggestionVisible(false);
+      setTimeout(() => {
+        setSuggestionIndex((i) => (i + 1) % SUGGESTIONS.length);
+        setSuggestionVisible(true);
+      }, 350);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isFocused, query]);
 
-  const buildSearchQuery = useCallback(
-    (rawQuery: string) => {
-      let finalQuery = rawQuery.trim();
-      const lower = finalQuery.toLowerCase();
-      if (useCase && !lower.includes(useCase.toLowerCase())) {
-        finalQuery += ` for ${useCase.toLowerCase()}`;
-      }
-      if (priority && !lower.includes(priority.toLowerCase())) {
-        finalQuery += ` with good ${priority.toLowerCase()}`;
-      }
-      if (budget && !/under\s*\$?\d+/i.test(finalQuery)) {
-        finalQuery += ` under $${budget}`;
-      }
-      return finalQuery.trim();
-    },
-    [useCase, priority, budget]
-  );
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, []);
 
   const handleSearch = useCallback(
     (searchQuery: string) => {
-      const finalQuery = buildSearchQuery(searchQuery);
+      const finalQuery = searchQuery.trim();
       if (!finalQuery) return;
-      track("search_submitted", {
-        page: "search",
-        query: finalQuery,
-        properties: {
-          raw_query: searchQuery,
-          use_case: useCase || null,
-          priority: priority || null,
-          budget: budget || null,
-        },
-      });
+      track("search_submitted", { page: "search", query: finalQuery });
       if (isVagueQuery(finalQuery)) {
         track("refine_started", { page: "search", query: finalQuery });
         router.push(`/refine?q=${encodeURIComponent(finalQuery)}`);
@@ -107,319 +79,161 @@ export default function SearchPage() {
         router.push(`/results?q=${encodeURIComponent(finalQuery)}`);
       }
     },
-    [router, buildSearchQuery, useCase, priority, budget]
+    [router]
   );
-
-  const handleInputChange = (value: string) => {
-    setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setShowAutocomplete(value.length > 0);
-    }, 150);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
-      ) {
-        setShowAutocomplete(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
 
   const base = "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]";
 
-  const filterChip = (active: boolean) =>
-    `px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 cursor-pointer ${
-      active
-        ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-        : "bg-white border-stone-200 text-stone-600 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50"
-    }`;
-
   return (
-    <div className="min-h-screen bg-[#f5f0ea] relative overflow-hidden">
-      {/* Warm gradient bloom */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full -z-10 pointer-events-none"
-        style={{ background: "rgba(254,215,170,0.22)", filter: "blur(120px)" }}
-      />
+    <div className="min-h-screen relative overflow-hidden" style={{ background: "#2ECC71" }}>
+      {/* Decorative floating shapes */}
+      <div className="absolute top-16 left-8 w-20 h-20 rounded-full bg-white/10 animate-float pointer-events-none" />
+      <div className="absolute top-32 right-12 w-14 h-14 rounded-full bg-white/15 animate-floatSlow pointer-events-none" />
+      <div className="absolute top-1/2 left-4 w-10 h-10 rounded-full bg-brand-yellow/30 animate-floatDelay pointer-events-none" />
+      <div className="absolute bottom-40 right-8 w-24 h-24 rounded-full bg-white/8 animate-float pointer-events-none" />
+      <div className="absolute bottom-20 left-1/3 w-8 h-8 rounded-full bg-brand-pink/30 animate-floatDelay2 pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 w-6 h-6 rounded-full bg-white/20 animate-floatSlow pointer-events-none" />
+      {/* Star shapes */}
+      <svg className="absolute top-20 right-1/3 animate-spinSlow opacity-20 pointer-events-none" width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
+      <svg className="absolute bottom-32 left-1/4 animate-spinSlow opacity-15 pointer-events-none" width="24" height="24" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
+      <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 animate-spinSlow opacity-10 pointer-events-none" width="48" height="48" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
 
       {/* Header */}
       <header
-        className={`relative z-10 flex items-center px-6 py-5 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+        className={`relative z-10 flex items-center justify-between px-6 py-5 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
       >
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 text-stone-400 hover:text-stone-700 transition-colors text-sm font-medium"
-        >
-          <ArrowLeft size={16} />
-          Home
+        <Link href="/" className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm font-medium">
+          <PicksyMascot size={32} />
         </Link>
+        <span className="text-white/50 text-xs font-medium">Powered by Reddit</span>
       </header>
 
       {/* Main */}
-      <main className="relative z-10 flex flex-col items-center px-4 pt-2 pb-24">
+      <main className="relative z-10 flex flex-col items-center px-4 pt-4 pb-32">
 
-        {/* Cursive wordmark */}
+        {/* Mascot + wordmark */}
         <div
-          className={`mb-7 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          className={`flex flex-col items-center mb-8 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
           style={{ transitionDelay: "40ms" }}
         >
-          <span
-            className="text-5xl text-[#5c2200]"
-            style={{
-              fontFamily: "var(--font-serif), Georgia, 'Times New Roman', serif",
-              fontStyle: "italic",
-              fontWeight: 700,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Picksy
+          <PicksyMascot size={96} className="mb-3 drop-shadow-xl" />
+          <span className="font-heading font-black text-4xl text-white tracking-tight drop-shadow">
+            picksy
           </span>
+          <p className="text-white/70 text-sm mt-1 font-medium">What are you shopping for?</p>
         </div>
-
-        {/* Heading */}
-        <h1
-          className={`text-4xl md:text-5xl font-bold text-stone-900 text-center leading-tight mb-2 max-w-xl ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "100ms" }}
-        >
-          What are you{" "}
-          <em className="not-italic text-stone-400">overthinking</em>{" "}
-          today?
-        </h1>
-
-        <p
-          className={`text-stone-500 text-base mb-8 text-center ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "160ms" }}
-        >
-          One search. One clear answer.
-        </p>
 
         {/* Search bar */}
         <div
-          className={`w-full max-w-[680px] relative ${base} ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
-          style={{ transitionDelay: "220ms" }}
+          className={`w-full max-w-[620px] relative ${base} ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+          style={{ transitionDelay: "120ms" }}
         >
           <div
-            className={`flex items-center gap-3 bg-white rounded-full px-5 h-[60px] transition-all duration-300 ${
+            className={`flex items-center gap-3 bg-white rounded-full px-5 h-[62px] transition-all duration-300 shadow-2xl ${
               isFocused
-                ? "shadow-[0_0_0_2px_theme(colors.orange.400)] shadow-orange-100"
-                : "shadow-[0_1px_4px_rgba(0,0,0,0.08)] border border-stone-200"
+                ? "ring-4 ring-white/40"
+                : ""
             }`}
           >
             <Search
               size={20}
-              className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-orange-500" : "text-stone-400"}`}
+              className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-brand-green" : "text-stone-400"}`}
             />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-              placeholder="Search for a product..."
-              className="flex-1 bg-transparent outline-none text-stone-900 placeholder-stone-400 text-base"
-              aria-label="Search for products"
-            />
+            {/* Animated placeholder overlay */}
+            <div className="flex-1 relative">
+              {!query && !isFocused && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 text-base pointer-events-none select-none w-full truncate"
+                  style={{
+                    opacity: suggestionVisible ? 1 : 0,
+                    transform: `translateY(-50%) translateY(${suggestionVisible ? 0 : 6}px)`,
+                    transition: "opacity 0.35s ease, transform 0.35s ease",
+                  }}
+                >
+                  {SUGGESTIONS[suggestionIndex]}
+                </span>
+              )}
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
+                placeholder=""
+                className="w-full bg-transparent outline-none text-stone-900 text-base relative z-10"
+                aria-label="Search for electronics"
+              />
+            </div>
             {query.trim() && (
               <button
                 onClick={() => handleSearch(query)}
-                className="shrink-0 bg-stone-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-stone-700 transition-all flex items-center gap-1.5 group active:scale-95"
+                className="shrink-0 btn-gradient px-5 py-2 rounded-full text-sm flex items-center gap-1.5 group active:scale-95 font-bold"
               >
-                Search
+                Go
                 <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
           </div>
-
-          {/* Autocomplete dropdown */}
-          {showAutocomplete && filteredExamples.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden z-50"
-            >
-              {filteredExamples.slice(0, 5).map((item) => (
-                <button
-                  key={item.text}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-stone-50 transition-colors text-left border-b border-stone-100 last:border-0"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSearch(item.text);
-                  }}
-                >
-                  <Search size={13} className="text-stone-400 shrink-0" />
-                  <span className="text-stone-700 text-sm">{item.text}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Use case + priority chips */}
+        {/* Category pills */}
         <div
-          className={`w-full max-w-[680px] mt-3 flex items-center gap-2 flex-wrap ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "260ms" }}
+          className={`mt-8 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "200ms" }}
         >
-          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0">
-            Use:
-          </span>
-          {USE_CASES.map((uc) => (
-            <button
-              key={uc}
-              onClick={() => {
-                const next = useCase === uc.toLowerCase() ? "" : uc.toLowerCase();
-                setUseCase(next);
-                track("filter_applied", {
-                  page: "search",
-                  properties: { filter_type: "use_case", value: next || null },
-                });
-              }}
-              className={filterChip(useCase === uc.toLowerCase())}
-            >
-              {uc}
-            </button>
-          ))}
-          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider shrink-0 ml-2">
-            Priority:
-          </span>
-          {PRIORITIES.map((p) => (
-            <button
-              key={p}
-              onClick={() => {
-                const next = priority === p.toLowerCase() ? "" : p.toLowerCase();
-                setPriority(next);
-                track("filter_applied", {
-                  page: "search",
-                  properties: { filter_type: "priority", value: next || null },
-                });
-              }}
-              className={filterChip(priority === p.toLowerCase())}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-
-        {/* Store tip */}
-        <p
-          className={`text-[11px] text-stone-400 mt-2 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "280ms" }}
-        >
-          Tip: Include a store for local prices —{" "}
-          <button
-            onClick={() => handleSearch("best gaming headset at Best Buy")}
-            className="text-orange-500 font-semibold hover:underline"
-          >
-            &ldquo;best gaming headset at Best Buy&rdquo;
-          </button>
-        </p>
-
-        {/* Popular Categories */}
-        <div
-          className={`mt-10 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "320ms" }}
-        >
-          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 text-center">
-            Popular Categories
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest text-center mb-3">
+            Popular categories
+          </p>
+          <div className="flex flex-wrap justify-center gap-2.5">
             {CATEGORIES.map((cat, i) => (
               <button
                 key={cat.label}
                 onClick={() => {
-                  track("category_click", {
-                    page: "search",
-                    properties: { category: cat.label, query: cat.query },
-                  });
+                  track("category_click", { page: "search", properties: { category: cat.label, query: cat.query } });
                   handleSearch(cat.query);
                 }}
-                className={`flex flex-col items-center justify-center gap-2.5 py-6 bg-white border border-stone-200 rounded-2xl hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                style={{ transitionDelay: `${320 + i * 40}ms` }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/20 hover:bg-white/35 text-white font-semibold text-sm border border-white/20 hover:border-white/40 transition-all active:scale-95 ${base}`}
+                style={{ transitionDelay: `${200 + i * 30}ms` }}
               >
-                <span className="text-3xl leading-none">{cat.emoji}</span>
-                <span className="text-sm font-medium text-stone-700">{cat.label}</span>
+                <span className="text-base leading-none">{cat.emoji}</span>
+                {cat.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Budget */}
+        {/* Community trust bar */}
         <div
-          className={`mt-8 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "560ms" }}
+          className={`mt-12 flex flex-col items-center gap-3 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "480ms" }}
         >
-          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 text-center">
-            Budget
-          </h3>
-          <div className="grid grid-cols-4 gap-3">
-            {BUDGET_OPTIONS.map((opt) => (
-              <button
-                key={opt.label}
-                onClick={() => {
-                  const next = opt.value === "" ? "" : budget === opt.value ? "" : opt.value;
-                  setBudget(next);
-                  track("filter_applied", {
-                    page: "search",
-                    properties: { filter_type: "budget", value: next || null },
-                  });
-                }}
-                className={`py-3 rounded-2xl text-sm font-medium border transition-all active:scale-95 ${
-                  (opt.value !== "" && budget === opt.value)
-                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                    : "bg-white border-stone-200 text-stone-700 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50"
-                }`}
+          {/* Avatar cluster */}
+          <div className="flex -space-x-2.5">
+            {AVATAR_COLORS.map((color, i) => (
+              <div
+                key={i}
+                className="w-9 h-9 rounded-full border-2 border-[#2ECC71] flex items-center justify-center text-white text-xs font-black shadow-sm"
+                style={{ background: color }}
               >
-                {opt.label}
-              </button>
+                {AVATAR_INITIALS[i]}
+              </div>
             ))}
           </div>
+          <p className="text-white/80 text-sm font-semibold text-center">
+            <span className="text-white font-black">15,000+</span> shoppers found their perfect pick
+          </p>
+          <p className="text-white/50 text-xs text-center">
+            ✨ Powered by 12,000+ Reddit discussions
+          </p>
         </div>
-
-        {/* Recent searches */}
-        <div
-          className={`mt-10 w-full max-w-[680px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "620ms" }}
-        >
-          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-3 px-1">
-            Recent Searches
-          </h3>
-          <div className="space-y-0.5">
-            {RECENT_SEARCHES.map((item, i) => (
-              <button
-                key={item.query}
-                onClick={() => handleSearch(item.query)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white hover:shadow-sm transition-all text-left group ${base} ${loaded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3"}`}
-                style={{ transitionDelay: `${620 + i * 60}ms` }}
-              >
-                <Clock size={14} className="text-stone-300 shrink-0" />
-                <span className="text-stone-500 text-sm flex-1 group-hover:text-stone-800 transition-colors">
-                  {item.query}
-                </span>
-                <span className="text-stone-300 text-xs">{item.time}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer attribution */}
-        <p
-          className={`mt-12 text-sm text-stone-400 text-center ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "780ms" }}
-        >
-          ✨ Powered by 12,000+ Reddit discussions &amp; Trustpilot reviews
-        </p>
       </main>
     </div>
   );

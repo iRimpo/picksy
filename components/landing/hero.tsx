@@ -13,7 +13,7 @@ function RedditIcon({ className }: { className?: string }) {
 
 export function Hero() {
   return (
-    <header className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+    <header className="relative min-h-screen flex items-center justify-center overflow-hidden bg-brand-bg">
       {/* Soft gradient blobs */}
       <div className="blob-pink -top-40 -left-40" />
       <div className="blob-cyan -bottom-40 -right-40" />

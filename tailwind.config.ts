@@ -11,17 +11,20 @@ const config: Config = {
     extend: {
       fontFamily: {
         inter: ["Inter", "sans-serif"],
-        serif: ["Instrument Serif", "Georgia", "serif"],
+        heading: ["Montserrat", "sans-serif"],
+        serif: ["Montserrat", "sans-serif"], // keep alias for any remaining serif references
       },
       colors: {
-        // Legacy brand colors (kept for backward compat)
         brand: {
-          pink: "#ea580c",
-          cyan: "#fb923c",
-          yellow: "#fed7aa",
-          dark: "#1c1917",
-          bg: "#fafaf9",
-          footer: "#0c0a09",
+          pink: "#FF6B8A",
+          green: "#2ECC71",
+          yellow: "#FFD93D",
+          blue: "#4EADFF",
+          dark: "#1A1A2E",
+          bg: "#FFFBF7",
+          footer: "#1A1A2E",
+          // legacy aliases
+          cyan: "#2ECC71",
         },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -68,6 +71,15 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "3xl": "1.5rem",
+        "4xl": "2rem",
+        pill: "9999px",
+      },
+      boxShadow: {
+        "glow-pink": "0 0 20px rgba(255, 107, 138, 0.4), 0 0 60px rgba(255, 107, 138, 0.15)",
+        "glow-green": "0 0 20px rgba(46, 204, 113, 0.4), 0 0 60px rgba(46, 204, 113, 0.15)",
+        "glow-blue": "0 0 20px rgba(78, 173, 255, 0.4), 0 0 60px rgba(78, 173, 255, 0.15)",
+        "glow-yellow": "0 0 20px rgba(255, 217, 61, 0.4), 0 0 60px rgba(255, 217, 61, 0.15)",
       },
       keyframes: {
         gradient: {

@@ -128,10 +128,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </button>
           <button
             onClick={() => setSaved(!saved)}
-            className={`transition-colors ${saved ? "text-orange-600" : "text-stone-400 hover:text-stone-600"}`}
+            className={`transition-colors ${saved ? "text-brand-pink" : "text-stone-400 hover:text-stone-600"}`}
             aria-label="Save"
           >
-            <Heart size={18} fill={saved ? "#ea580c" : "none"} />
+            <Heart size={18} fill={saved ? "#FF6B8A" : "none"} />
           </button>
         </div>
       </header>
@@ -158,7 +158,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Info */}
           <div className="flex-1 anim-right anim-d1">
-            <p className="text-orange-600 text-sm font-semibold mb-1">{product.brand}</p>
+            <p className="text-brand-pink text-sm font-semibold mb-1">{product.brand}</p>
             <h2 className="text-3xl font-black text-stone-900 mb-1">{product.name}</h2>
             <p className="text-stone-400 text-sm mb-4">{product.category}</p>
             <p className="text-4xl font-black text-stone-900 mb-6">
@@ -169,7 +169,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="relative mb-4">
               <button
                 onClick={() => setShowWhereToBuy(!showWhereToBuy)}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white transition px-6 py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2"
+                className="w-full btn-gradient px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2"
               >
                 Where to Buy <ChevronDown size={16} className={`transition-transform ${showWhereToBuy ? "rotate-180" : ""}`} />
               </button>
@@ -280,7 +280,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   onClick={() => setTranscriptFilter(f)}
                   className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                     transcriptFilter === f
-                      ? "bg-orange-50 text-orange-600 border-orange-200"
+                      ? "bg-brand-pink/10 text-brand-pink border-brand-pink/20"
                       : "bg-stone-50 text-stone-500 border-stone-100 hover:border-stone-200"
                   }`}
                 >
@@ -313,11 +313,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                     {/* Creator */}
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-9 h-9 rounded-full shrink-0 bg-orange-100" />
+                      <div className="w-9 h-9 rounded-full shrink-0 bg-brand-pink/15" />
                       <div className="flex-1">
                         <p className="font-bold text-sm text-stone-900">
                           {t.creator}{" "}
-                          {t.verified && <CheckCircle size={12} className="inline text-orange-400" />}
+                          {t.verified && <CheckCircle size={12} className="inline text-brand-pink" />}
                         </p>
                         <p className="text-stone-400 text-xs">{t.followers} followers</p>
                       </div>
@@ -366,7 +366,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     {t.quotes.length > 1 && (
                       <button
                         onClick={() => toggleTranscript(i)}
-                        className="mt-3 text-xs font-semibold text-orange-600 hover:underline"
+                        className="mt-3 text-xs font-semibold text-brand-pink hover:underline"
                       >
                         {expandedTranscripts.includes(i)
                           ? "Show Less ▲"
@@ -412,7 +412,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.pros.length > 3 && (
               <button
                 onClick={() => setShowMorePros(!showMorePros)}
-                className="mt-4 text-xs font-semibold text-orange-600 hover:underline"
+                className="mt-4 text-xs font-semibold text-brand-pink hover:underline"
               >
                 {showMorePros
                   ? "Show less ▲"
@@ -445,7 +445,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.cons.length > 3 && (
               <button
                 onClick={() => setShowMoreCons(!showMoreCons)}
-                className="mt-4 text-xs font-semibold text-orange-600 hover:underline"
+                className="mt-4 text-xs font-semibold text-brand-pink hover:underline"
               >
                 {showMoreCons
                   ? "Show less ▲"
@@ -570,7 +570,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Link
                   key={alt.id}
                   href={`/product/${alt.id}`}
-                  className="shrink-0 w-56 bg-stone-50 rounded-xl p-4 border border-stone-100 hover:border-orange-200 hover:shadow-md transition-all hover:-translate-y-1.5 hover:bg-white"
+                  className="shrink-0 w-56 bg-stone-50 rounded-xl p-4 border border-stone-100 hover:border-brand-pink/30 hover:shadow-md transition-all hover:-translate-y-1.5 hover:bg-white"
                 >
                   <div className="w-full h-24 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center mb-3">
                     <span className="text-3xl">🧴</span>
@@ -613,7 +613,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               onClick={() => setSaved(!saved)}
               className={`px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${
                 saved
-                  ? "border-orange-500 text-orange-600 bg-orange-50/60"
+                  ? "border-brand-pink text-brand-pink bg-brand-pink/5"
                   : "border-stone-200 text-stone-600 hover:border-stone-300"
               }`}
             >
@@ -631,7 +631,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 }
                 setShowWhereToBuy(!showWhereToBuy);
               }}
-              className="bg-orange-600 hover:bg-orange-700 text-white transition px-6 py-2.5 rounded-xl text-sm font-bold text-white"
+              className="btn-gradient px-6 py-2.5 rounded-2xl text-sm"
             >
               Where to Buy &rarr;
             </button>

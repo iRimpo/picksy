@@ -4,7 +4,7 @@ import { EmailForm } from "@/components/shared/email-form";
 
 export function CtaSection() {
   return (
-    <section id="waitlist" className="relative py-20 md:py-32 overflow-hidden bg-gray-50">
+    <section id="waitlist" className="relative py-20 md:py-32 overflow-hidden bg-brand-bg">
       <div className="blob-pink -top-40 -left-40" />
       <div className="blob-cyan -bottom-40 -right-40" />
 

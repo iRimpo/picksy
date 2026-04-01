@@ -11,6 +11,7 @@ import {
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
 import { getStoreUrl } from "@/lib/retailers";
+import { PicksyMascot } from "@/components/shared/picksy-mascot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,54 +106,72 @@ function getScoreBadgeLabel(score: number, scoreLabel: string): string {
 // ─── Loading State ─────────────────────────────────────────────────────────────
 
 function LoadingState({ query }: { query: string }) {
-  const [step, setStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [visibleSteps, setVisibleSteps] = useState(1);
 
-  const steps = [
-    "Searching Reddit and Trustpilot reviews...",
-    "Analyzing 143 posts...",
-    "Extracting product mentions...",
-    "Calculating scores...",
+  const STEPS = [
+    { icon: "🔍", text: "Scanning Reddit discussions..." },
+    { icon: "🧠", text: `Analyzing opinions on "${query.slice(0, 28)}..."` },
+    { icon: "⚖️", text: "Weighing community scores..." },
+    { icon: "✨", text: "Picking the winner for you..." },
   ];
-  const stepsLength = steps.length;
 
   useEffect(() => {
-    const progressTimer = setInterval(() => {
-      setProgress((p) => Math.min(p + 2, 95));
-    }, 50);
-    const stepTimer = setInterval(() => {
-      setStep((s) => Math.min(s + 1, stepsLength - 1));
-    }, 600);
-    return () => { clearInterval(progressTimer); clearInterval(stepTimer); };
-  }, [stepsLength]);
+    const timers = [1, 2, 3].map((i) =>
+      setTimeout(() => setVisibleSteps(i + 1), i * 1400)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-      <div className="w-16 h-16 rounded-full bg-[#FF4500] flex items-center justify-center mb-6 animate-pulse">
-        <svg viewBox="0 0 20 20" className="w-9 h-9 fill-white">
-          <path d="M20 10a10 10 0 1 1-20 0 10 10 0 0 1 20 0zm-9.93-1.73c-.3-.03-.58.16-.67.45-.1.3.05.63.35.74.82.3 1.4.95 1.56 1.77a3.2 3.2 0 0 1-3.18 3.77c-.84 0-1.67-.37-2.26-1.02-.55-.6-.8-1.4-.68-2.2.12-.82.7-1.5 1.56-1.92.3-.15.42-.51.27-.82a.6.6 0 0 0-.81-.27c-1.2.59-2 1.6-2.18 2.77-.17 1.12.17 2.26.94 3.1.82.9 1.97 1.39 3.16 1.39 1.19 0 2.29-.48 3.1-1.35a4.4 4.4 0 0 0 1.06-3.34c-.25-1.44-1.2-2.67-2.22-3.07zm-5.48-2.88c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zm8.82 0c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zM10 6.19a2.8 2.8 0 0 0-1.97.8.6.6 0 1 0 .85.85 1.6 1.6 0 0 1 2.24 0 .6.6 0 1 0 .85-.85A2.8 2.8 0 0 0 10 6.19z" />
-        </svg>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 relative overflow-hidden">
+      {/* Floating shapes (inherit green bg from page) */}
+      <div className="absolute top-12 left-8 w-16 h-16 rounded-full bg-white/10 animate-float pointer-events-none" />
+      <div className="absolute top-1/3 right-6 w-12 h-12 rounded-full bg-white/15 animate-floatSlow pointer-events-none" />
+      <div className="absolute bottom-16 left-1/4 w-10 h-10 rounded-full bg-brand-pink/25 animate-floatDelay pointer-events-none" />
+      <svg className="absolute top-20 right-1/3 animate-spinSlow opacity-20 pointer-events-none" width="24" height="24" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
+
+      {/* Mascot with shadow */}
+      <div className="mb-6 flex flex-col items-center">
+        <PicksyMascot size={88} className="drop-shadow-xl" style={{ animation: "bounce 1.2s infinite" }} />
+        <div className="w-14 h-2.5 bg-black/15 rounded-full blur-sm mt-1 animate-pulse" />
       </div>
-      <h2 className="text-xl font-black text-stone-900 mb-2">Analyzing Reddit + Trustpilot</h2>
-      <p className="text-stone-500 text-sm mb-8 text-center max-w-xs">
-        Finding the best <span className="font-semibold text-stone-700">{query}</span> based on Reddit discussions and Trustpilot reviews
+
+      <h2 className="text-2xl font-black text-white mb-1 text-center">Finding your pick...</h2>
+      <p className="text-white/70 text-sm mb-10 text-center max-w-xs">
+        Scanning Reddit + reviews for <span className="text-white font-bold">{query}</span>
       </p>
-      <div className="w-full max-w-sm mb-4">
-        <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+
+      {/* Slide-in step messages */}
+      <div className="w-full max-w-sm space-y-2.5">
+        {STEPS.map((step, i) => (
           <div
-            className="h-full rounded-full transition-all duration-100"
-            style={{ width: `${progress}%`, backgroundColor: "#ea580c" }}
-          />
-        </div>
-        <div className="flex justify-between mt-1.5">
-          <span className="text-xs text-stone-400">{steps[step]}</span>
-          <span className="text-xs text-stone-400">{progress}%</span>
-        </div>
-      </div>
-      <div className="flex gap-3 mt-4">
-        {steps.map((_, i) => (
-          <div key={i} className={`w-2 h-2 rounded-full transition-all ${i <= step ? "bg-orange-600" : "bg-stone-200"}`} />
+            key={i}
+            className="flex items-center gap-3 rounded-2xl px-4 py-3 border"
+            style={{
+              background: i < visibleSteps ? "rgba(255,255,255,0.18)" : "transparent",
+              borderColor: i < visibleSteps ? "rgba(255,255,255,0.25)" : "transparent",
+              opacity: i < visibleSteps ? 1 : 0,
+              transform: i < visibleSteps ? "translateY(0)" : "translateY(12px)",
+              transition: "all 0.5s cubic-bezier(0.16,1,0.3,1)",
+              backdropFilter: i < visibleSteps ? "blur(8px)" : "none",
+            }}
+          >
+            <span className="text-xl">{step.icon}</span>
+            <span className="text-white/90 text-sm font-medium flex-1">{step.text}</span>
+            {i < visibleSteps - 1 && <span className="text-brand-yellow font-bold text-sm">✓</span>}
+            {i === visibleSteps - 1 && (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+            )}
+          </div>
         ))}
+      </div>
+
+      {/* Trust line */}
+      <div className="flex items-center gap-5 mt-10 text-white/55 text-xs">
+        <span className="flex items-center gap-1.5">🛡️ 12,000+ posts analyzed</span>
+        <span className="flex items-center gap-1.5">⚡ ~30 seconds</span>
       </div>
     </div>
   );
@@ -196,7 +215,7 @@ function LocationModal({ store, onConfirm, onSkip }: {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-scaleIn">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-2xl">🏪</div>
+          <div className="w-12 h-12 rounded-2xl bg-brand-pink/10 border border-brand-pink/20 flex items-center justify-center text-2xl">🏪</div>
           <div>
             <p className="text-xs text-stone-400 font-medium">Shopping at</p>
             <p className="text-lg font-black text-stone-900">{store}</p>
@@ -207,7 +226,7 @@ function LocationModal({ store, onConfirm, onSkip }: {
         <button
           onClick={handleAutoDetect}
           disabled={detecting}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-orange-500 text-orange-600 font-bold text-sm mb-3 hover:bg-orange-50/60 transition-colors disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-brand-pink text-brand-pink font-bold text-sm mb-3 hover:bg-brand-pink/5 transition-colors disabled:opacity-60"
         >
           {detecting ? <><Loader2 size={16} className="animate-spin" /> Detecting location...</> : <><MapPin size={16} /> Use My Location</>}
         </button>
@@ -222,9 +241,9 @@ function LocationModal({ store, onConfirm, onSkip }: {
             onChange={(e) => { setZip(e.target.value.replace(/\D/g, "")); setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && handleZipSubmit()}
             placeholder="Enter ZIP code"
-            className="flex-1 px-4 py-3 border-2 border-stone-200 rounded-xl text-sm outline-none focus:border-orange-500 transition-colors"
+            className="flex-1 px-4 py-3 border-2 border-stone-200 rounded-xl text-sm outline-none focus:border-brand-pink transition-colors"
           />
-          <button onClick={handleZipSubmit} className="px-4 py-3 bg-orange-600 hover:bg-orange-700 transition text-white rounded-xl text-sm font-bold">Go</button>
+          <button onClick={handleZipSubmit} className="px-4 py-3 btn-gradient rounded-xl text-sm font-bold">Go</button>
         </div>
         {error && <p className="text-xs text-red-500 flex items-center gap-1 mb-3"><AlertCircle size={12} /> {error}</p>}
         <button onClick={onSkip} className="w-full text-sm text-stone-400 hover:text-stone-600 py-2 transition-colors">
@@ -250,11 +269,11 @@ function StoreSelector({ stores, onSelect }: { stores: StoreLocation[]; onSelect
             <button
               key={store.id}
               onClick={() => onSelect(store)}
-              className="w-full flex items-center gap-3 p-4 rounded-2xl border border-stone-100 hover:border-orange-500 hover:bg-orange-50/60 transition-all text-left group"
+              className="w-full flex items-center gap-3 p-4 rounded-2xl border border-stone-100 hover:border-brand-pink/40 hover:bg-brand-pink/5 transition-all text-left group"
             >
               <div className="w-10 h-10 rounded-xl bg-stone-50 flex items-center justify-center shrink-0 text-lg">📍</div>
               <div className="flex-1">
-                <p className="font-bold text-sm text-stone-900 group-hover:text-orange-600">{store.name}</p>
+                <p className="font-bold text-sm text-stone-900 group-hover:text-brand-pink">{store.name}</p>
                 <p className="text-xs text-stone-400">{store.address}, {store.city}</p>
               </div>
               <span className="text-xs text-stone-400 shrink-0">{store.distance} mi</span>
@@ -268,8 +287,13 @@ function StoreSelector({ stores, onSelect }: { stores: StoreLocation[]; onSelect
 
 // ─── Winner Card ───────────────────────────────────────────────────────────────
 
-function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null }) {
+function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null; alternatives: Alternative[] }) {
   const [imgError, setImgError] = useState(false);
+  const [barsVisible, setBarsVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setBarsVisible(true), 500);
+    return () => clearTimeout(t);
+  }, []);
   const lowestPrice = winner.buyLinks.length > 0
     ? Math.min(...winner.buyLinks.map((l) => l.price))
     : winner.price;
@@ -279,7 +303,7 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
     <div className="max-w-4xl mx-auto">
 
       {/* Page title */}
-      <h2 className="text-2xl font-bold text-stone-900 mb-4">{pageTitle}</h2>
+      <h2 className="font-heading font-black text-2xl text-brand-dark mb-4">{pageTitle}</h2>
 
       {/* Badges + actions row */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
@@ -300,7 +324,7 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
 
       {/* Brand + product name */}
       <p className="text-stone-400 text-sm mb-1">{winner.brand}</p>
-      <h1 className="text-3xl md:text-4xl font-bold text-stone-900 mb-6 leading-tight">{winner.name}</h1>
+      <h1 className="font-heading font-black text-3xl md:text-4xl text-brand-dark mb-6 leading-tight">{winner.name}</h1>
 
       {/* Two-column: image left, info right */}
       <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-8 mb-10">
@@ -327,7 +351,7 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
               <div
                 key={i}
                 className={`w-[72px] h-[72px] rounded-xl bg-white border overflow-hidden flex items-center justify-center cursor-pointer transition-colors ${
-                  i === 0 ? "border-orange-400 shadow-sm" : "border-stone-200 hover:border-stone-300"
+                  i === 0 ? "border-brand-pink shadow-sm" : "border-stone-200 hover:border-stone-300"
                 }`}
               >
                 {imageUrl && !imgError ? (
@@ -374,12 +398,12 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
                   }
                   className={`relative rounded-xl border p-3 flex items-center gap-2 hover:shadow-md transition-all group ${
                     isBest
-                      ? "border-teal-200 bg-teal-50/60 hover:border-teal-300"
+                      ? "border-brand-green/30 bg-brand-green/5 hover:border-brand-green/50"
                       : "border-stone-200 bg-white hover:border-stone-300"
                   }`}
                 >
                   {isBest && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 bg-teal-500 text-white rounded-full whitespace-nowrap">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 bg-brand-green text-white rounded-full whitespace-nowrap">
                       Best Price
                     </span>
                   )}
@@ -388,7 +412,7 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-stone-600 truncate">{link.store}</p>
-                    <p className={`text-sm font-bold leading-tight ${isBest ? "text-teal-600" : "text-stone-900"}`}>
+                    <p className={`text-sm font-bold leading-tight ${isBest ? "text-brand-green" : "text-stone-900"}`}>
                       ${link.price.toFixed(2)}
                     </p>
                   </div>
@@ -422,8 +446,8 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
           <ul className="space-y-3">
             {winner.pros.map((pro, i) => (
               <li key={i} className="flex items-center gap-2.5 text-sm text-stone-700">
-                <span className="w-5 h-5 rounded-full border-2 border-teal-400 flex items-center justify-center shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-teal-400" />
+                <span className="w-5 h-5 rounded-full border-2 border-brand-green flex items-center justify-center shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-brand-green" />
                 </span>
                 {pro}
               </li>
@@ -437,8 +461,8 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
           <ul className="space-y-3">
             {winner.cons.map((con, i) => (
               <li key={i} className="flex items-center gap-2.5 text-sm text-stone-700">
-                <span className="w-5 h-5 rounded-full border-2 border-orange-300 flex items-center justify-center shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-orange-300" />
+                <span className="w-5 h-5 rounded-full border-2 border-brand-pink/40 flex items-center justify-center shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-brand-pink/40" />
                 </span>
                 {con}
               </li>
@@ -448,23 +472,68 @@ function WinnerCard({ winner, meta, imageUrl }: { winner: Winner; meta: Analysis
       </div>
 
       {/* Stats bar */}
-      <div className="bg-[#e8f4f1] rounded-2xl px-6 py-5 flex flex-wrap gap-6 mb-8">
+      <div className="bg-brand-green/10 rounded-2xl px-6 py-5 flex flex-wrap gap-6 mb-8">
         <div className="flex items-center gap-2">
-          <TrendingUp size={16} className="text-teal-600 shrink-0" />
+          <TrendingUp size={16} className="text-brand-green shrink-0" />
           <span className="text-xl font-bold text-stone-900">{winner.sentiment}%</span>
           <span className="text-sm text-stone-500">positive sentiment</span>
         </div>
         <div className="flex items-center gap-2">
-          <Users size={16} className="text-teal-600 shrink-0" />
+          <Users size={16} className="text-brand-green shrink-0" />
           <span className="text-xl font-bold text-stone-900">{winner.mentions.toLocaleString()}</span>
           <span className="text-sm text-stone-500">mentions</span>
         </div>
         <div className="flex items-center gap-2">
-          <BarChart2 size={16} className="text-teal-600 shrink-0" />
+          <BarChart2 size={16} className="text-brand-green shrink-0" />
           <span className="text-xl font-bold text-stone-900">{winner.postsAnalyzed}+</span>
           <span className="text-sm text-stone-500">posts analyzed</span>
         </div>
       </div>
+
+      {/* How it compares — animated score bars */}
+      {alternatives.length > 0 && (
+        <div className="mb-8">
+          <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+            <BarChart2 size={13} /> How it compares
+          </h4>
+          <div className="space-y-2.5">
+            {/* Winner row */}
+            <div className="flex items-center gap-3">
+              <div className="w-28 shrink-0">
+                <p className="text-xs font-black text-stone-900 truncate leading-tight">{winner.name.split(" ").slice(-2).join(" ")}</p>
+                <span className="text-[9px] font-bold text-white bg-brand-green rounded-full px-1.5 py-0.5">Top Pick</span>
+              </div>
+              <div className="flex-1 h-7 bg-stone-100 rounded-full overflow-hidden relative">
+                <div
+                  className="h-full rounded-full transition-all ease-out"
+                  style={{
+                    width: barsVisible ? `${winner.score}%` : "0%",
+                    background: "linear-gradient(90deg, #2ECC71, #25A855)",
+                    transitionDuration: "1.2s",
+                  }}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-stone-700 mix-blend-multiply">{winner.score}</span>
+              </div>
+            </div>
+            {/* Alt rows */}
+            {alternatives.slice(0, 3).map((alt) => (
+              <div key={alt.id} className="flex items-center gap-3">
+                <div className="w-28 shrink-0">
+                  <p className="text-xs font-medium text-stone-600 truncate leading-tight">{alt.name.split(" ").slice(-2).join(" ")}</p>
+                  <p className="text-[9px] text-stone-400 truncate">{alt.brand}</p>
+                </div>
+                <div className="flex-1 h-7 bg-stone-100 rounded-full overflow-hidden relative">
+                  <div
+                    className="h-full rounded-full bg-stone-300 transition-all ease-out"
+                    style={{ width: barsVisible ? `${alt.score}%` : "0%", transitionDuration: "1.2s" }}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{alt.score}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Top Quotes */}
       {winner.redditQuote && (
@@ -585,7 +654,7 @@ function NotElectronicsState({ message }: { message: string }) {
           <Link
             key={q}
             href={`/results?q=${encodeURIComponent(q)}`}
-            className="text-sm text-orange-600 font-medium hover:underline text-center"
+            className="text-sm text-brand-pink font-medium hover:underline text-center"
           >
             &ldquo;{q}&rdquo;
           </Link>
@@ -603,7 +672,16 @@ function NotElectronicsState({ message }: { message: string }) {
 
 // ─── Reddit Comments Section ──────────────────────────────────────────────────
 
-function RedditAvatar({ avatarUrl, author }: { avatarUrl: string | null; author: string }) {
+const COMMENT_CARD_STYLES = [
+  "bg-white border-brand-pink/25",
+  "bg-[#F0FDF4] border-brand-green/25",
+  "bg-[#FFF8F0] border-brand-yellow/30",
+  "bg-[#EFF6FF] border-blue-200/50",
+];
+
+const AVATAR_BG_COLORS = ["#FF8FB3", "#4EADFF", "#FFD93D", "#B39DDB", "#2ECC71", "#FFA07A", "#87CEEB", "#FFB347"];
+
+function RedditAvatar({ avatarUrl, author, bg }: { avatarUrl: string | null; author: string; bg?: string }) {
   const [imgError, setImgError] = useState(false);
   const initial = author.replace("[deleted]", "?")[0]?.toUpperCase() ?? "?";
 
@@ -612,14 +690,17 @@ function RedditAvatar({ avatarUrl, author }: { avatarUrl: string | null; author:
       <img
         src={avatarUrl}
         alt={author}
-        className="w-9 h-9 rounded-full object-cover shrink-0 bg-stone-100"
+        className="w-10 h-10 rounded-full object-cover shrink-0"
         onError={() => setImgError(true)}
       />
     );
   }
 
   return (
-    <div className="w-9 h-9 rounded-full bg-[#FF4500] flex items-center justify-center shrink-0 text-white text-sm font-bold">
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-black"
+      style={{ background: bg || "#FF4500" }}
+    >
       {initial}
     </div>
   );
@@ -628,6 +709,7 @@ function RedditAvatar({ avatarUrl, author }: { avatarUrl: string | null; author:
 function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
   const [comments, setComments] = useState<RedditComment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (threadUrls.length === 0) { setLoading(false); return; }
@@ -640,57 +722,141 @@ function RedditCommentsSection({ threadUrls }: { threadUrls: string[] }) {
 
   if (!loading && comments.length === 0) return null;
 
+  const topComments = comments.slice(0, 3);
+  const moreComments = comments.slice(3);
+
   return (
     <div className="max-w-4xl mx-auto mb-8">
-      <h3 className="text-base font-semibold text-stone-900 mb-4 flex items-center gap-2">
-        <svg viewBox="0 0 20 20" className="w-5 h-5 text-[#FF4500]" fill="currentColor">
-          <path d="M20 10a10 10 0 1 1-20 0 10 10 0 0 1 20 0zm-9.93-1.73c-.3-.03-.58.16-.67.45-.1.3.05.63.35.74.82.3 1.4.95 1.56 1.77a3.2 3.2 0 0 1-3.18 3.77c-.84 0-1.67-.37-2.26-1.02-.55-.6-.8-1.4-.68-2.2.12-.82.7-1.5 1.56-1.92.3-.15.42-.51.27-.82a.6.6 0 0 0-.81-.27c-1.2.59-2 1.6-2.18 2.77-.17 1.12.17 2.26.94 3.1.82.9 1.97 1.39 3.16 1.39 1.19 0 2.29-.48 3.1-1.35a4.4 4.4 0 0 0 1.06-3.34c-.25-1.44-1.2-2.67-2.22-3.07zm-5.48-2.88c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zm8.82 0c-.6 0-1.1.5-1.1 1.1s.5 1.1 1.1 1.1 1.1-.5 1.1-1.1-.5-1.1-1.1-1.1zM10 6.19a2.8 2.8 0 0 0-1.97.8.6.6 0 1 0 .85.85 1.6 1.6 0 0 1 2.24 0 .6.6 0 1 0 .85-.85A2.8 2.8 0 0 0 10 6.19z" />
-        </svg>
-        What Reddit is Saying
-      </h3>
+      {/* Section header with avatar cluster */}
+      <div className="flex items-center gap-4 mb-5">
+        <div className="flex -space-x-2.5">
+          {AVATAR_BG_COLORS.slice(0, 5).map((color, i) => (
+            <div
+              key={i}
+              className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-black shadow-sm"
+              style={{ background: color }}
+            >
+              {["A", "J", "M", "R", "K"][i]}
+            </div>
+          ))}
+        </div>
+        <div>
+          <h3 className="font-heading font-black text-lg text-stone-900">Community says</h3>
+          <p className="text-xs text-stone-400">Real opinions from Reddit</p>
+        </div>
+      </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 flex gap-3 animate-pulse">
-              <div className="w-9 h-9 rounded-full bg-stone-200 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 bg-stone-200 rounded w-1/4" />
-                <div className="h-3 bg-stone-200 rounded w-full" />
-                <div className="h-3 bg-stone-200 rounded w-3/4" />
+            <div key={i} className="bg-white rounded-2xl p-4 border border-stone-100 animate-pulse space-y-2">
+              <div className="h-3 bg-stone-200 rounded w-3/4" />
+              <div className="h-3 bg-stone-200 rounded w-full" />
+              <div className="h-3 bg-stone-200 rounded w-1/2" />
+              <div className="flex gap-2 mt-3">
+                <div className="w-8 h-8 rounded-full bg-stone-200 shrink-0" />
+                <div className="flex-1 space-y-1.5 pt-1">
+                  <div className="h-2.5 bg-stone-200 rounded w-1/2" />
+                  <div className="h-2 bg-stone-200 rounded w-1/3" />
+                </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
-          {comments.map((comment, i) => (
-            <a
-              key={i}
-              href={comment.permalink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block bg-white rounded-2xl p-4 border border-stone-100 hover:border-stone-200 hover:shadow-sm transition-all"
-            >
-              <div className="flex items-start gap-3">
-                <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="text-sm font-semibold text-stone-900">u/{comment.author}</span>
-                    <span className="text-xs text-stone-400">in r/{comment.subreddit}</span>
-                    {comment.upvotes > 0 && (
-                      <span className="ml-auto text-xs text-stone-400 flex items-center gap-1">
-                        <TrendingUp size={11} className="text-orange-400" />
-                        {comment.upvotes.toLocaleString()}
-                      </span>
-                    )}
+        <>
+          {/* Top 3 prominent cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            {topComments.map((comment, i) => (
+              <a
+                key={i}
+                href={comment.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`block rounded-2xl p-4 border hover:shadow-md hover:-translate-y-0.5 transition-all ${COMMENT_CARD_STYLES[i % 4]}`}
+              >
+                <div className="text-3xl font-black text-stone-200 leading-none mb-2 select-none">&ldquo;</div>
+                <p className="text-sm text-stone-700 leading-relaxed line-clamp-4 mb-3">{comment.body}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={AVATAR_BG_COLORS[i % AVATAR_BG_COLORS.length]} />
+                    <div>
+                      <p className="text-xs font-bold text-stone-800">u/{comment.author}</p>
+                      <p className="text-[10px] text-stone-400">r/{comment.subreddit}</p>
+                    </div>
                   </div>
-                  <p className="text-sm text-stone-600 leading-relaxed line-clamp-3">{comment.body}</p>
+                  {comment.upvotes > 0 && (
+                    <span className="flex items-center gap-1 text-xs font-bold text-stone-500 bg-stone-100 px-2 py-1 rounded-full shrink-0">
+                      ▲ {comment.upvotes.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+
+          {/* Expandable more comments */}
+          {moreComments.length > 0 && (
+            <>
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl border-2 border-stone-200 text-sm font-bold text-stone-600 hover:border-brand-pink hover:text-brand-pink transition-all mb-3"
+              >
+                <span
+                  className="inline-block transition-transform duration-300"
+                  style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                >
+                  ▾
+                </span>
+                {expanded ? "Show less" : `See ${moreComments.length} more opinions`}
+                {!expanded && (
+                  <span className="flex -space-x-1.5">
+                    {AVATAR_BG_COLORS.slice(0, Math.min(3, moreComments.length)).map((color, i) => (
+                      <div key={i} className="w-5 h-5 rounded-full border border-white" style={{ background: color }} />
+                    ))}
+                  </span>
+                )}
+              </button>
+
+              <div
+                style={{
+                  maxHeight: expanded ? `${moreComments.length * 240}px` : "0px",
+                  overflow: "hidden",
+                  transition: "max-height 0.65s cubic-bezier(0.16,1,0.3,1)",
+                }}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                  {moreComments.map((comment, i) => (
+                    <a
+                      key={i}
+                      href={comment.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`block rounded-2xl p-4 border hover:shadow-md transition-all ${COMMENT_CARD_STYLES[(i + 3) % 4]}`}
+                    >
+                      <div className="text-3xl font-black text-stone-200 leading-none mb-2 select-none">&ldquo;</div>
+                      <p className="text-sm text-stone-700 leading-relaxed line-clamp-3 mb-3">{comment.body}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={AVATAR_BG_COLORS[(i + 3) % AVATAR_BG_COLORS.length]} />
+                          <div>
+                            <p className="text-xs font-bold text-stone-800">u/{comment.author}</p>
+                            <p className="text-[10px] text-stone-400">r/{comment.subreddit}</p>
+                          </div>
+                        </div>
+                        {comment.upvotes > 0 && (
+                          <span className="flex items-center gap-1 text-xs font-bold text-stone-500 bg-stone-100 px-2 py-1 rounded-full shrink-0">
+                            ▲ {comment.upvotes.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </div>
-            </a>
-          ))}
-        </div>
+            </>
+          )}
+        </>
       )}
     </div>
   );
@@ -719,6 +885,8 @@ function ResultsContent() {
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState(query);
   const [storeContext, setStoreContext] = useState(storeParam);
+  const [showResults, setShowResults] = useState(false);
+  const [resultVisible, setResultVisible] = useState(false);
 
   const STORE_NAMES = ["Walmart", "Target", "Amazon", "Best Buy", "Newegg", "B&H", "Micro Center"];
   function detectStoreInQuery(q: string): string | null {
@@ -792,6 +960,15 @@ function ResultsContent() {
     }
   }
 
+  // Trigger slide-in animation when results are ready
+  useEffect(() => {
+    if (flowState === "result") {
+      setShowResults(true);
+      const t = setTimeout(() => setResultVisible(true), 80);
+      return () => clearTimeout(t);
+    }
+  }, [flowState]);
+
   // Fetch product image once we have a winner
   useEffect(() => {
     if (!result?.winner) return;
@@ -834,43 +1011,48 @@ function ResultsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f0ea]">
+    <div className="min-h-screen relative overflow-x-hidden" style={{ background: "#2ECC71" }}>
+      {/* Floating bg shapes — visible while loading */}
+      <div className="absolute top-20 left-6 w-20 h-20 rounded-full bg-white/10 animate-float pointer-events-none" />
+      <div className="absolute top-1/3 right-4 w-14 h-14 rounded-full bg-white/12 animate-floatSlow pointer-events-none" />
+      <div className="absolute bottom-1/2 left-1/3 w-8 h-8 rounded-full bg-brand-pink/20 animate-floatDelay2 pointer-events-none" />
 
-      {/* Sticky header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-stone-100">
+      {/* Sticky header — dark */}
+      <header className="sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/search" className="text-stone-400 hover:text-stone-700 transition-colors shrink-0">
+          <Link href="/search" className="text-white/60 hover:text-white transition-colors shrink-0">
             <ArrowLeft size={20} />
           </Link>
-          <Link href="/" className="text-stone-900 font-bold text-lg tracking-tight shrink-0">
-            Picksy
+          <Link href="/" className="flex items-center gap-1.5 shrink-0">
+            <PicksyMascot size={32} />
+            <span className="font-heading font-black text-base text-white">picksy</span>
           </Link>
-          <div className="flex-1 flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3 h-10">
-            <Search size={14} className="text-stone-400 shrink-0" />
+          <div className="flex-1 flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-3 h-10">
+            <Search size={14} className="text-white/50 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleNewSearch()}
-              className="flex-1 bg-transparent outline-none text-sm text-stone-900 placeholder-stone-400 min-w-0"
+              className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/40 min-w-0"
               placeholder="Search products..."
             />
             {searchQuery && searchQuery !== query && (
-              <button onClick={handleNewSearch} className="text-orange-600 text-xs font-bold shrink-0">Go</button>
+              <button onClick={handleNewSearch} className="text-brand-yellow text-xs font-bold shrink-0">Go</button>
             )}
           </div>
         </div>
 
         {/* Store context banner */}
         {(storeContext || storeParam) && flowState === "result" && (
-          <div className="bg-orange-50 border-b border-orange-100 px-4 py-2">
+          <div className="bg-white/5 border-b border-white/10 px-4 py-2">
             <div className="max-w-5xl mx-auto flex items-center gap-2 text-xs">
-              <MapPin size={12} className="text-orange-500" />
-              <span className="text-stone-700">
-                Shopping at <span className="font-bold">{selectedStore?.name || storeContext || storeParam}</span>
-                {selectedStore && <span className="text-stone-500"> — {selectedStore.address}, {selectedStore.city}</span>}
+              <MapPin size={12} className="text-brand-yellow" />
+              <span className="text-white/80">
+                Shopping at <span className="font-bold text-white">{selectedStore?.name || storeContext || storeParam}</span>
+                {selectedStore && <span className="text-white/50"> — {selectedStore.address}, {selectedStore.city}</span>}
               </span>
-              <button onClick={() => { setStoreContext(""); runAnalysis(); }} className="ml-auto text-stone-400 hover:text-stone-600">
+              <button onClick={() => { setStoreContext(""); runAnalysis(); }} className="ml-auto text-white/40 hover:text-white/70">
                 <X size={12} />
               </button>
             </div>
@@ -886,15 +1068,25 @@ function ResultsContent() {
         <StoreSelector stores={stores} onSelect={handleStoreSelected} />
       )}
 
-      {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {flowState === "loading" && <LoadingState query={query} />}
-        {flowState === "error" && <ErrorState query={query} onRetry={() => runAnalysis()} />}
-        {flowState === "not-electronics" && <NotElectronicsState message={notElectronicsMessage} />}
+      {/* Loading / error — on green bg */}
+      {!showResults && (
+        <main className="max-w-5xl mx-auto px-4 py-8">
+          {flowState === "loading" && <LoadingState query={query} />}
+          {flowState === "error" && <ErrorState query={query} onRetry={() => runAnalysis()} />}
+          {flowState === "not-electronics" && <NotElectronicsState message={notElectronicsMessage} />}
+        </main>
+      )}
 
-        {flowState === "result" && result && (
-          <>
-            <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} />
+      {/* Results — white sheet slides up from below green */}
+      {showResults && result && (
+        <div
+          className={`bg-white rounded-t-[2.5rem] mt-3 shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            resultVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
+          }`}
+          style={{ minHeight: "calc(100vh - 4rem)" }}
+        >
+          <main className="max-w-5xl mx-auto px-4 py-8">
+            <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} />
             <RedditCommentsSection threadUrls={redditThreadUrls} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
@@ -902,14 +1094,14 @@ function ResultsContent() {
               <p className="text-sm text-stone-400 mb-3">Not quite right?</p>
               <Link
                 href="/search"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-stone-200 text-sm font-semibold text-stone-600 hover:border-orange-400 hover:text-orange-600 transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-stone-200 text-sm font-semibold text-stone-600 hover:border-brand-pink hover:text-brand-pink transition-all"
               >
                 <Search size={14} /> New Search
               </Link>
             </div>
-          </>
-        )}
-      </main>
+          </main>
+        </div>
+      )}
     </div>
   );
 }
@@ -919,8 +1111,8 @@ function ResultsContent() {
 export default function ResultsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#f5f0ea] flex items-center justify-center">
-        <Loader2 size={32} className="text-orange-600 animate-spin" />
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <Loader2 size={32} className="text-brand-pink animate-spin" />
       </div>
     }>
       <ResultsContent />

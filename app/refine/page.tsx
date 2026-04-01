@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { decodeQuery } from "@/lib/query-decoder";
 import AuraCanvas from "@/components/refine/AuraCanvas";
+import { PicksyMascot } from "@/components/shared/picksy-mascot";
 
 function ThinkingDots() {
   return (
@@ -16,7 +17,7 @@ function ThinkingDots() {
           key={i}
           animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
           transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-          style={{ width: 8, height: 8, borderRadius: "50%", background: "#a8a29e" }}
+          style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.5)" }}
         />
       ))}
     </div>
@@ -34,11 +35,6 @@ function RefineContent() {
 
   const decoded = decodeQuery(q);
 
-  // Chat animation sequence
-  // step 0 → user bubble (immediate)
-  // step 1 → thinking dots (400ms)
-  // step 2 → AI text (1000ms)
-  // step 3 → canvas card (1400ms)
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -51,25 +47,36 @@ function RefineContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Header — matches search page */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 border-b border-stone-100">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: "#2ECC71" }}>
+      {/* Floating decorative shapes */}
+      <div className="absolute top-10 left-6 w-16 h-16 rounded-full bg-white/10 animate-float pointer-events-none" />
+      <div className="absolute top-28 right-8 w-12 h-12 rounded-full bg-white/15 animate-floatSlow pointer-events-none" />
+      <div className="absolute bottom-32 left-8 w-20 h-20 rounded-full bg-white/8 animate-floatDelay pointer-events-none" />
+      <div className="absolute bottom-20 right-1/4 w-8 h-8 rounded-full bg-brand-pink/30 animate-floatDelay2 pointer-events-none" />
+      <svg className="absolute top-16 right-1/3 animate-spinSlow opacity-20 pointer-events-none" width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
+      <svg className="absolute bottom-40 left-1/3 animate-spinSlow opacity-15 pointer-events-none" width="20" height="20" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
+
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between px-6 py-5">
         <Link
           href="/search"
-          className="flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors"
+          className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft size={18} />
-          <div
-            className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-            style={{ fontFamily: "var(--font-serif), Georgia, serif" }}
-          >
-            P
-          </div>
-          <span className="font-bold text-stone-900 text-lg tracking-tight">Picksy</span>
+          <PicksyMascot size={32} />
+          <span className="font-heading font-black text-white text-lg">picksy</span>
         </Link>
+        {/* Query pill */}
+        <div className="bg-brand-dark/80 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2 rounded-2xl max-w-[220px] truncate shadow-lg">
+          {q}
+        </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 pt-8 pb-20">
+      <main className="max-w-2xl mx-auto px-4 pt-4 pb-20 relative z-10">
         {/* Step 0: User chat bubble */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -79,7 +86,7 @@ function RefineContent() {
         >
           <div
             style={{
-              background: "#1c1917",
+              background: "#1A1A2E",
               color: "white",
               borderRadius: "18px 18px 4px 18px",
               padding: "10px 16px",
@@ -87,6 +94,7 @@ function RefineContent() {
               fontWeight: 500,
               maxWidth: "80%",
               lineHeight: 1.5,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
             }}
           >
             {q}
@@ -115,11 +123,12 @@ function RefineContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              color: "#57534e",
-              fontSize: 15,
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 16,
               lineHeight: 1.6,
               marginBottom: 20,
               paddingLeft: 4,
+              fontWeight: 500,
             }}
           >
             I found a few quick questions that&rsquo;ll sharpen your results:
@@ -143,7 +152,7 @@ function RefineContent() {
 
 export default function RefinePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-stone-50" />}>
+    <Suspense fallback={<div className="min-h-screen" style={{ background: "#2ECC71" }} />}>
       <RefineContent />
     </Suspense>
   );
