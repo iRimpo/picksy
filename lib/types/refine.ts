@@ -37,4 +37,6 @@ export interface ResolvedPreferences {
   values: PreferenceValue[];
   /** Short summary injected into the LLM prompt */
   summary: string;
+  /** Structured key-value pairs for future use */
+  answers?: Record<string, string | string[] | number>;
 }

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { decodeQuery } from "@/lib/query-decoder";
-import AuraCanvas from "@/components/refine/AuraCanvas";
+import QuestionFlow from "@/components/refine/QuestionFlow";
 import { PicksyMascot } from "@/components/shared/picksy-mascot";
 
 function ThinkingDots() {
@@ -142,7 +142,7 @@ function RefineContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            <AuraCanvas decoded={decoded} />
+            <QuestionFlow decoded={decoded} />
           </motion.div>
         )}
       </main>

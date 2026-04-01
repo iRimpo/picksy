@@ -289,6 +289,35 @@
   }
 }
 
+/* ─── Range slider thumb (cross-browser) ─────────────────── */
+.range-slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #2ECC71;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.4);
+  position: relative;
+  z-index: 3;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.range-slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.6);
+}
+.range-slider-thumb::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid #2ECC71;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.4);
+}
+
 /* ─── Keyframes ──────────────────────────────────────────── */
 
 @keyframes float {
