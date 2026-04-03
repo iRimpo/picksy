@@ -17,7 +17,7 @@ export default function StepIndicator({ currentStep, totalSteps }: StepIndicator
             width: i === currentStep ? 20 : 8,
             opacity: i <= currentStep ? 1 : 0.3,
           }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ type: "spring", stiffness: 380, damping: 28 }}
           style={{
             height: 8,
             borderRadius: 100,
