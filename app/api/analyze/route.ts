@@ -64,10 +64,10 @@ interface SearchResult {
   title: string;
   content: string;
   url: string;
-  source: "reddit" | "trustpilot" | "other";
+  source: "reddit" | "other";
 }
 
-// ─── Tavily Search (Reddit + Trustpilot) ───────────────────────────────────────
+// ─── Tavily Search (Reddit) ────────────────────────────────────────────────────
 
 async function fetchSearchResults(query: string, subreddits: string[]): Promise<SearchResult[]> {
   const apiKey = process.env.TAVILY_API_KEY;
@@ -85,7 +85,7 @@ async function fetchSearchResults(query: string, subreddits: string[]): Promise<
         api_key: apiKey,
         query: tavilyQuery,
         search_depth: "basic",
-        include_domains: ["reddit.com", "trustpilot.com"],
+        include_domains: ["reddit.com"],
         max_results: 20,
       }),
       cache: "no-store",
@@ -96,11 +96,7 @@ async function fetchSearchResults(query: string, subreddits: string[]): Promise<
     const data = await res.json();
     return (data.results || []).map((r: { title?: string; content?: string; url?: string }) => {
       const url = String(r.url || "");
-      const source = url.includes("reddit.com")
-        ? "reddit"
-        : url.includes("trustpilot.com")
-        ? "trustpilot"
-        : "other";
+      const source = url.includes("reddit.com") ? "reddit" : "other";
       return {
         title: String(r.title || ""),
         content: String(r.content || "").slice(0, 800),
@@ -167,6 +163,58 @@ async function fetchActualRedditComments(threadUrls: string[]): Promise<ActualCo
   return all.sort((a, b) => b.upvotes - a.upvotes).slice(0, 15);
 }
 
+// ─── TikTok Content via Apify ──────────────────────────────────────────────────
+
+interface TikTokVideo {
+  author: string;
+  description: string;
+  likes: number;
+  views: number;
+}
+
+async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
+  const apiKey = process.env.APIFY_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${apiKey}&timeout=15`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          searchQueries: [`${query} review`],
+          resultsPerPage: 5,
+          shouldDownloadVideos: false,
+          shouldDownloadCovers: false,
+        }),
+        signal: controller.signal,
+        cache: "no-store",
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!res.ok) return [];
+
+    const items = await res.json();
+    if (!Array.isArray(items)) return [];
+
+    return items
+      .filter((v: Record<string, unknown>) => typeof v.text === "string" && (v.text as string).length > 10)
+      .map((v: Record<string, unknown>) => ({
+        author: String((v.authorMeta as Record<string, unknown>)?.name || "unknown"),
+        description: String(v.text || "").slice(0, 400),
+        likes: Number(v.diggCount || 0),
+        views: Number(v.playCount || 0),
+      }));
+  } catch {
+    return []; // fail silently — TikTok is best-effort enrichment
+  }
+}
+
 // ─── Gemini Full Analysis ──────────────────────────────────────────────────────
 
 interface AnalysisOutput {
@@ -205,13 +253,13 @@ async function analyzeWithGemini(
   query: string,
   results: SearchResult[],
   preferencesSummary?: string,
-  actualComments?: ActualComment[]
+  actualComments?: ActualComment[],
+  tiktokVideos?: TikTokVideo[]
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
   const redditResults = results.filter((r) => r.source === "reddit");
-  const trustpilotResults = results.filter((r) => r.source === "trustpilot");
 
   const formatResults = (items: SearchResult[]) =>
     items.length > 0
@@ -225,7 +273,6 @@ async function analyzeWithGemini(
           const match = r.url.match(/reddit\.com\/r\/([^/]+)/);
           return match ? `r/${match[1]}` : null;
         }
-        if (r.source === "trustpilot") return "Trustpilot";
         return null;
       })
       .filter(Boolean)
@@ -239,21 +286,23 @@ async function analyzeWithGemini(
     ? `\nACTUAL REDDIT COMMENTS (fetched directly from threads — highest signal):\n${actualComments.map((c, i) => `[${i + 1}] u/${c.author} in r/${c.subreddit} (${c.upvotes} upvotes): ${c.body}`).join("\n\n")}\n`
     : "";
 
-  const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and Trustpilot reviews.
+  const tiktokBlock = tiktokVideos && tiktokVideos.length > 0
+    ? `\nTIKTOK REVIEW CONTENT (from TikTok creator videos — medium signal):\n${tiktokVideos.map((v, i) => `[${i + 1}] @${v.author} (${v.likes.toLocaleString()} likes, ${v.views.toLocaleString()} views): ${v.description}`).join("\n\n")}\n`
+    : "";
+
+  const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and TikTok reviews.
 
 A user searched for: "${query}"${preferencesBlock}
-${actualCommentsBlock}
+${actualCommentsBlock}${tiktokBlock}
 REDDIT SEARCH SNIPPETS (${redditResults.length} found):
 ${formatResults(redditResults)}
 
-TRUSTPILOT RESULTS (${trustpilotResults.length} found):
-${formatResults(trustpilotResults)}
-
 Your job:
-1. Identify the most recommended product. Prioritize the ACTUAL REDDIT COMMENTS above (if present) as they are the highest-quality signal. Use the search snippets and Trustpilot data as supporting context.
-2. If no results were found, use your training knowledge about this product category.
-3. Do NOT bias toward any specific store. Focus on the best product based on community trust and reviews.
-4. Return ONLY valid JSON matching this exact structure — no markdown, no explanation, just JSON:
+1. Identify the most recommended product. Priority order: ACTUAL REDDIT COMMENTS (highest) → TIKTOK REVIEW CONTENT (medium) → Reddit search snippets (supporting context).
+2. If TikTok creators mention a specific product positively with high engagement, factor that into your recommendation.
+3. If no results were found, use your training knowledge about this product category.
+4. Do NOT bias toward any specific store. Focus on the best product based on community trust and reviews.
+5. Return ONLY valid JSON matching this exact structure — no markdown, no explanation, just JSON:
 
 {
   "winner": {
@@ -267,7 +316,7 @@ Your job:
     "sentiment": 89,
     "mentions": 34,
     "postsAnalyzed": ${results.length},
-    "whyItWon": "2 sentences explaining why this product won based on Reddit and Trustpilot signals.",
+    "whyItWon": "2 sentences explaining why this product won based on Reddit and TikTok signals.",
     "pros": ["Pro 1", "Pro 2", "Pro 3"],
     "cons": ["Con 1", "Con 2"],
     "buyLinks": [
@@ -275,7 +324,7 @@ Your job:
       { "store": "Best Buy", "price": 199.99 },
       { "store": "Walmart", "price": 189.97 }
     ],
-    "redditQuote": "A short quote capturing the overall Reddit + Trustpilot sentiment"
+    "redditQuote": "A short quote capturing the overall Reddit sentiment"
   },
   "alternatives": [
     {
@@ -458,18 +507,21 @@ export async function POST(req: NextRequest) {
     // Enrich Tavily query with preference terms if present
     const searchQuery = preferencesSummary ? `${query} ${preferencesSummary}` : query;
 
-    // 1. Search Reddit + Trustpilot via Tavily (with category-specific subreddits)
+    // 1. Search Reddit via Tavily (with category-specific subreddits)
     const results = await fetchSearchResults(searchQuery, categorySubreddits);
 
-    // 2. Fetch actual Reddit thread content for richer analysis
+    // 2. Fetch Reddit thread content + TikTok reviews in parallel
     const threadUrls = results
       .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
       .map((r) => r.url)
       .slice(0, 3);
-    const actualComments = await fetchActualRedditComments(threadUrls);
+    const [actualComments, tiktokVideos] = await Promise.all([
+      fetchActualRedditComments(threadUrls),
+      fetchTikTokContent(query),
+    ]);
 
-    // 3. Use Gemini to analyze results + actual comments
-    const analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments);
+    // 3. Use Gemini to analyze results + actual comments + TikTok
+    const analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos);
 
     // 3. Fall back to mock only if everything fails
     const output = analysis || FALLBACK;
@@ -494,7 +546,6 @@ export async function POST(req: NextRequest) {
     }
 
     const redditCount = results.filter((r) => r.source === "reddit").length;
-    const trustpilotCount = results.filter((r) => r.source === "trustpilot").length;
     let redditThreadUrls = results
       .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
       .map((r) => r.url)
@@ -516,7 +567,6 @@ export async function POST(req: NextRequest) {
         subreddits,
         postsAnalyzed: results.length,
         redditResults: redditCount,
-        trustpilotResults: trustpilotCount,
         redditThreadUrls,
         mode: detectedStore ? "store-specific" : "general",
         llmProvider: analysis ? "gemini" : "mock",

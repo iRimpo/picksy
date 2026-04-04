@@ -569,14 +569,6 @@ function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; 
             </a>
           );
         })}
-        <a
-          href={`https://www.trustpilot.com/search?query=${encodeURIComponent(winner.name)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full font-medium hover:bg-stone-200 hover:text-stone-800 transition-colors"
-        >
-          Trustpilot
-        </a>
         <span className="text-stone-400">· {winner.postsAnalyzed}+ posts analyzed</span>
       </div>
     </div>
