@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { QuestionDefinition } from "@/lib/types/questions";
 
 interface RangeSliderProps {
@@ -22,20 +23,25 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
     <div style={{ padding: "8px 0 24px" }}>
       {/* Current value bubble */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-        <div
+        <motion.div
+          key={displayVal}
+          initial={{ scale: 1.1, opacity: 0.7 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 500, damping: 28 }}
+          className="font-heading"
           style={{
             background: "rgba(46,204,113,0.2)",
             border: "1.5px solid rgba(46,204,113,0.4)",
             borderRadius: 100,
             padding: "6px 20px",
             fontSize: 22,
-            fontWeight: 800,
+            fontWeight: 900,
             color: "white",
             letterSpacing: "-0.01em",
           }}
         >
           {displayVal}
-        </div>
+        </motion.div>
       </div>
 
       {/* Track container */}
@@ -75,7 +81,6 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
             position: "relative",
             zIndex: 2,
           }}
-          // Inline CSS for the thumb — Tailwind can't reach pseudo-elements
           className="range-slider-thumb"
         />
       </div>
@@ -86,22 +91,23 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
           {stops.map((s) => {
             const isActive = value >= s.value;
             return (
-              <button
+              <motion.button
                 key={s.value}
                 onClick={() => onChange(s.value)}
+                animate={{ color: isActive ? "rgba(46,204,113,0.9)" : "rgba(255,255,255,0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.15 }}
                 style={{
                   fontSize: 10,
                   fontWeight: isActive ? 700 : 400,
-                  color: isActive ? "rgba(46,204,113,0.9)" : "rgba(255,255,255,0.3)",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   padding: "2px 0",
-                  transition: "color 0.15s",
                 }}
               >
                 {s.label}
-              </button>
+              </motion.button>
             );
           })}
         </div>

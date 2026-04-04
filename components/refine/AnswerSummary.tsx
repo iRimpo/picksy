@@ -76,9 +76,10 @@ export default function AnswerSummary({ answers, questions, query, onConfirm, on
       {/* Buttons */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center" }}>
         <motion.button
+          className="font-heading"
           onClick={onConfirm}
           whileTap={{ scale: 0.97 }}
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.03, boxShadow: "0 8px 28px rgba(255,107,138,0.5)" }}
           style={{
             background: "linear-gradient(135deg, #FF6B8A, #2ECC71)",
             color: "white",
@@ -86,9 +87,9 @@ export default function AnswerSummary({ answers, questions, query, onConfirm, on
             borderRadius: 100,
             padding: "12px 28px",
             fontSize: 14,
-            fontWeight: 700,
+            fontWeight: 800,
             cursor: "pointer",
-            letterSpacing: "0.01em",
+            letterSpacing: "0.02em",
             boxShadow: "0 4px 20px rgba(255,107,138,0.4)",
           }}
         >

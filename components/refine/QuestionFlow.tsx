@@ -166,7 +166,7 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
         borderRadius: 16,
         overflow: "hidden",
         background: "#1c1917",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(46,204,113,0.1), inset 0 1px 0 rgba(255,255,255,0.06)",
       }}
     >
       {/* Header: back button + step indicator */}
@@ -178,23 +178,26 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
           gap: 8,
         }}
       >
-        <button
+        <motion.button
           onClick={goBack}
+          animate={{ opacity: step > 0 ? 1 : 0 }}
+          whileHover={step > 0 ? { scale: 1.1, color: "rgba(255,255,255,0.9)" } : {}}
+          whileTap={step > 0 ? { scale: 0.9 } : {}}
+          transition={{ opacity: { duration: 0.2 }, scale: { type: "spring", stiffness: 400, damping: 24 } }}
           style={{
             background: "none",
             border: "none",
-            color: step > 0 ? "rgba(255,255,255,0.5)" : "transparent",
+            color: "rgba(255,255,255,0.5)",
             cursor: step > 0 ? "pointer" : "default",
             padding: "4px",
             display: "flex",
             alignItems: "center",
             pointerEvents: step > 0 ? "auto" : "none",
-            transition: "opacity 0.2s",
           }}
           aria-label="Previous question"
         >
           <ArrowLeft size={16} />
-        </button>
+        </motion.button>
         <div style={{ flex: 1 }}>
           <StepIndicator currentStep={step} totalSteps={questions.length} />
         </div>
@@ -215,11 +218,12 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
           >
             {/* Category label */}
             <p
+              className="font-heading"
               style={{
                 fontSize: 10,
-                fontWeight: 700,
-                color: "rgba(46,204,113,0.7)",
-                letterSpacing: "0.1em",
+                fontWeight: 900,
+                color: "rgba(46,204,113,0.8)",
+                letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 marginBottom: 6,
               }}
@@ -229,9 +233,10 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
 
             {/* Prompt */}
             <h3
+              className="font-heading"
               style={{
                 fontSize: 20,
-                fontWeight: 800,
+                fontWeight: 900,
                 color: "white",
                 marginBottom: currentQuestion.subPrompt ? 4 : 16,
                 lineHeight: 1.25,
@@ -286,20 +291,23 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
             {needsNextButton && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4, marginBottom: 16 }}>
                 <motion.button
+                  className="font-heading"
                   onClick={step < questions.length - 1 ? advance : handleConfirm}
                   whileTap={{ scale: 0.97 }}
+                  whileHover={canProceed ? { scale: 1.04, boxShadow: "0 6px 24px rgba(255,107,138,0.45)" } : {}}
                   animate={{ opacity: canProceed ? 1 : 0.45 }}
                   disabled={!canProceed}
                   style={{
-                    background: "rgba(46,204,113,0.15)",
-                    border: "1.5px solid rgba(46,204,113,0.4)",
-                    color: "#2ECC71",
+                    background: "linear-gradient(135deg, #FF6B8A, #2ECC71)",
+                    border: "none",
+                    color: "white",
                     borderRadius: 100,
-                    padding: "9px 20px",
+                    padding: "10px 22px",
                     fontSize: 13,
-                    fontWeight: 700,
+                    fontWeight: 800,
                     cursor: canProceed ? "pointer" : "not-allowed",
                     letterSpacing: "0.02em",
+                    boxShadow: "0 4px 16px rgba(255,107,138,0.3)",
                   }}
                 >
                   {step < questions.length - 1 ? "Next →" : "See results →"}

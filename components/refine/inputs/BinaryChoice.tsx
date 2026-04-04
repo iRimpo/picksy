@@ -14,18 +14,28 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
 
   return (
     <div style={{ display: "flex", gap: 12, padding: "4px 0 16px" }}>
-      {options.map((opt) => {
+      {options.map((opt, index) => {
         const isSelected = selected === opt.id;
         return (
           <motion.button
             key={opt.id}
             onClick={() => onSelect(opt.id)}
-            whileTap={{ scale: 0.97 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{
               borderColor: isSelected ? "#2ECC71" : "rgba(255,255,255,0.12)",
               background: isSelected ? "rgba(46,204,113,0.15)" : "rgba(255,255,255,0.06)",
+              opacity: 1,
+              y: 0,
             }}
-            transition={{ duration: 0.18 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{
+              opacity: { duration: 0.38, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 },
+              y: { duration: 0.38, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 },
+              borderColor: { duration: 0.18 },
+              background: { duration: 0.18 },
+              scale: { type: "spring", stiffness: 400, damping: 24 },
+            }}
             style={{
               flex: 1,
               display: "flex",
@@ -45,6 +55,7 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 22 }}
                 style={{
                   position: "absolute",
                   top: 8,
@@ -70,9 +81,10 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
 
             {/* Label */}
             <span
+              className="font-heading"
               style={{
                 fontSize: 15,
-                fontWeight: 700,
+                fontWeight: 800,
                 color: isSelected ? "white" : "rgba(255,255,255,0.85)",
                 lineHeight: 1.2,
                 textAlign: "center",
