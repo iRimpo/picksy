@@ -170,6 +170,7 @@ interface TikTokVideo {
   description: string;
   likes: number;
   views: number;
+  topComments: string[]; // actual viewer comments from the video
 }
 
 async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
@@ -178,10 +179,12 @@ async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    // 40s total: ~20s for videos + ~15s for comments
+    const timeout = setTimeout(() => controller.abort(), 40000);
 
-    const res = await fetch(
-      `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${apiKey}&timeout=15`,
+    // Step 1: Fetch top videos via search
+    const videoRes = await fetch(
+      `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${apiKey}&timeout=20`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -195,21 +198,63 @@ async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
         cache: "no-store",
       }
     );
-    clearTimeout(timeout);
 
-    if (!res.ok) return [];
+    if (!videoRes.ok) { clearTimeout(timeout); return []; }
 
-    const items = await res.json();
-    if (!Array.isArray(items)) return [];
+    const items = await videoRes.json();
+    if (!Array.isArray(items)) { clearTimeout(timeout); return []; }
 
-    return items
+    const videos = items
       .filter((v: Record<string, unknown>) => typeof v.text === "string" && (v.text as string).length > 10)
       .map((v: Record<string, unknown>) => ({
         author: String((v.authorMeta as Record<string, unknown>)?.name || "unknown"),
         description: String(v.text || "").slice(0, 400),
         likes: Number(v.diggCount || 0),
         views: Number(v.playCount || 0),
+        webVideoUrl: String(v.webVideoUrl || ""),
+        topComments: [] as string[],
       }));
+
+    // Step 2: Fetch viewer comments for top 2 videos in one batch call
+    const topUrls = videos.slice(0, 2).map((v) => v.webVideoUrl).filter(Boolean);
+    if (topUrls.length > 0) {
+      try {
+        const commentsRes = await fetch(
+          `https://api.apify.com/v2/acts/clockworks~tiktok-comments-scraper/run-sync-get-dataset-items?token=${apiKey}&timeout=15`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ postURLs: topUrls, maxComments: 8 }),
+            signal: controller.signal,
+            cache: "no-store",
+          }
+        );
+        if (commentsRes.ok) {
+          const allComments = await commentsRes.json();
+          if (Array.isArray(allComments)) {
+            for (const c of allComments) {
+              const commentText = String(c.text || "").trim();
+              if (!commentText || commentText.length < 5) continue;
+              // Skip non-English comments (>30% non-ASCII characters)
+              const nonAscii = (commentText.match(/[^\x00-\x7F]/g) || []).length;
+              if (nonAscii / commentText.length > 0.3) continue;
+              const videoUrl = String(c.videoWebUrl || c.submittedVideoUrl || "");
+              const idx = videos.findIndex((v) => videoUrl.includes(v.webVideoUrl.split("/video/")[1] || "NONE"));
+              if (idx >= 0 && videos[idx].topComments.length < 4) {
+                videos[idx].topComments.push(commentText.slice(0, 200));
+              }
+            }
+          }
+        }
+      } catch {
+        // fail silently — comments are bonus signal
+      }
+    }
+
+    clearTimeout(timeout);
+    // Strip internal webVideoUrl before returning
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return videos.map(({ webVideoUrl: _url, ...rest }) => rest);
   } catch {
     return []; // fail silently — TikTok is best-effort enrichment
   }
@@ -287,7 +332,12 @@ async function analyzeWithGemini(
     : "";
 
   const tiktokBlock = tiktokVideos && tiktokVideos.length > 0
-    ? `\nTIKTOK REVIEW CONTENT (from TikTok creator videos — medium signal):\n${tiktokVideos.map((v, i) => `[${i + 1}] @${v.author} (${v.likes.toLocaleString()} likes, ${v.views.toLocaleString()} views): ${v.description}`).join("\n\n")}\n`
+    ? `\nTIKTOK REVIEW CONTENT (creator captions + viewer comments — medium signal):\n${tiktokVideos.map((v, i) => {
+        const commentsLine = v.topComments.length > 0
+          ? `\n   Viewer comments: ${v.topComments.map((c) => `"${c}"`).join(" | ")}`
+          : "";
+        return `[${i + 1}] @${v.author} (${v.likes.toLocaleString()} likes, ${v.views.toLocaleString()} views): ${v.description}${commentsLine}`;
+      }).join("\n\n")}\n`
     : "";
 
   const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and TikTok reviews.
@@ -567,6 +617,7 @@ export async function POST(req: NextRequest) {
         subreddits,
         postsAnalyzed: results.length,
         redditResults: redditCount,
+        tiktokResults: tiktokVideos.length,
         redditThreadUrls,
         mode: detectedStore ? "store-specific" : "general",
         llmProvider: analysis ? "gemini" : "mock",
