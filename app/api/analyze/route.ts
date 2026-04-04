@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { decodeQuery } from "@/lib/query-decoder";
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
@@ -68,9 +69,13 @@ interface SearchResult {
 
 // ─── Tavily Search (Reddit + Trustpilot) ───────────────────────────────────────
 
-async function fetchSearchResults(query: string): Promise<SearchResult[]> {
+async function fetchSearchResults(query: string, subreddits: string[]): Promise<SearchResult[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) return [];
+
+  // Append category-specific subreddit names so Tavily surfaces the right communities
+  const subredditHint = subreddits.slice(0, 2).join(" ");
+  const tavilyQuery = `${query} ${subredditHint} reviews`;
 
   try {
     const res = await fetch("https://api.tavily.com/search", {
@@ -78,10 +83,10 @@ async function fetchSearchResults(query: string): Promise<SearchResult[]> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: apiKey,
-        query: `${query} reviews recommendations`,
+        query: tavilyQuery,
         search_depth: "basic",
         include_domains: ["reddit.com", "trustpilot.com"],
-        max_results: 15,
+        max_results: 20,
       }),
       cache: "no-store",
     });
@@ -98,7 +103,7 @@ async function fetchSearchResults(query: string): Promise<SearchResult[]> {
         : "other";
       return {
         title: String(r.title || ""),
-        content: String(r.content || "").slice(0, 500),
+        content: String(r.content || "").slice(0, 800),
         url,
         source,
       } as SearchResult;
@@ -107,6 +112,59 @@ async function fetchSearchResults(query: string): Promise<SearchResult[]> {
     console.error("Tavily search failed:", err);
     return [];
   }
+}
+
+// ─── Fetch Actual Reddit Thread Content ────────────────────────────────────────
+
+interface ActualComment {
+  author: string;
+  body: string;
+  upvotes: number;
+  subreddit: string;
+}
+
+function extractTopComments(children: Record<string, unknown>[], subreddit: string, out: ActualComment[], maxDepth = 1, depth = 0) {
+  if (depth > maxDepth || out.length >= 15) return;
+  for (const child of children) {
+    if (out.length >= 15) break;
+    const data = child as { author?: string; body?: string; ups?: number; score?: number; subreddit?: string; replies?: { data?: { children?: Record<string, unknown>[] } } | string };
+    const body = typeof data.body === "string" ? data.body.trim() : "";
+    if (!body || body === "[deleted]" || body === "[removed]" || body.length < 20) continue;
+    out.push({
+      author: data.author || "[deleted]",
+      body: body.slice(0, 600),
+      upvotes: data.ups ?? data.score ?? 0,
+      subreddit: data.subreddit || subreddit,
+    });
+    if (data.replies && typeof data.replies === "object" && data.replies.data?.children) {
+      extractTopComments(data.replies.data.children as Record<string, unknown>[], subreddit, out, maxDepth, depth + 1);
+    }
+  }
+}
+
+async function fetchActualRedditComments(threadUrls: string[]): Promise<ActualComment[]> {
+  const all: ActualComment[] = [];
+  await Promise.all(
+    threadUrls.slice(0, 3).map(async (url) => {
+      try {
+        const jsonUrl = url.replace(/\/?$/, ".json") + "?limit=20&sort=top";
+        const res = await fetch(jsonUrl, {
+          headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+          next: { revalidate: 3600 },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length < 2) return;
+        const subredditMatch = url.match(/reddit\.com\/r\/([^/]+)/);
+        const subreddit = subredditMatch ? subredditMatch[1] : "reddit";
+        const children = (data[1]?.data?.children || []).map((c: { data: Record<string, unknown> }) => c.data);
+        extractTopComments(children, subreddit, all);
+      } catch {
+        // fail silently — this is best-effort enrichment
+      }
+    })
+  );
+  return all.sort((a, b) => b.upvotes - a.upvotes).slice(0, 15);
 }
 
 // ─── Gemini Full Analysis ──────────────────────────────────────────────────────
@@ -146,7 +204,8 @@ interface AnalysisOutput {
 async function analyzeWithGemini(
   query: string,
   results: SearchResult[],
-  preferencesSummary?: string
+  preferencesSummary?: string,
+  actualComments?: ActualComment[]
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -176,18 +235,22 @@ async function analyzeWithGemini(
     ? `\nUSER PREFERENCES (collected via interactive refinement):\n${preferencesSummary}\n\nUse these preferences to bias your recommendation toward products that match.\n`
     : "";
 
+  const actualCommentsBlock = actualComments && actualComments.length > 0
+    ? `\nACTUAL REDDIT COMMENTS (fetched directly from threads — highest signal):\n${actualComments.map((c, i) => `[${i + 1}] u/${c.author} in r/${c.subreddit} (${c.upvotes} upvotes): ${c.body}`).join("\n\n")}\n`
+    : "";
+
   const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and Trustpilot reviews.
 
 A user searched for: "${query}"${preferencesBlock}
-
-REDDIT RESULTS (${redditResults.length} found):
+${actualCommentsBlock}
+REDDIT SEARCH SNIPPETS (${redditResults.length} found):
 ${formatResults(redditResults)}
 
 TRUSTPILOT RESULTS (${trustpilotResults.length} found):
 ${formatResults(trustpilotResults)}
 
 Your job:
-1. Identify the most recommended product based on the Reddit and Trustpilot content above.
+1. Identify the most recommended product. Prioritize the ACTUAL REDDIT COMMENTS above (if present) as they are the highest-quality signal. Use the search snippets and Trustpilot data as supporting context.
 2. If no results were found, use your training knowledge about this product category.
 3. Do NOT bias toward any specific store. Focus on the best product based on community trust and reviews.
 4. Return ONLY valid JSON matching this exact structure — no markdown, no explanation, just JSON:
@@ -388,14 +451,25 @@ export async function POST(req: NextRequest) {
         ? preferences.summary
         : undefined;
 
+    // Decode query to get category-specific subreddits
+    const decoded = decodeQuery(query);
+    const categorySubreddits = decoded.suggestedSubreddits;
+
     // Enrich Tavily query with preference terms if present
     const searchQuery = preferencesSummary ? `${query} ${preferencesSummary}` : query;
 
-    // 1. Search Reddit + Trustpilot via Tavily
-    const results = await fetchSearchResults(searchQuery);
+    // 1. Search Reddit + Trustpilot via Tavily (with category-specific subreddits)
+    const results = await fetchSearchResults(searchQuery, categorySubreddits);
 
-    // 2. Use Gemini to analyze results and generate recommendation
-    const analysis = await analyzeWithGemini(query, results, preferencesSummary);
+    // 2. Fetch actual Reddit thread content for richer analysis
+    const threadUrls = results
+      .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
+      .map((r) => r.url)
+      .slice(0, 3);
+    const actualComments = await fetchActualRedditComments(threadUrls);
+
+    // 3. Use Gemini to analyze results + actual comments
+    const analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments);
 
     // 3. Fall back to mock only if everything fails
     const output = analysis || FALLBACK;
