@@ -461,46 +461,6 @@ function detectBudget(query: string): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
-// ─── Fallback mock (last resort if Tavily + Gemini both fail) ─────────────────
-
-const FALLBACK: AnalysisOutput = {
-  winner: {
-    id: "sony-wh1000xm5",
-    name: "Sony WH-1000XM5",
-    brand: "Sony",
-    emoji: "🎧",
-    price: 279.99,
-    score: 95,
-    scoreLabel: "Best Pick",
-    sentiment: 94,
-    mentions: 1247,
-    postsAnalyzed: 0,
-    whyItWon:
-      "Consistently ranked #1 by r/headphones and tech reviewers for its industry-leading noise cancellation and premium sound quality at a competitive price.",
-    pros: ["Best-in-class ANC", "30-hour battery", "Exceptional sound quality", "Comfortable for all-day wear"],
-    cons: ["Premium price", "No IP water resistance"],
-    buyLinks: [
-      { store: "Amazon", price: 279.99 },
-      { store: "Best Buy", price: 279.99 },
-      { store: "Walmart", price: 269.00 },
-    ],
-    redditQuote: '"Nothing touches these on a plane. Absolute silence — worth every penny."',
-  },
-  alternatives: [
-    {
-      id: "bose-qc45",
-      name: "Bose QuietComfort 45",
-      brand: "Bose",
-      emoji: "🎧",
-      score: 89,
-      price: 229.99,
-      mentions: 876,
-      sentiment: 90,
-      whyNotWinner: "Excellent ANC and comfort but slightly behind Sony in audio quality",
-    },
-  ],
-  subreddits: ["r/headphones", "r/audiophile"],
-};
 
 // ─── Reddit Search Fallback ────────────────────────────────────────────────────
 
@@ -571,11 +531,21 @@ export async function POST(req: NextRequest) {
     ]);
 
     // 3. Use Gemini to analyze results + actual comments + TikTok
-    const analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos);
+    let analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos);
 
-    // 3. Fall back to mock only if everything fails
-    const output = analysis || FALLBACK;
-    const { winner, alternatives, subreddits } = output;
+    // Retry with Gemini training knowledge only if search-assisted analysis fails
+    if (!analysis) {
+      console.warn("[analyze] Gemini failed with search data, retrying with training knowledge for:", query);
+      analysis = await analyzeWithGemini(query, [], preferencesSummary, [], []);
+    }
+
+    // Hard fail — return error instead of wrong hardcoded fallback
+    if (!analysis) {
+      console.error("[analyze] Gemini failed completely for query:", query);
+      return NextResponse.json({ error: "Unable to generate a recommendation right now. Please try again." }, { status: 500 });
+    }
+
+    const { winner, alternatives, subreddits } = analysis;
 
     // 4. If a store was mentioned, find matching buy link price
     if (detectedStore) {
@@ -622,8 +592,8 @@ export async function POST(req: NextRequest) {
         tiktokResults: tiktokVideos.length,
         redditThreadUrls,
         mode: detectedStore ? "store-specific" : "general",
-        llmProvider: analysis ? "gemini" : "mock",
-        llmUsed: !!analysis,
+        llmProvider: "gemini",
+        llmUsed: true,
         analysisTimeMs: Date.now() - startTime,
       },
     });

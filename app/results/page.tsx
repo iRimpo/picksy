@@ -784,13 +784,25 @@ function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditCommen
   );
 }
 
-function RedditCommentsSection({ threadUrls, query }: { threadUrls: string[]; query: string }) {
+function RedditCommentsSection({ threadUrls, query, initialComments }: { threadUrls: string[]; query: string; initialComments?: RedditCommentData[] }) {
   const [comments, setComments] = useState<RedditComment[]>([]);
   const [parsedThreadUrls, setParsedThreadUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    // Use comments already fetched by the analyze API — no second Reddit call needed
+    if (initialComments && initialComments.length > 0) {
+      setComments(initialComments.map((c) => ({
+        ...c,
+        avatarUrl: null,
+        permalink: `https://reddit.com/r/${c.subreddit}/search?q=${encodeURIComponent(query)}&sort=relevance`,
+      })));
+      setLoading(false);
+      return;
+    }
+
+    // Fallback: fetch from reddit-comments API (used when no pre-fetched data)
     let endpoint: string;
     if (threadUrls.length > 0) {
       endpoint = `/api/reddit-comments?urls=${encodeURIComponent(JSON.stringify(threadUrls))}`;
@@ -808,7 +820,7 @@ function RedditCommentsSection({ threadUrls, query }: { threadUrls: string[]; qu
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [threadUrls, query]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!loading && comments.length === 0) return null;
 
@@ -966,6 +978,7 @@ function ResultsContent() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [notElectronicsMessage, setNotElectronicsMessage] = useState("");
   const [redditThreadUrls, setRedditThreadUrls] = useState<string[]>([]);
+  const [preloadedComments, setPreloadedComments] = useState<RedditCommentData[]>([]);
   const [productImageUrl, setProductImageUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
@@ -1013,6 +1026,7 @@ function ResultsContent() {
       const data: AnalysisResult = await res.json();
       setResult(data);
       setRedditThreadUrls(data.meta.redditThreadUrls || []);
+      setPreloadedComments(data.comments || []);
       // Cache comments for the product detail page
       if (data.winner?.id) {
         try {
@@ -1182,7 +1196,7 @@ function ResultsContent() {
         >
           <main className="max-w-5xl mx-auto px-4 py-8">
             <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} />
-            <RedditCommentsSection threadUrls={redditThreadUrls} query={query} />
+            <RedditCommentsSection threadUrls={redditThreadUrls} query={query} initialComments={preloadedComments} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
             <div className="max-w-4xl mx-auto text-center pb-8">
