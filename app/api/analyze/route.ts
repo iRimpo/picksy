@@ -4,7 +4,7 @@ import { decodeQuery } from "@/lib/query-decoder";
 export const maxDuration = 60; // Vercel function timeout — 60s
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
 // ─── In-memory result cache (avoids burning rate limit on repeated queries) ────
 interface CacheEntry { payload: unknown; ts: number }
@@ -693,11 +693,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (!analysis) {
-      const msg = geminiStatus === 429
-        ? "Too many requests — please wait a moment and try again."
-        : "Unable to generate a recommendation right now. Please try again.";
+      if (geminiStatus === 429) {
+        return NextResponse.json(
+          { error: "rate_limited", message: "Picksy is getting a lot of searches right now. Wait a few seconds and try again." },
+          { status: 429 }
+        );
+      }
       console.error("[analyze] failed for query:", query, "| gemini status:", geminiStatus);
-      return NextResponse.json({ error: msg }, { status: 500 });
+      return NextResponse.json({ error: "Unable to generate a recommendation right now. Please try again." }, { status: 500 });
     }
 
     const { winner, alternatives, subreddits } = analysis;

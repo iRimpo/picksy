@@ -655,6 +655,37 @@ function AlternativesSection({ alternatives, query }: { alternatives: Alternativ
 
 // ─── Error State ───────────────────────────────────────────────────────────────
 
+function RateLimitedState({ onRetry }: { onRetry: () => void }) {
+  const [secs, setSecs] = useState(15);
+  useEffect(() => {
+    if (secs <= 0) { onRetry(); return; }
+    const t = setTimeout(() => setSecs(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secs, onRetry]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[50vh] px-4 text-center">
+      <PicksyMascot size={72} className="mb-5 drop-shadow-lg" />
+      <h2 className="text-xl font-black text-white mb-2">Picksy is in high demand</h2>
+      <p className="text-white/70 text-sm mb-6 max-w-xs">
+        Too many searches at once. Auto-retrying in <span className="text-white font-bold">{secs}s</span>...
+      </p>
+      <div className="w-40 h-1.5 bg-white/20 rounded-full overflow-hidden mb-6">
+        <div
+          className="h-full bg-white rounded-full transition-all duration-1000"
+          style={{ width: `${((15 - secs) / 15) * 100}%` }}
+        />
+      </div>
+      <button
+        onClick={onRetry}
+        className="bg-white/20 text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-white/30 transition-colors"
+      >
+        Try now anyway
+      </button>
+    </div>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ErrorState({ query, onRetry }: { query: string; onRetry: () => void }) {
   return (
@@ -1088,7 +1119,7 @@ function RedditCommentsSection({ threadUrls, query, initialComments, tiktokVideo
 
 // ─── Main Results Content ──────────────────────────────────────────────────────
 
-type FlowState = "loading" | "location-prompt" | "store-selection" | "result" | "error" | "not-electronics";
+type FlowState = "loading" | "location-prompt" | "store-selection" | "result" | "error" | "rate-limited" | "not-electronics";
 
 function ResultsContent() {
   const router = useRouter();
@@ -1145,6 +1176,10 @@ function ResultsContent() {
           ...(preferences ? { preferences } : {}),
         }),
       });
+      if (res.status === 429) {
+        setFlowState("rate-limited");
+        return;
+      }
       if (res.status === 422) {
         const errData = await res.json();
         if (errData.reason === "not_electronics") {
@@ -1319,6 +1354,7 @@ function ResultsContent() {
       {!showResults && (
         <main className="max-w-5xl mx-auto px-4 py-8">
           {flowState === "loading" && <LoadingState query={query} />}
+          {flowState === "rate-limited" && <RateLimitedState onRetry={() => runAnalysis()} />}
           {flowState === "error" && <ErrorState query={query} onRetry={() => runAnalysis()} />}
           {flowState === "not-electronics" && <NotElectronicsState message={notElectronicsMessage} />}
         </main>
