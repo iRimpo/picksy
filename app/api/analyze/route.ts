@@ -4,7 +4,9 @@ import { decodeQuery } from "@/lib/query-decoder";
 export const maxDuration = 60; // Vercel function timeout — 60s
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
+// Two models with separate free-tier quota pools — fallback when primary is rate-limited
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash";
 
 // ─── In-memory result cache (avoids burning rate limit on repeated queries) ────
 interface CacheEntry { payload: unknown; ts: number }
@@ -401,7 +403,8 @@ async function analyzeWithGemini(
   preferencesSummary?: string,
   actualComments?: ActualComment[],
   tiktokVideos?: TikTokVideo[],
-  budget?: number | null
+  budget?: number | null,
+  model = GEMINI_MODEL
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -511,7 +514,7 @@ Rules:
     const timeout = setTimeout(() => controller.abort(), 25000); // 25s hard cap
 
     const res = await fetch(
-      `${GEMINI_API_URL}/models/${GEMINI_MODEL}:generateContent`,
+      `${GEMINI_API_URL}/models/${model}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -533,7 +536,7 @@ Rules:
 
     if (!res.ok) {
       const errBody = await res.text().catch(() => "(unreadable)");
-      console.error(`Gemini error ${res.status} for model ${GEMINI_MODEL}:`, errBody.slice(0, 500));
+      console.error(`Gemini error ${res.status} for model ${model}:`, errBody.slice(0, 500));
       const err = new Error(`Gemini error: ${res.status}`);
       (err as Error & { status: number }).status = res.status;
       throw err;
@@ -685,11 +688,19 @@ export async function POST(req: NextRequest) {
 
     const directLinks = speculativeLinks.status === "fulfilled" ? speculativeLinks.value : [];
 
-    // Retry with training knowledge only — skip if rate-limited (429)
-    if (!analysis && geminiStatus !== 429) {
+    // Retry: if primary model is rate-limited, try fallback model (separate quota pool)
+    // If primary failed for other reasons, retry with training knowledge only
+    if (!analysis) {
       try {
-        analysis = await analyzeWithGemini(query, [], preferencesSummary, [], [], budget);
-      } catch { /* fall through to hard fail */ }
+        const retryModel = geminiStatus === 429 ? GEMINI_FALLBACK_MODEL : GEMINI_MODEL;
+        const retryResults = geminiStatus === 429 ? results : [];
+        const retryComments = geminiStatus === 429 ? actualComments : [];
+        const retryTiktok = geminiStatus === 429 ? tiktokVideos : [];
+        analysis = await analyzeWithGemini(query, retryResults, preferencesSummary, retryComments, retryTiktok, budget, retryModel);
+        geminiStatus = 0; // reset so we don't return 429 below
+      } catch (retryErr) {
+        geminiStatus = (retryErr as Error & { status?: number }).status ?? geminiStatus;
+      }
     }
 
     if (!analysis) {
