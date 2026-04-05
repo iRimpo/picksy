@@ -13,6 +13,9 @@ interface CacheEntry { payload: unknown; ts: number }
 const analyzeCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+// ─── Rate-limit cooldown (prevents hammering Gemini after a 429) ───────────────
+let rateLimitedUntil = 0; // epoch ms — both models exhausted until this time
+
 // ─── Electronics Validation ────────────────────────────────────────────────────
 
 async function validateElectronicsQuery(
@@ -612,6 +615,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
+    // Rate-limit cooldown check — if both models were recently exhausted, fail fast
+    if (Date.now() < rateLimitedUntil) {
+      return NextResponse.json(
+        { error: "rate_limited", message: "Picksy is getting a lot of searches right now. Wait a few seconds and try again." },
+        { status: 429 }
+      );
+    }
+
     // Cache check — skip expensive API calls for repeated queries
     const cacheKey = `${query}::${storeOverride || ""}::${preferences?.summary || ""}`;
     const cached = analyzeCache.get(cacheKey);
@@ -705,6 +716,8 @@ export async function POST(req: NextRequest) {
 
     if (!analysis) {
       if (geminiStatus === 429) {
+        // Both models rate-limited — set a 30s server-side cooldown to stop hammering
+        rateLimitedUntil = Date.now() + 30_000;
         return NextResponse.json(
           { error: "rate_limited", message: "Picksy is getting a lot of searches right now. Wait a few seconds and try again." },
           { status: 429 }
