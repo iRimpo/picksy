@@ -4,13 +4,164 @@ import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Share2, Heart, ChevronDown, ExternalLink,
-  Play, CheckCircle, AlertTriangle,
+  Play, CheckCircle, AlertTriangle, ChevronUp,
 } from "lucide-react";
 import { products } from "@/lib/data/products";
 import { useAnimateIn } from "@/lib/hooks/use-animate-in";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
 import { getStoreUrl } from "@/lib/retailers";
+
+// ─── Community Comments ────────────────────────────────────────────────────────
+
+interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number }
+interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[] }
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h}, 55%, 48%)`;
+}
+
+function initials(name: string): string {
+  return name.replace(/^u\/|^@/, "").slice(0, 2).toUpperCase();
+}
+
+function RedditComment({ comment, expanded, onToggle }: { comment: RedditCommentData; expanded: boolean; onToggle: () => void }) {
+  const long = comment.body.length > 220;
+  const body = long && !expanded ? comment.body.slice(0, 220) + "…" : comment.body;
+  const color = avatarColor(comment.author);
+  return (
+    <div className="flex gap-3 py-4 border-b border-stone-100 last:border-0">
+      <div
+        className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white"
+        style={{ background: color }}
+      >
+        {initials(comment.author)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="text-sm font-bold text-stone-900">u/{comment.author}</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+            r/{comment.subreddit}
+          </span>
+          {comment.upvotes > 0 && (
+            <span className="text-[10px] text-stone-400">▲ {comment.upvotes.toLocaleString()}</span>
+          )}
+        </div>
+        <p className="text-sm text-stone-600 leading-relaxed">{body}</p>
+        {long && (
+          <button onClick={onToggle} className="mt-1 text-xs font-semibold text-brand-pink hover:underline flex items-center gap-0.5">
+            {expanded ? <><ChevronUp size={12} /> Show less</> : <>Show more</>}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TikTokEntry({ video }: { video: TikTokVideoData }) {
+  const color = avatarColor(video.author);
+  return (
+    <div className="flex gap-3 py-4 border-b border-stone-100 last:border-0">
+      <div
+        className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white"
+        style={{ background: color }}
+      >
+        {initials(video.author)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="text-sm font-bold text-stone-900">@{video.author}</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-900 text-white">
+            🎵 TikTok
+          </span>
+          {video.likes > 0 && (
+            <span className="text-[10px] text-stone-400">♥ {video.likes.toLocaleString()}</span>
+          )}
+        </div>
+        <p className="text-sm text-stone-600 leading-relaxed">{video.description}</p>
+        {video.topComments.length > 0 && (
+          <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-stone-100">
+            {video.topComments.map((c, i) => (
+              <p key={i} className="text-xs text-stone-500 italic">&ldquo;{c}&rdquo;</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CommunityComments({ productId }: { productId: string }) {
+  const [reddit, setReddit] = useState<RedditCommentData[]>([]);
+  const [tiktok, setTikTok] = useState<TikTokVideoData[]>([]);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`picksy_comments_${productId}`);
+      if (!raw) return;
+      const { reddit: r, tiktok: t } = JSON.parse(raw);
+      setReddit(Array.isArray(r) ? r : []);
+      setTikTok(Array.isArray(t) ? t : []);
+    } catch { /* ignore */ }
+  }, [productId]);
+
+  if (reddit.length === 0 && tiktok.length === 0) return null;
+
+  const toggle = (i: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) { next.delete(i); } else { next.add(i); }
+      return next;
+    });
+
+  return (
+    <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
+      <h3 className="text-2xl font-black text-stone-900 mb-1">Voices from the Community</h3>
+      <p className="text-stone-400 text-sm mb-6">
+        The actual comments we analyzed to make this recommendation
+      </p>
+
+      {reddit.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">💬</span>
+            <span className="text-sm font-bold text-stone-700">Reddit</span>
+            <span className="text-xs text-stone-400">{reddit.length} comments</span>
+          </div>
+          <div>
+            {reddit.map((c, i) => (
+              <RedditComment
+                key={i}
+                comment={c}
+                expanded={expanded.has(i)}
+                onToggle={() => toggle(i)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tiktok.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">🎵</span>
+            <span className="text-sm font-bold text-stone-700">TikTok</span>
+            <span className="text-xs text-stone-400">{tiktok.length} videos</span>
+          </div>
+          <div>
+            {tiktok.map((v, i) => (
+              <TikTokEntry key={i} video={v} />
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function ScoreGauge({ score, label }: { score: number; label: string }) {
   const [mounted, setMounted] = useState(false);
@@ -226,6 +377,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         </section>
+
+        {/* Community Comments */}
+        <CommunityComments productId={id} />
 
         {/* SECTION 2: Sentiment */}
         <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">

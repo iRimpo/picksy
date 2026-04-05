@@ -68,7 +68,9 @@ interface RedditComment {
   avatarUrl: string | null;
   permalink: string;
 }
-interface AnalysisResult { winner: Winner; alternatives: Alternative[]; meta: AnalysisMeta }
+interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number }
+interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[] }
+interface AnalysisResult { winner: Winner; alternatives: Alternative[]; meta: AnalysisMeta; comments?: RedditCommentData[]; tiktokVideos?: TikTokVideoData[] }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1011,6 +1013,15 @@ function ResultsContent() {
       const data: AnalysisResult = await res.json();
       setResult(data);
       setRedditThreadUrls(data.meta.redditThreadUrls || []);
+      // Cache comments for the product detail page
+      if (data.winner?.id) {
+        try {
+          sessionStorage.setItem(
+            `picksy_comments_${data.winner.id}`,
+            JSON.stringify({ reddit: data.comments || [], tiktok: data.tiktokVideos || [] })
+          );
+        } catch { /* ignore quota errors */ }
+      }
       setFlowState("result");
       track("search_result_viewed", {
         page: "results",

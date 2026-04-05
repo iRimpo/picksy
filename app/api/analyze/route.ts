@@ -609,6 +609,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       winner,
       alternatives,
+      comments: actualComments,
+      tiktokVideos,
       meta: {
         query,
         category: "general",
