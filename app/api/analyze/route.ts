@@ -49,7 +49,7 @@ function setDbCache(cacheKey: string, payload: unknown): void {
     .from("analysis_cache")
     .upsert({ cache_key: cacheKey, payload, expires_at: expiresAt })
     .then(() => {}) // intentional fire-and-forget
-    .catch(() => {});
+    .then(undefined, () => {});
 }
 
 // ─── Rate-limit cooldown (prevents hammering Gemini after a 429) ───────────────
