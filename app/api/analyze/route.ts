@@ -7,7 +7,7 @@ export const maxDuration = 60; // Vercel function timeout — 60s
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 // Two models with separate free-tier quota pools — fallback when primary is rate-limited
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash";
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash-lite";
 
 // ─── L1: In-memory cache (fast, same function instance) ──────────────────────
 interface CacheEntry { payload: unknown; ts: number }
