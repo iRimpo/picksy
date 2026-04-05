@@ -68,7 +68,7 @@ interface RedditComment {
   avatarUrl: string | null;
   permalink: string;
 }
-interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number }
+interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number; permalink?: string }
 interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[] }
 interface AnalysisResult { winner: Winner; alternatives: Alternative[]; meta: AnalysisMeta; comments?: RedditCommentData[]; tiktokVideos?: TikTokVideoData[] }
 
@@ -744,10 +744,12 @@ function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditCommen
       {/* Avatar row — first thing you see */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
-          <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={bg} size={42} />
+          <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author || comment.subreddit} bg={bg} size={42} />
           <div>
-            <p className="text-[13px] font-bold text-stone-800 leading-tight">u/{comment.author}</p>
-            <p className="text-[11px] text-stone-400">r/{comment.subreddit}</p>
+            {comment.author && comment.author !== comment.subreddit ? (
+              <p className="text-[13px] font-bold text-stone-800 leading-tight">u/{comment.author}</p>
+            ) : null}
+            <p className={`text-stone-${comment.author && comment.author !== comment.subreddit ? "400" : "800"} ${comment.author && comment.author !== comment.subreddit ? "text-[11px]" : "text-[13px] font-bold"}`}>r/{comment.subreddit}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -796,7 +798,7 @@ function RedditCommentsSection({ threadUrls, query, initialComments }: { threadU
       setComments(initialComments.map((c) => ({
         ...c,
         avatarUrl: null,
-        permalink: `https://reddit.com/r/${c.subreddit}/search?q=${encodeURIComponent(query)}&sort=relevance`,
+        permalink: c.permalink ?? `https://reddit.com/r/${c.subreddit}/search?q=${encodeURIComponent(query)}&sort=relevance`,
       })));
       setLoading(false);
       return;

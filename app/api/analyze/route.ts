@@ -122,6 +122,7 @@ interface ActualComment {
   body: string;
   upvotes: number;
   subreddit: string;
+  permalink?: string;
 }
 
 function extractTopComments(children: Record<string, unknown>[], subreddit: string, out: ActualComment[], maxDepth = 1, depth = 0) {
@@ -558,7 +559,8 @@ export async function POST(req: NextRequest) {
           .slice(0, 8)
           .map((r) => {
             const sub = r.url.match(/reddit\.com\/r\/([^/]+)/)?.[1] ?? "reddit";
-            return { author: sub, body: r.content.slice(0, 400), upvotes: 0, subreddit: sub };
+            // author left empty so UI shows subreddit as source, not a fake username
+            return { author: "", body: r.content.slice(0, 400), upvotes: 0, subreddit: sub, permalink: r.url };
           });
 
     // 3. Use Gemini to analyze results + actual comments + TikTok
