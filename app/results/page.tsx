@@ -728,11 +728,12 @@ function RedditAvatar({ avatarUrl, author, bg, size = 44 }: { avatarUrl: string 
   );
 }
 
-// Single comment card — avatar at top, quote below
+// Single comment card — two variants: real user comment vs thread excerpt
 function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditComment; index: number; cardOffset?: number }) {
   const sentiment = detectSentiment(comment.body);
   const bg = AVATAR_BG_COLORS[(index + cardOffset) % AVATAR_BG_COLORS.length];
   const cardStyle = COMMENT_CARD_STYLES[(index + cardOffset) % 4];
+  const isExcerpt = !comment.author; // Tavily-sourced snippet, no individual author
 
   return (
     <a
@@ -741,15 +742,30 @@ function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditCommen
       rel="noopener noreferrer"
       className={`flex flex-col rounded-2xl p-4 border hover:shadow-md hover:-translate-y-0.5 transition-all group ${cardStyle}`}
     >
-      {/* Avatar row — first thing you see */}
+      {/* Header row */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
-          <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author || comment.subreddit} bg={bg} size={42} />
+          {isExcerpt ? (
+            /* Thread excerpt: show Reddit icon + subreddit */
+            <div
+              className="w-[42px] h-[42px] rounded-full shrink-0 flex items-center justify-center text-white font-black text-base"
+              style={{ background: bg }}
+            >
+              r/
+            </div>
+          ) : (
+            <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={bg} size={42} />
+          )}
           <div>
-            {comment.author && comment.author !== comment.subreddit ? (
+            {!isExcerpt && (
               <p className="text-[13px] font-bold text-stone-800 leading-tight">u/{comment.author}</p>
-            ) : null}
-            <p className={`text-stone-${comment.author && comment.author !== comment.subreddit ? "400" : "800"} ${comment.author && comment.author !== comment.subreddit ? "text-[11px]" : "text-[13px] font-bold"}`}>r/{comment.subreddit}</p>
+            )}
+            <p className={`text-[${isExcerpt ? "13px" : "11px"}] ${isExcerpt ? "font-bold text-stone-800" : "text-stone-400"}`}>
+              r/{comment.subreddit}
+            </p>
+            {isExcerpt && (
+              <p className="text-[10px] text-stone-400">Reddit discussion</p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
