@@ -17,7 +17,30 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "Picksy | Stop Overthinking. We'll Tell You What To Buy.",
   description:
-    "Picksy analyzes thousands of Reddit discussions to give you one clear recommendation in 30 seconds. Real reviews, real pricing, zero research-induced stress.",
+    "Picksy analyzes Reddit and TikTok discussions to give you one clear recommendation in seconds. Real reviews, real pricing, zero research-induced stress.",
+  metadataBase: new URL("https://picksy.app"),
+  openGraph: {
+    title: "Picksy — We'll Tell You What To Buy",
+    description:
+      "Stop drowning in reviews. Picksy reads Reddit and TikTok so you don't have to — one clear pick, every time.",
+    url: "https://picksy.app",
+    siteName: "Picksy",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Picksy — Stop Overthinking. We'll Tell You What To Buy.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Picksy — We'll Tell You What To Buy",
+    description: "One clear pick from Reddit + TikTok reviews. No more analysis paralysis.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

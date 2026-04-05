@@ -547,7 +547,6 @@ export async function POST(req: NextRequest) {
     const cacheKey = `${query}::${storeOverride || ""}::${preferences?.summary || ""}`;
     const cached = analyzeCache.get(cacheKey);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      console.log("[analyze] cache hit for:", query);
       return NextResponse.json(cached.payload);
     }
 
@@ -613,7 +612,6 @@ export async function POST(req: NextRequest) {
 
     // Retry with training knowledge only — skip if rate-limited (429)
     if (!analysis && geminiStatus !== 429) {
-      console.warn("[analyze] retrying with training knowledge for:", query);
       try {
         analysis = await analyzeWithGemini(query, [], preferencesSummary, [], []);
       } catch { /* fall through to hard fail */ }

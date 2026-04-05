@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 
@@ -16,11 +17,15 @@ export async function submitEmail(
     };
   }
 
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 1200));
-
-  // TODO: Replace with Supabase insert
-  console.log("Email submitted:", result.data);
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    await supabase.from("waitlist").insert({ email: result.data });
+  } catch {
+    // Fail silently — don't block the user on a DB error
+  }
 
   return {
     success: true,
