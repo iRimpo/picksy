@@ -601,6 +601,101 @@ Rules:
   }
 }
 
+// ─── Groq Analysis (final fallback when both Gemini models are 429'd) ──────────
+
+async function analyzeWithGroq(
+  query: string,
+  results: SearchResult[],
+  preferencesSummary?: string,
+  actualComments?: ActualComment[],
+  tiktokVideos?: TikTokVideo[],
+  budget?: number | null
+): Promise<AnalysisOutput | null> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  const redditResults = results.filter((r) => r.source === "reddit");
+  const formatResults = (items: SearchResult[]) =>
+    items.length > 0
+      ? items.map((r, i) => `[${i + 1}] ${r.title}\n${r.content}`).join("\n\n")
+      : "None found.";
+  const sourcesSeen = Array.from(new Set(
+    results.map((r) => {
+      if (r.source === "reddit") {
+        const match = r.url.match(/reddit\.com\/r\/([^/]+)/);
+        return match ? `r/${match[1]}` : null;
+      }
+      return null;
+    }).filter(Boolean)
+  )) as string[];
+
+  const budgetBlock = budget
+    ? `\n⚠️ HARD BUDGET LIMIT: $${budget}. Only recommend products AT OR BELOW $${budget}.\n`
+    : "";
+  const preferencesBlock = preferencesSummary
+    ? `\nUSER PREFERENCES:\n${preferencesSummary}\n`
+    : "";
+  const actualCommentsBlock = actualComments && actualComments.length > 0
+    ? `\nACTUAL REDDIT COMMENTS:\n${actualComments.map((c, i) => `[${i + 1}] u/${c.author} in r/${c.subreddit} (${c.upvotes} upvotes): ${c.body}`).join("\n\n")}\n`
+    : "";
+  const tiktokBlock = tiktokVideos && tiktokVideos.length > 0
+    ? `\nTIKTOK REVIEWS:\n${tiktokVideos.map((v, i) => `[${i + 1}] @${v.author} (${v.likes} likes): ${v.description}`).join("\n\n")}\n`
+    : "";
+
+  const prompt = `You are the recommendation engine for Picksy. A user searched for: "${query}"${budgetBlock}${preferencesBlock}
+${actualCommentsBlock}${tiktokBlock}
+REDDIT SNIPPETS (${redditResults.length} found):
+${formatResults(redditResults)}
+
+Return ONLY valid JSON (no markdown) with this structure:
+{"winner":{"id":"slug","name":"Full Name","brand":"Brand","emoji":"🎧","price":199.99,"score":87,"scoreLabel":"Strong Pick","sentiment":89,"mentions":34,"postsAnalyzed":${results.length},"whyItWon":"2 sentences.","pros":["Pro 1","Pro 2","Pro 3"],"cons":["Con 1","Con 2"],"buyLinks":[{"store":"Amazon","price":199.99},{"store":"Best Buy","price":199.99}],"redditQuote":"Short quote"},"alternatives":[{"id":"slug","name":"Name","brand":"Brand","emoji":"🎧","score":74,"price":149.99,"mentions":18,"sentiment":76,"whyNotWinner":"Reason"}],"subreddits":${JSON.stringify(sourcesSeen.length > 0 ? sourcesSeen : ["r/BuyItForLife"])}}
+
+Rules: score/sentiment are 0-100 integers, include 2-3 alternatives${budget ? `, ALL prices must be $${budget} or less` : ""}.`.trim();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are a product recommendation engine. Always respond with valid JSON only — no markdown, no explanation." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "(unreadable)");
+      console.error(`Groq error ${res.status}:`, errBody.slice(0, 300));
+      return null; // non-fatal — caller will return 429 if needed
+    }
+
+    const payload = await res.json();
+    const text: string = payload?.choices?.[0]?.message?.content?.trim() || "";
+    if (!text) return null;
+
+    const parsed = JSON.parse(text);
+    if (!parsed?.winner?.name || !Array.isArray(parsed?.alternatives)) return null;
+
+    return parsed as AnalysisOutput;
+  } catch (err) {
+    console.error("Groq analysis failed:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function detectStore(query: string): string | null {
@@ -764,9 +859,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (!analysis && geminiStatus === 429) {
+      // Both Gemini models rate-limited — try Groq as final fallback (separate free tier)
+      analysis = await analyzeWithGroq(query, results, preferencesSummary, actualComments, tiktokVideos, budget);
+    }
+
     if (!analysis) {
       if (geminiStatus === 429) {
-        // Both models rate-limited — set a 30s server-side cooldown to stop hammering
         rateLimitedUntil = Date.now() + 30_000;
         return NextResponse.json(
           { error: "rate_limited", message: "Picksy is getting a lot of searches right now. Wait a few seconds and try again." },
