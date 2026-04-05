@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRedditToken, redditHeaders, redditApiUrl } from "@/lib/reddit-auth";
 
 export interface RedditComment {
   author: string;
@@ -10,7 +9,8 @@ export interface RedditComment {
   permalink: string;
 }
 
-// In-memory avatar cache (cleared on server restart — acceptable for our use)
+// ─── Avatar cache ────────────────────────────────────────────────────────────
+
 const avatarCache = new Map<string, string | null>();
 
 async function fetchAvatar(username: string): Promise<string | null> {
@@ -22,16 +22,12 @@ async function fetchAvatar(username: string): Promise<string | null> {
       `https://www.reddit.com/user/${encodeURIComponent(username)}/about.json`,
       {
         headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
-        next: { revalidate: 3600 }, // cache 1 hour
+        next: { revalidate: 3600 },
       }
     );
-    if (!res.ok) {
-      avatarCache.set(username, null);
-      return null;
-    }
+    if (!res.ok) { avatarCache.set(username, null); return null; }
     const data = await res.json();
     const icon: string = data?.data?.icon_img || data?.data?.snoovatar_img || "";
-    // Reddit appends query params to icon URLs — strip them for cleaner URLs
     const clean = icon ? icon.split("?")[0] : null;
     avatarCache.set(username, clean);
     return clean;
@@ -40,6 +36,8 @@ async function fetchAvatar(username: string): Promise<string | null> {
     return null;
   }
 }
+
+// ─── Reddit JSON API (works on local; often IP-blocked on Vercel) ─────────────
 
 interface RedditCommentData {
   author?: string;
@@ -63,94 +61,145 @@ function extractComments(
     if (out.length >= 10) break;
     const body = child.body?.trim();
     if (!body || body === "[deleted]" || body === "[removed]" || body.length < 20) continue;
-
     out.push({
       author: child.author || "[deleted]",
       body: body.slice(0, 400),
       subreddit: child.subreddit || subreddit,
       upvotes: child.ups ?? child.score ?? 0,
-      avatarUrl: null, // filled in later
+      avatarUrl: null,
       permalink: child.permalink
         ? `https://www.reddit.com${child.permalink}`
         : `https://www.reddit.com/r/${subreddit}`,
     });
-
-    // Recurse into replies
     if (child.replies && typeof child.replies === "object" && child.replies.data?.children) {
-      extractComments(
-        child.replies.data.children as RedditCommentData[],
-        subreddit,
-        out,
-        maxDepth,
-        depth + 1
-      );
+      extractComments(child.replies.data.children as RedditCommentData[], subreddit, out, maxDepth, depth + 1);
     }
   }
 }
 
-async function fetchCommentsFromThread(threadUrl: string, token: string | null): Promise<RedditComment[]> {
-  const jsonUrl = redditApiUrl(
-    threadUrl.replace(/\/?$/, ".json") + "?limit=25&sort=top",
-    token
-  );
+async function fetchCommentsFromRedditDirect(threadUrl: string): Promise<RedditComment[] | null> {
+  try {
+    const jsonUrl = threadUrl.replace(/\/?$/, ".json") + "?limit=25&sort=top";
+    const res = await fetch(jsonUrl, {
+      headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null; // null = blocked, try Tavily
+
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length < 2) return null;
+
+    const subredditMatch = threadUrl.match(/reddit\.com\/r\/([^/]+)/);
+    const subreddit = subredditMatch ? subredditMatch[1] : "reddit";
+    const children: RedditCommentData[] = (data[1]?.data?.children || []).map(
+      (c: { data: RedditCommentData }) => c.data
+    );
+    const comments: RedditComment[] = [];
+    extractComments(children, subreddit, comments);
+    return comments.length > 0 ? comments : null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Tavily Extract (reliable from Vercel IPs) ────────────────────────────────
+
+function parseCommentsFromRaw(raw: string, threadUrl: string): RedditComment[] {
+  const subredditMatch = threadUrl.match(/reddit\.com\/r\/([^/]+)/);
+  const subreddit = subredditMatch ? subredditMatch[1] : "reddit";
+
+  const comments: RedditComment[] = [];
+  // Match every u/username occurrence and grab the text that follows
+  // Split on u/username boundaries to extract author + following text
+  const chunks = raw.split(/\bu\/([A-Za-z0-9_-]{3,20})\b/);
+  // chunks: [before_first, author1, text1, author2, text2, ...]
+
+  for (let i = 1; i < chunks.length - 1; i += 2) {
+    const author = chunks[i];
+    const rawBody = chunks[i + 1]
+      .replace(/\n+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 400);
+
+    if (
+      rawBody.length < 20 ||
+      author === "AutoModerator" ||
+      author === "deleted"
+    ) continue;
+
+    comments.push({
+      author,
+      body: rawBody.slice(0, 400),
+      subreddit,
+      upvotes: 0,
+      avatarUrl: null,
+      permalink: threadUrl,
+    });
+
+    if (comments.length >= 10) break;
+  }
+  return comments;
+}
+
+async function fetchCommentsViaTavily(threadUrls: string[]): Promise<RedditComment[]> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey || threadUrls.length === 0) return [];
 
   try {
-    const res = await fetch(jsonUrl, {
-      headers: redditHeaders(token),
-      next: { revalidate: 3600 },
+    const res = await fetch("https://api.tavily.com/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: apiKey, urls: threadUrls }),
+      cache: "no-store",
     });
     if (!res.ok) return [];
 
     const data = await res.json();
-    // Reddit returns [post_listing, comments_listing]
-    if (!Array.isArray(data) || data.length < 2) return [];
-
-    const commentsListing = data[1];
-    const children: RedditCommentData[] = commentsListing?.data?.children?.map(
-      (c: { data: RedditCommentData }) => c.data
-    ) || [];
-
-    // Infer subreddit from URL
-    const subredditMatch = threadUrl.match(/reddit\.com\/r\/([^/]+)/);
-    const subreddit = subredditMatch ? subredditMatch[1] : "reddit";
-
-    const comments: RedditComment[] = [];
-    extractComments(children, subreddit, comments);
-
-    return comments;
+    const results: { url: string; raw_content: string }[] = data.results || [];
+    return results.flatMap((r) => parseCommentsFromRaw(r.raw_content || "", r.url));
   } catch {
     return [];
   }
 }
 
-async function searchRedditForThreads(query: string, token: string | null): Promise<string[]> {
+// ─── Thread discovery fallback ────────────────────────────────────────────────
+
+async function searchRedditForThreads(query: string): Promise<string[]> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return [];
+
   try {
-    const base = redditApiUrl("https://www.reddit.com/search.json", token);
-    const url = `${base}?q=${encodeURIComponent(query)}&type=link&sort=relevance&limit=5`;
-    const res = await fetch(url, {
-      headers: redditHeaders(token),
-      next: { revalidate: 3600 },
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: `${query} site:reddit.com`,
+        search_depth: "basic",
+        include_domains: ["reddit.com"],
+        max_results: 5,
+      }),
+      cache: "no-store",
     });
     if (!res.ok) return [];
     const data = await res.json();
-    const children: { data?: { permalink?: string } }[] = data?.data?.children || [];
-    return children
-      .map((c) => (c.data?.permalink ? `https://www.reddit.com${c.data.permalink}` : null))
-      .filter((u): u is string => !!u)
+    return (data.results || [])
+      .map((r: { url?: string }) => r.url || "")
+      .filter((u: string) => u.includes("/comments/"))
       .slice(0, 3);
   } catch {
     return [];
   }
 }
 
+// ─── Route Handler ────────────────────────────────────────────────────────────
+
 export async function GET(req: NextRequest) {
   const urlsParam = req.nextUrl.searchParams.get("urls");
   const queryParam = req.nextUrl.searchParams.get("query");
 
-  const token = await getRedditToken();
-
   let threadUrls: string[] = [];
-
   if (urlsParam) {
     try {
       threadUrls = JSON.parse(urlsParam) as string[];
@@ -159,23 +208,28 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Fallback: search Reddit directly if no URLs were provided
   if (threadUrls.length === 0 && queryParam) {
-    threadUrls = await searchRedditForThreads(queryParam, token);
+    threadUrls = await searchRedditForThreads(queryParam);
   }
 
   if (threadUrls.length === 0) {
     return NextResponse.json({ comments: [], threadUrls: [] });
   }
 
-  // Limit to 3 threads to stay under Reddit rate limits
   const limited = threadUrls.slice(0, 3);
 
-  // Fetch comments from all threads in parallel
-  const allCommentArrays = await Promise.all(limited.map((u) => fetchCommentsFromThread(u, token)));
-  const allComments = allCommentArrays.flat();
+  // Try Reddit direct API first (fast, structured, works locally)
+  const directResults = await Promise.all(limited.map(fetchCommentsFromRedditDirect));
+  const directComments = directResults.flatMap((r) => r ?? []);
 
-  // Deduplicate by author+body and sort by upvotes
+  // Fall back to Tavily extract for any threads that Reddit blocked
+  const blockedUrls = limited.filter((_, i) => directResults[i] === null);
+  const tavilyComments = blockedUrls.length > 0
+    ? await fetchCommentsViaTavily(blockedUrls)
+    : [];
+
+  const allComments = [...directComments, ...tavilyComments];
+
   const seen = new Set<string>();
   const deduped = allComments.filter((c) => {
     const key = `${c.author}::${c.body.slice(0, 50)}`;
@@ -186,7 +240,7 @@ export async function GET(req: NextRequest) {
 
   const sorted = deduped.sort((a, b) => b.upvotes - a.upvotes).slice(0, 8);
 
-  // Fetch avatars for unique authors (limit to top 5 to avoid rate limiting)
+  // Fetch Reddit avatars for real usernames
   const uniqueAuthors = Array.from(new Set(sorted.slice(0, 5).map((c) => c.author)));
   const avatars = await Promise.all(uniqueAuthors.map(fetchAvatar));
   const avatarMap = new Map(uniqueAuthors.map((author, i) => [author, avatars[i]]));
