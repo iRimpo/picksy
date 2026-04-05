@@ -4,6 +4,11 @@ import { decodeQuery } from "@/lib/query-decoder";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
+// ─── In-memory result cache (avoids burning rate limit on repeated queries) ────
+interface CacheEntry { payload: unknown; ts: number }
+const analyzeCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 // ─── Electronics Validation ────────────────────────────────────────────────────
 
 async function validateElectronicsQuery(
@@ -420,7 +425,13 @@ Rules:
       }
     );
 
-    if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "(unreadable)");
+      console.error(`Gemini error ${res.status} for model ${GEMINI_MODEL}:`, errBody.slice(0, 500));
+      const err = new Error(`Gemini error: ${res.status}`);
+      (err as Error & { status: number }).status = res.status;
+      throw err;
+    }
 
     const payload = await res.json();
     const candidates = payload?.candidates;
@@ -434,8 +445,8 @@ Rules:
 
     return parsed as AnalysisOutput;
   } catch (err) {
-    console.error("Gemini analysis failed:", err);
-    return null;
+    console.error("Gemini analysis failed:", err instanceof Error ? err.message : err);
+    throw err; // re-throw so caller can inspect status
   }
 }
 
@@ -492,6 +503,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
+    // Cache check — skip expensive API calls for repeated queries
+    const cacheKey = `${query}::${storeOverride || ""}::${preferences?.summary || ""}`;
+    const cached = analyzeCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+      console.log("[analyze] cache hit for:", query);
+      return NextResponse.json(cached.payload);
+    }
+
     // 0. Validate that the query is electronics-related
     const validation = await validateElectronicsQuery(query);
     if (!validation.valid) {
@@ -531,18 +550,28 @@ export async function POST(req: NextRequest) {
     ]);
 
     // 3. Use Gemini to analyze results + actual comments + TikTok
-    let analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos);
-
-    // Retry with Gemini training knowledge only if search-assisted analysis fails
-    if (!analysis) {
-      console.warn("[analyze] Gemini failed with search data, retrying with training knowledge for:", query);
-      analysis = await analyzeWithGemini(query, [], preferencesSummary, [], []);
+    let analysis: AnalysisOutput | null = null;
+    let geminiStatus = 0;
+    try {
+      analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos);
+    } catch (err) {
+      geminiStatus = (err as Error & { status?: number }).status ?? 0;
     }
 
-    // Hard fail — return error instead of wrong hardcoded fallback
+    // Retry with training knowledge only — skip if rate-limited (429)
+    if (!analysis && geminiStatus !== 429) {
+      console.warn("[analyze] retrying with training knowledge for:", query);
+      try {
+        analysis = await analyzeWithGemini(query, [], preferencesSummary, [], []);
+      } catch { /* fall through to hard fail */ }
+    }
+
     if (!analysis) {
-      console.error("[analyze] Gemini failed completely for query:", query);
-      return NextResponse.json({ error: "Unable to generate a recommendation right now. Please try again." }, { status: 500 });
+      const msg = geminiStatus === 429
+        ? "Too many requests — please wait a moment and try again."
+        : "Unable to generate a recommendation right now. Please try again.";
+      console.error("[analyze] failed for query:", query, "| gemini status:", geminiStatus);
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     const { winner, alternatives, subreddits } = analysis;
@@ -576,7 +605,7 @@ export async function POST(req: NextRequest) {
       redditThreadUrls = await fetchRedditThreadsFromSearch(query);
     }
 
-    return NextResponse.json({
+    const responsePayload = {
       winner,
       alternatives,
       comments: actualComments,
@@ -596,7 +625,12 @@ export async function POST(req: NextRequest) {
         llmUsed: true,
         analysisTimeMs: Date.now() - startTime,
       },
-    });
+    };
+
+    // Cache for 10 minutes so repeat searches skip the API calls
+    analyzeCache.set(cacheKey, { payload: responsePayload, ts: Date.now() });
+
+    return NextResponse.json(responsePayload);
   } catch {
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
   }
