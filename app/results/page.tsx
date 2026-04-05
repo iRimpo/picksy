@@ -671,7 +671,7 @@ function NotElectronicsState({ message }: { message: string }) {
         ))}
       </div>
       <Link
-        href="/search"
+        href="/"
         className="bg-stone-900 hover:bg-stone-800 transition px-6 py-3 rounded-xl font-bold text-white text-sm"
       >
         Try a new search
@@ -1076,7 +1076,7 @@ function ResultsContent() {
   }, [result?.winner?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!query) { router.push("/search"); return; }
+    if (!query) { router.push("/"); return; }
     if (storeParam && zipParam) { runAnalysis(storeParam); return; }
     if (detectedStore && !zipParam) {
       setStoreContext(detectedStore);
@@ -1115,7 +1115,7 @@ function ResultsContent() {
       {/* Sticky header — dark */}
       <header className="sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/search" className="text-white/60 hover:text-white transition-colors shrink-0">
+          <Link href="/" className="text-white/60 hover:text-white transition-colors shrink-0">
             <ArrowLeft size={20} />
           </Link>
           <Link href="/" className="flex items-center gap-1.5 shrink-0">
@@ -1188,7 +1188,7 @@ function ResultsContent() {
             <div className="max-w-4xl mx-auto text-center pb-8">
               <p className="text-sm text-stone-400 mb-3">Not quite right?</p>
               <Link
-                href="/search"
+                href="/"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-stone-200 text-sm font-semibold text-stone-600 hover:border-brand-pink hover:text-brand-pink transition-all"
               >
                 <Search size={14} /> New Search

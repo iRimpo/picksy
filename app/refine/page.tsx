@@ -30,7 +30,7 @@ function RefineContent() {
   const q = searchParams.get("q") || "";
 
   useEffect(() => {
-    if (!q.trim()) router.replace("/search");
+    if (!q.trim()) router.replace("/");
   }, [q, router]);
 
   const decoded = decodeQuery(q);
@@ -63,7 +63,7 @@ function RefineContent() {
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5">
         <Link
-          href="/search"
+          href="/"
           className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
         >
           <ArrowLeft size={18} />
