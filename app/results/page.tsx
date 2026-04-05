@@ -655,16 +655,20 @@ function AlternativesSection({ alternatives, query }: { alternatives: Alternativ
 
 // ─── Error State ───────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ErrorState({ query, onRetry }: { query: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] px-4 text-center">
-      <div className="text-5xl mb-4">😕</div>
-      <h2 className="text-xl font-black text-stone-900 mb-2">Analysis failed</h2>
-      <p className="text-stone-500 text-sm mb-6 max-w-xs">
-        Something went wrong while analyzing &ldquo;{query}&rdquo;. This is usually temporary — try again.
+      <PicksyMascot size={72} className="mb-5 drop-shadow-lg" />
+      <h2 className="text-xl font-black text-white mb-2">Taking longer than usual</h2>
+      <p className="text-white/70 text-sm mb-6 max-w-xs">
+        Reddit and AI are both busy right now. Give it another shot — it usually works on the second try.
       </p>
-      <button onClick={onRetry} className="bg-stone-900 hover:bg-stone-800 transition px-6 py-3 rounded-xl font-bold text-white text-sm">
-        Try Again
+      <button
+        onClick={onRetry}
+        className="bg-white text-brand-green font-heading font-black px-8 py-3.5 rounded-2xl text-sm hover:bg-white/90 transition-colors shadow-lg"
+      >
+        Try Again →
       </button>
     </div>
   );
@@ -1126,7 +1130,7 @@ function ResultsContent() {
 
   const detectedStore = detectStoreInQuery(query);
 
-  async function runAnalysis(overrideStore?: string) {
+  async function runAnalysis(overrideStore?: string, attempt = 0) {
     setFlowState("loading");
     try {
       const preferences = preferencesParam
@@ -1180,7 +1184,12 @@ function ResultsContent() {
         },
       });
     } catch {
-      setFlowState("error");
+      if (attempt === 0) {
+        // Auto-retry once after 2s before showing the error screen
+        setTimeout(() => runAnalysis(overrideStore, 1), 2000);
+      } else {
+        setFlowState("error");
+      }
     }
   }
 

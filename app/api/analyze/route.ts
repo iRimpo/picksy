@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { decodeQuery } from "@/lib/query-decoder";
 
+export const maxDuration = 60; // Vercel function timeout — 60s
+
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
@@ -446,6 +448,9 @@ Rules:
 - scoreLabel should be 1–3 words (e.g. "Best Pick", "Strong Pick", "Budget Pick", "Gentle Pick")`.trim();
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000); // 25s hard cap
+
     const res = await fetch(
       `${GEMINI_API_URL}/models/${GEMINI_MODEL}:generateContent`,
       {
@@ -461,9 +466,11 @@ Rules:
             responseMimeType: "application/json",
           },
         }),
+        signal: controller.signal,
         cache: "no-store",
       }
     );
+    clearTimeout(timeout);
 
     if (!res.ok) {
       const errBody = await res.text().catch(() => "(unreadable)");
