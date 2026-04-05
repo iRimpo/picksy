@@ -7,11 +7,14 @@ interface RangeSliderProps {
   question: QuestionDefinition;
   value: number;
   onChange: (value: number) => void;
+  budgetStrict?: boolean;
+  onBudgetStrictChange?: (strict: boolean) => void;
 }
 
-export default function RangeSlider({ question, value, onChange }: RangeSliderProps) {
+export default function RangeSlider({ question, value, onChange, budgetStrict = true, onBudgetStrictChange }: RangeSliderProps) {
   const cfg = question.range!;
   const { min, max, step, stops = [], prefix = "", unit = "" } = cfg;
+  const isBudget = question.preferenceKey === "budget";
 
   const pct = ((value - min) / (max - min)) * 100;
   const isAtMax = value >= max;
@@ -20,7 +23,7 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
     : `${prefix}${value.toLocaleString()}${unit}`;
 
   return (
-    <div style={{ padding: "8px 0 24px" }}>
+    <div style={{ padding: "8px 0 16px" }}>
       {/* Current value bubble */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
         <motion.div
@@ -30,13 +33,13 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
           transition={{ type: "spring", stiffness: 500, damping: 28 }}
           className="font-heading"
           style={{
-            background: "rgba(46,204,113,0.2)",
-            border: "1.5px solid rgba(46,204,113,0.4)",
+            background: "#FFF0F3",
+            border: "1.5px solid #FF6B8A",
             borderRadius: 100,
             padding: "6px 20px",
             fontSize: 22,
             fontWeight: 900,
-            color: "white",
+            color: "#FF6B8A",
             letterSpacing: "-0.01em",
           }}
         >
@@ -44,9 +47,8 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
         </motion.div>
       </div>
 
-      {/* Track container */}
+      {/* Track */}
       <div style={{ position: "relative", padding: "0 4px" }}>
-        {/* Custom track fill */}
         <div
           style={{
             position: "absolute",
@@ -55,14 +57,13 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
             transform: "translateY(-50%)",
             width: `calc(${pct}% - 4px)`,
             height: 6,
-            background: "linear-gradient(90deg, #2ECC71, #25A855)",
+            background: "linear-gradient(90deg, #FF6B8A, #FF9BAD)",
             borderRadius: 100,
             pointerEvents: "none",
             zIndex: 1,
             transition: "width 0.05s",
           }}
         />
-
         <input
           type="range"
           min={min}
@@ -77,7 +78,7 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
             outline: "none",
             cursor: "pointer",
             appearance: "none",
-            background: "rgba(255,255,255,0.12)",
+            background: "#F0EDEA",
             position: "relative",
             zIndex: 2,
           }}
@@ -94,7 +95,7 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
               <motion.button
                 key={s.value}
                 onClick={() => onChange(s.value)}
-                animate={{ color: isActive ? "rgba(46,204,113,0.9)" : "rgba(255,255,255,0.3)" }}
+                animate={{ color: isActive ? "#FF6B8A" : "#A8A29E" }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.15 }}
                 style={{
@@ -110,6 +111,72 @@ export default function RangeSlider({ question, value, onChange }: RangeSliderPr
               </motion.button>
             );
           })}
+        </div>
+      )}
+
+      {/* Strict / Flexible toggle — only shown for budget questions */}
+      {isBudget && onBudgetStrictChange && (
+        <div style={{ marginTop: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "#78716c", marginBottom: 8, textAlign: "center" }}>
+            How strict is this budget?
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <motion.button
+              onClick={() => onBudgetStrictChange(true)}
+              animate={{
+                background: budgetStrict ? "#FFF0F3" : "#FAFAF9",
+                borderColor: budgetStrict ? "#FF6B8A" : "#E8E5E0",
+              }}
+              whileHover={{ background: budgetStrict ? "#FFE6EC" : "#F5F3F1" }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: `1.5px solid ${budgetStrict ? "#FF6B8A" : "#E8E5E0"}`,
+                cursor: "pointer",
+                outline: "none",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 16, marginBottom: 3 }}>🔒</div>
+              <p className="font-heading" style={{ fontSize: 12, fontWeight: 800, color: budgetStrict ? "#FF6B8A" : "#44403c", margin: 0 }}>
+                Strict
+              </p>
+              <p style={{ fontSize: 10, color: budgetStrict ? "#FF6B8A" : "#78716c", margin: "2px 0 0" }}>
+                Must stay under {displayVal}
+              </p>
+            </motion.button>
+
+            <motion.button
+              onClick={() => onBudgetStrictChange(false)}
+              animate={{
+                background: !budgetStrict ? "#F0FDF4" : "#FAFAF9",
+                borderColor: !budgetStrict ? "#2ECC71" : "#E8E5E0",
+              }}
+              whileHover={{ background: !budgetStrict ? "#DCFCE7" : "#F5F3F1" }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: `1.5px solid ${!budgetStrict ? "#2ECC71" : "#E8E5E0"}`,
+                cursor: "pointer",
+                outline: "none",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 16, marginBottom: 3 }}>🤙</div>
+              <p className="font-heading" style={{ fontSize: 12, fontWeight: 800, color: !budgetStrict ? "#2ECC71" : "#44403c", margin: 0 }}>
+                Flexible
+              </p>
+              <p style={{ fontSize: 10, color: !budgetStrict ? "#2ECC71" : "#78716c", margin: "2px 0 0" }}>
+                Around {displayVal} is fine
+              </p>
+            </motion.button>
+          </div>
         </div>
       )}
     </div>

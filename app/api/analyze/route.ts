@@ -448,7 +448,8 @@ async function analyzeWithGemini(
   actualComments?: ActualComment[],
   tiktokVideos?: TikTokVideo[],
   budget?: number | null,
-  model = GEMINI_MODEL
+  model = GEMINI_MODEL,
+  budgetStrict = true
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -473,7 +474,9 @@ async function analyzeWithGemini(
   )) as string[];
 
   const budgetBlock = budget
-    ? `\n⚠️ HARD BUDGET LIMIT: $${budget}. You MUST only recommend products priced AT OR BELOW $${budget}. Do NOT recommend anything above this price. If the most popular product exceeds the budget, pick the best one that fits within $${budget} instead. All buyLinks prices must also be at or below $${budget}.\n`
+    ? budgetStrict
+      ? `\n⚠️ STRICT BUDGET: $${budget}. You MUST only recommend products priced AT OR BELOW $${budget}. Do NOT recommend anything above this price. All buyLinks prices must also be at or below $${budget}.\n`
+      : `\n💡 BUDGET PREFERENCE: around $${budget}. Prefer products in this range, but you may suggest slightly higher options if they are significantly better value.\n`
     : "";
 
   const preferencesBlock = preferencesSummary
@@ -791,7 +794,16 @@ export async function POST(req: NextRequest) {
 
     const startTime = Date.now();
     const detectedStore = storeOverride || detectStore(query);
-    const budget = detectBudget(query);
+
+    // Budget: prefer explicit value from refine flow, fall back to query string detection
+    const prefBudget = preferences && typeof preferences === "object" && typeof preferences.budget === "number"
+      ? preferences.budget
+      : null;
+    const prefBudgetStrict = preferences && typeof preferences === "object" && typeof preferences.budgetStrict === "boolean"
+      ? preferences.budgetStrict
+      : true; // default strict
+    const budget = prefBudget ?? detectBudget(query);
+    const budgetStrict = budget ? prefBudgetStrict : false;
 
     const preferencesSummary: string | undefined =
       preferences && typeof preferences === "object" && typeof preferences.summary === "string"
@@ -837,7 +849,7 @@ export async function POST(req: NextRequest) {
     // We speculatively fetch product links for the query — Tavily returns the
     // right product pages even without knowing the exact winner name yet
     const [geminiResult, speculativeLinks] = await Promise.allSettled([
-      analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget),
+      analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_MODEL, budgetStrict),
       fetchProductDirectLinks(query, ""),
     ]);
 
@@ -854,7 +866,7 @@ export async function POST(req: NextRequest) {
     // - other: different model may handle the request better
     if (!analysis) {
       try {
-        analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_FALLBACK_MODEL);
+        analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_FALLBACK_MODEL, budgetStrict);
         geminiStatus = 0; // reset so we don't return 429 below
       } catch (retryErr) {
         geminiStatus = (retryErr as Error & { status?: number }).status ?? geminiStatus;

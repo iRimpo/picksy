@@ -13,6 +13,7 @@ import BinaryChoice from "./inputs/BinaryChoice";
 import SingleSelect from "./inputs/SingleSelect";
 import MultiSelect from "./inputs/MultiSelect";
 import RangeSlider from "./inputs/RangeSlider";
+import FreeText from "./inputs/FreeText";
 
 interface QuestionFlowProps {
   decoded: DecodedQuery;
@@ -29,32 +30,21 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
   const questionSet = getQuestionsForCategory(decoded);
   const questions = questionSet.questions;
 
-  // Seed answers with pre-fills detected from the query
   const [answers, setAnswers] = useState<QuestionAnswer[]>(() =>
     getPrefilledAnswers(decoded, questions)
   );
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 = forward, -1 = back
+  const [direction, setDirection] = useState(1);
 
-  // Skip steps that were pre-filled (first render only)
-  useEffect(() => {
-    const prefilledIds = getPrefilledAnswers(decoded, questions).map((a) => a.questionId);
-    if (prefilledIds.includes(questions[0]?.id) && questions.length > 1) {
-      // Don't auto-skip on mount — let user confirm pre-fill
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => {}, []);
 
   const currentQuestion = questions[step];
   const currentAnswer = answers.find((a) => a.questionId === currentQuestion?.id) ?? null;
 
-  function getSelectedIds(): string[] {
-    return currentAnswer?.selectedOptionIds ?? [];
-  }
-
-  function getSelectedId(): string | null {
-    return currentAnswer?.selectedOptionIds?.[0] ?? null;
-  }
+  function getSelectedIds(): string[] { return currentAnswer?.selectedOptionIds ?? []; }
+  function getSelectedId(): string | null { return currentAnswer?.selectedOptionIds?.[0] ?? null; }
+  function getFreeText(): string { return currentAnswer?.freeText ?? ""; }
 
   function getRangeValue(): number {
     if (currentAnswer?.rangeValue !== undefined) return currentAnswer.rangeValue;
@@ -65,40 +55,29 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
     return 0;
   }
 
+  function getBudgetStrict(): boolean {
+    return currentAnswer?.budgetStrict ?? true;
+  }
+
   function setAnswer(answer: QuestionAnswer) {
     setAnswers((prev) => {
-      const existing = prev.findIndex((a) => a.questionId === answer.questionId);
-      if (existing >= 0) {
-        const next = [...prev];
-        next[existing] = answer;
-        return next;
-      }
+      const idx = prev.findIndex((a) => a.questionId === answer.questionId);
+      if (idx >= 0) { const next = [...prev]; next[idx] = answer; return next; }
       return [...prev, answer];
     });
   }
 
   function advance() {
-    if (step < questions.length - 1) {
-      setDirection(1);
-      setStep((s) => s + 1);
-    }
+    if (step < questions.length - 1) { setDirection(1); setStep((s) => s + 1); }
   }
 
   function goBack() {
-    if (step > 0) {
-      setDirection(-1);
-      setStep((s) => s - 1);
-    }
+    if (step > 0) { setDirection(-1); setStep((s) => s - 1); }
   }
 
   const handleSingleOrBinarySelect = useCallback(
     (optionId: string) => {
-      setAnswer({
-        questionId: currentQuestion.id,
-        preferenceKey: currentQuestion.preferenceKey,
-        selectedOptionIds: [optionId],
-      });
-      // Auto-advance after brief visual feedback
+      setAnswer({ questionId: currentQuestion.id, preferenceKey: currentQuestion.preferenceKey, selectedOptionIds: [optionId] });
       setTimeout(() => advance(), 320);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,18 +88,10 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
     const prev = getSelectedIds();
     const max = currentQuestion.maxSelections ?? 3;
     let next: string[];
-    if (prev.includes(optionId)) {
-      next = prev.filter((id) => id !== optionId);
-    } else if (prev.length < max) {
-      next = [...prev, optionId];
-    } else {
-      return; // at max, ignore
-    }
-    setAnswer({
-      questionId: currentQuestion.id,
-      preferenceKey: currentQuestion.preferenceKey,
-      selectedOptionIds: next,
-    });
+    if (prev.includes(optionId)) { next = prev.filter((id) => id !== optionId); }
+    else if (prev.length < max) { next = [...prev, optionId]; }
+    else { return; }
+    setAnswer({ questionId: currentQuestion.id, preferenceKey: currentQuestion.preferenceKey, selectedOptionIds: next });
   }
 
   function handleRangeChange(value: number) {
@@ -128,19 +99,31 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
       questionId: currentQuestion.id,
       preferenceKey: currentQuestion.preferenceKey,
       rangeValue: value,
+      budgetStrict: getBudgetStrict(),
     });
   }
 
+  function handleBudgetStrictChange(strict: boolean) {
+    setAnswer({
+      questionId: currentQuestion.id,
+      preferenceKey: currentQuestion.preferenceKey,
+      rangeValue: getRangeValue(),
+      budgetStrict: strict,
+    });
+  }
+
+  function handleFreeTextChange(text: string) {
+    setAnswer({ questionId: currentQuestion.id, preferenceKey: currentQuestion.preferenceKey, freeText: text });
+  }
+
   function handleConfirm() {
-    // Ensure range questions have a value even if not touched
     const finalAnswers = [...answers];
     questions.forEach((q) => {
       if (q.type === "range" && !finalAnswers.find((a) => a.questionId === q.id)) {
         const mid = Math.round((q.range!.min + q.range!.max) / 2);
-        finalAnswers.push({ questionId: q.id, preferenceKey: q.preferenceKey, rangeValue: mid });
+        finalAnswers.push({ questionId: q.id, preferenceKey: q.preferenceKey, rangeValue: mid, budgetStrict: true });
       }
     });
-
     const prefs = answersToPreferences(finalAnswers, questions, decoded.original);
     const encoded = encodeURIComponent(JSON.stringify(prefs));
     router.push(`/results?q=${encodeURIComponent(decoded.original)}&preferences=${encoded}`);
@@ -150,12 +133,13 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
     router.push(`/results?q=${encodeURIComponent(decoded.original)}`);
   }
 
-  const needsNextButton =
-    currentQuestion?.type === "multi-select" || currentQuestion?.type === "range";
+  const isFreeText = currentQuestion?.type === "free-text";
+  const needsNextButton = currentQuestion?.type === "multi-select" || currentQuestion?.type === "range" || isFreeText;
+  const isLastStep = step === questions.length - 1;
 
   const canProceed =
-    currentQuestion?.type === "range"
-      ? true // range always has a value
+    currentQuestion?.type === "range" || isFreeText
+      ? true
       : getSelectedIds().length > 0;
 
   if (!currentQuestion) return null;
@@ -163,31 +147,24 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
   return (
     <div
       style={{
-        borderRadius: 16,
+        borderRadius: 20,
         overflow: "hidden",
-        background: "#1c1917",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(46,204,113,0.1), inset 0 1px 0 rgba(255,255,255,0.06)",
+        background: "white",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)",
       }}
     >
-      {/* Header: back button + step indicator */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "14px 16px 0",
-          gap: 8,
-        }}
-      >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", padding: "14px 16px 0", gap: 8 }}>
         <motion.button
           onClick={goBack}
           animate={{ opacity: step > 0 ? 1 : 0 }}
-          whileHover={step > 0 ? { scale: 1.1, color: "rgba(255,255,255,0.9)" } : {}}
+          whileHover={step > 0 ? { scale: 1.1, color: "#1c1917" } : {}}
           whileTap={step > 0 ? { scale: 0.9 } : {}}
           transition={{ opacity: { duration: 0.2 }, scale: { type: "spring", stiffness: 400, damping: 24 } }}
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.5)",
+            color: "#A8A29E",
             cursor: step > 0 ? "pointer" : "default",
             padding: "4px",
             display: "flex",
@@ -205,7 +182,7 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
       </div>
 
       {/* Question area */}
-      <div style={{ padding: "12px 16px 0", minHeight: 340, position: "relative", overflow: "hidden" }}>
+      <div style={{ padding: "12px 16px 0", minHeight: 320, position: "relative", overflow: "hidden" }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -222,7 +199,7 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
               style={{
                 fontSize: 10,
                 fontWeight: 900,
-                color: "rgba(46,204,113,0.8)",
+                color: "#FF6B8A",
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 marginBottom: 6,
@@ -237,7 +214,7 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
               style={{
                 fontSize: 20,
                 fontWeight: 900,
-                color: "white",
+                color: "#1c1917",
                 marginBottom: currentQuestion.subPrompt ? 4 : 16,
                 lineHeight: 1.25,
               }}
@@ -245,60 +222,50 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
               {currentQuestion.prompt}
             </h3>
             {currentQuestion.subPrompt && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "rgba(255,255,255,0.4)",
-                  marginBottom: 14,
-                  fontWeight: 500,
-                }}
-              >
+              <p style={{ fontSize: 12, color: "#78716c", marginBottom: 14, fontWeight: 500 }}>
                 {currentQuestion.subPrompt}
               </p>
             )}
 
             {/* Input */}
             {currentQuestion.type === "binary" && (
-              <BinaryChoice
-                question={currentQuestion}
-                selected={getSelectedId()}
-                onSelect={handleSingleOrBinarySelect}
-              />
+              <BinaryChoice question={currentQuestion} selected={getSelectedId()} onSelect={handleSingleOrBinarySelect} />
             )}
             {currentQuestion.type === "single-select" && (
-              <SingleSelect
-                question={currentQuestion}
-                selected={getSelectedId()}
-                onSelect={handleSingleOrBinarySelect}
-              />
+              <SingleSelect question={currentQuestion} selected={getSelectedId()} onSelect={handleSingleOrBinarySelect} />
             )}
             {currentQuestion.type === "multi-select" && (
-              <MultiSelect
-                question={currentQuestion}
-                selected={getSelectedIds()}
-                onToggle={handleMultiToggle}
-              />
+              <MultiSelect question={currentQuestion} selected={getSelectedIds()} onToggle={handleMultiToggle} />
             )}
             {currentQuestion.type === "range" && (
               <RangeSlider
                 question={currentQuestion}
                 value={getRangeValue()}
                 onChange={handleRangeChange}
+                budgetStrict={getBudgetStrict()}
+                onBudgetStrictChange={handleBudgetStrictChange}
+              />
+            )}
+            {isFreeText && (
+              <FreeText
+                value={getFreeText()}
+                onChange={handleFreeTextChange}
+                onSubmit={isLastStep ? handleConfirm : advance}
               />
             )}
 
-            {/* Next button for multi-select and range */}
-            {needsNextButton && (
+            {/* Next / See results button for multi-select, range, and free-text */}
+            {needsNextButton && !isFreeText && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4, marginBottom: 16 }}>
                 <motion.button
                   className="font-heading"
-                  onClick={step < questions.length - 1 ? advance : handleConfirm}
+                  onClick={isLastStep ? handleConfirm : advance}
                   whileTap={{ scale: 0.97 }}
                   whileHover={canProceed ? { scale: 1.04, boxShadow: "0 6px 24px rgba(255,107,138,0.45)" } : {}}
-                  animate={{ opacity: canProceed ? 1 : 0.45 }}
+                  animate={{ opacity: canProceed ? 1 : 0.4 }}
                   disabled={!canProceed}
                   style={{
-                    background: "linear-gradient(135deg, #FF6B8A, #2ECC71)",
+                    background: "linear-gradient(135deg, #FF6B8A, #FF9BAD)",
                     border: "none",
                     color: "white",
                     borderRadius: 100,
@@ -310,7 +277,7 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
                     boxShadow: "0 4px 16px rgba(255,107,138,0.3)",
                   }}
                 >
-                  {step < questions.length - 1 ? "Next →" : "See results →"}
+                  {isLastStep ? "See results →" : "Next →"}
                 </motion.button>
               </div>
             )}
@@ -319,10 +286,10 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
       </div>
 
       {/* Divider */}
-      <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 16px" }} />
+      <div style={{ height: 1, background: "#F0EDEA", margin: "0 16px" }} />
 
-      {/* Answer summary + confirm */}
-      <div style={{ background: "#fafaf9", padding: "0 16px" }}>
+      {/* Answer summary */}
+      <div style={{ background: "#FAFAF9", padding: "0 16px" }}>
         <AnswerSummary
           answers={answers}
           questions={questions}

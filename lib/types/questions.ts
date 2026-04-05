@@ -1,6 +1,6 @@
 // ─── Question Flow Types ────────────────────────────────────────────────────────
 
-export type QuestionType = "binary" | "range" | "multi-select" | "single-select";
+export type QuestionType = "binary" | "range" | "multi-select" | "single-select" | "free-text";
 
 export interface QuestionOption {
   id: string;
@@ -42,4 +42,6 @@ export interface QuestionAnswer {
   preferenceKey: string;
   selectedOptionIds?: string[];
   rangeValue?: number;
+  budgetStrict?: boolean; // true = hard limit, false = flexible guideline
+  freeText?: string;      // for free-text questions
 }

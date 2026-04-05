@@ -39,4 +39,8 @@ export interface ResolvedPreferences {
   summary: string;
   /** Structured key-value pairs for future use */
   answers?: Record<string, string | string[] | number>;
+  /** Numeric budget if set via refine flow */
+  budget?: number;
+  /** Whether the budget is a hard limit (true) or a guideline (false) */
+  budgetStrict?: boolean;
 }

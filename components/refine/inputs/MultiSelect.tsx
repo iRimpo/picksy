@@ -24,18 +24,16 @@ export default function MultiSelect({ question, selected, onToggle }: MultiSelec
           return (
             <motion.button
               key={opt.id}
-              onClick={() => {
-                if (!isDisabled || isSelected) onToggle(opt.id);
-              }}
+              onClick={() => { if (!isDisabled || isSelected) onToggle(opt.id); }}
               initial={{ opacity: 0, scale: 0.84, y: 8 }}
               animate={{
-                opacity: isDisabled ? 0.35 : 1,
+                opacity: isDisabled ? 0.4 : 1,
                 scale: 1,
                 y: 0,
-                background: isSelected ? "rgba(46,204,113,0.2)" : "rgba(255,255,255,0.07)",
-                borderColor: isSelected ? "#2ECC71" : "rgba(255,255,255,0.14)",
+                background: isSelected ? "#FFF0F3" : "#FAFAF9",
+                borderColor: isSelected ? "#FF6B8A" : "#E8E5E0",
               }}
-              whileHover={!isDisabled ? { scale: 1.05 } : {}}
+              whileHover={!isDisabled ? { scale: 1.05, background: isSelected ? "#FFE6EC" : "#F5F3F1" } : {}}
               whileTap={!isDisabled ? { scale: 0.94 } : {}}
               transition={{
                 scale: { type: "spring", stiffness: 380, damping: 22, delay: index * 0.045 },
@@ -50,7 +48,7 @@ export default function MultiSelect({ question, selected, onToggle }: MultiSelec
                 gap: 6,
                 padding: "9px 14px",
                 borderRadius: 100,
-                border: `1.5px solid ${isSelected ? "#2ECC71" : "rgba(255,255,255,0.14)"}`,
+                border: `1.5px solid ${isSelected ? "#FF6B8A" : "#E8E5E0"}`,
                 cursor: isDisabled ? "not-allowed" : "pointer",
                 outline: "none",
               }}
@@ -62,7 +60,7 @@ export default function MultiSelect({ question, selected, onToggle }: MultiSelec
                 style={{
                   fontSize: 13,
                   fontWeight: isSelected ? 700 : 500,
-                  color: isSelected ? "white" : "rgba(255,255,255,0.7)",
+                  color: isSelected ? "#FF6B8A" : "#44403c",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -75,12 +73,7 @@ export default function MultiSelect({ question, selected, onToggle }: MultiSelec
                     animate={{ scale: 1, width: "auto" }}
                     exit={{ scale: 0, width: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      color: "#2ECC71",
-                      overflow: "hidden",
-                    }}
+                    style={{ fontSize: 10, fontWeight: 800, color: "#FF6B8A", overflow: "hidden" }}
                   >
                     ✓
                   </motion.span>
@@ -91,15 +84,10 @@ export default function MultiSelect({ question, selected, onToggle }: MultiSelec
         })}
       </div>
 
-      {/* Max indicator */}
       <motion.p
-        animate={{ color: atMax ? "rgba(46,204,113,0.9)" : "rgba(255,255,255,0.3)" }}
+        animate={{ color: atMax ? "#FF6B8A" : "#A8A29E" }}
         transition={{ duration: 0.2 }}
-        style={{
-          marginTop: 10,
-          fontSize: 11,
-          fontWeight: 500,
-        }}
+        style={{ marginTop: 10, fontSize: 11, fontWeight: 500 }}
       >
         {selected.length}/{max} selected
         {atMax && " — tap a chip to deselect"}

@@ -22,12 +22,12 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
             onClick={() => onSelect(opt.id)}
             initial={{ opacity: 0, y: 14 }}
             animate={{
-              borderColor: isSelected ? "#2ECC71" : "rgba(255,255,255,0.12)",
-              background: isSelected ? "rgba(46,204,113,0.15)" : "rgba(255,255,255,0.06)",
+              borderColor: isSelected ? "#FF6B8A" : "#E8E5E0",
+              background: isSelected ? "#FFF0F3" : "#FAFAF9",
               opacity: 1,
               y: 0,
             }}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, background: isSelected ? "#FFE6EC" : "#F5F3F1" }}
             whileTap={{ scale: 0.96 }}
             transition={{
               opacity: { duration: 0.38, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 },
@@ -44,13 +44,12 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
               gap: 8,
               padding: "20px 12px",
               borderRadius: 16,
-              border: `2px solid ${isSelected ? "#2ECC71" : "rgba(255,255,255,0.12)"}`,
+              border: `2px solid ${isSelected ? "#FF6B8A" : "#E8E5E0"}`,
               cursor: "pointer",
               position: "relative",
               outline: "none",
             }}
           >
-            {/* Checkmark */}
             {isSelected && (
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
@@ -63,7 +62,7 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
                   width: 20,
                   height: 20,
                   borderRadius: "50%",
-                  background: "#2ECC71",
+                  background: "#FF6B8A",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -76,16 +75,14 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
               </motion.div>
             )}
 
-            {/* Icon */}
             <span style={{ fontSize: 32, lineHeight: 1 }}>{opt.icon}</span>
 
-            {/* Label */}
             <span
               className="font-heading"
               style={{
                 fontSize: 15,
                 fontWeight: 800,
-                color: isSelected ? "white" : "rgba(255,255,255,0.85)",
+                color: isSelected ? "#FF6B8A" : "#1c1917",
                 lineHeight: 1.2,
                 textAlign: "center",
               }}
@@ -93,12 +90,11 @@ export default function BinaryChoice({ question, selected, onSelect }: BinaryCho
               {opt.label}
             </span>
 
-            {/* Description */}
             {opt.description && (
               <span
                 style={{
                   fontSize: 11,
-                  color: isSelected ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.4)",
+                  color: isSelected ? "#FF6B8A" : "#78716c",
                   textAlign: "center",
                   lineHeight: 1.4,
                 }}
