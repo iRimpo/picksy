@@ -295,6 +295,7 @@ async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
     ]);
 
     clearTimeout(timeout);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return videos.map(({ webVideoUrl, subtitleLinks: _sl, ...rest }) => ({
       ...rest,
       videoUrl: webVideoUrl,
