@@ -641,9 +641,9 @@ function ErrorState({ query, onRetry }: { query: string; onRetry: () => void }) 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] px-4 text-center">
       <div className="text-5xl mb-4">😕</div>
-      <h2 className="text-xl font-black text-stone-900 mb-2">Couldn&apos;t find results</h2>
+      <h2 className="text-xl font-black text-stone-900 mb-2">Analysis failed</h2>
       <p className="text-stone-500 text-sm mb-6 max-w-xs">
-        We couldn&apos;t find Reddit discussions for &ldquo;{query}&rdquo;. Try rephrasing or being more specific.
+        Something went wrong while analyzing &ldquo;{query}&rdquo;. This is usually temporary — try again.
       </p>
       <button onClick={onRetry} className="bg-stone-900 hover:bg-stone-800 transition px-6 py-3 rounded-xl font-bold text-white text-sm">
         Try Again
