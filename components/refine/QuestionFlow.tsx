@@ -327,6 +327,8 @@ export default function QuestionFlow({ decoded }: QuestionFlowProps) {
           answers={answers}
           questions={questions}
           query={decoded.original}
+          currentStep={step}
+          totalSteps={questions.length}
           onConfirm={handleConfirm}
           onSkip={handleSkip}
         />

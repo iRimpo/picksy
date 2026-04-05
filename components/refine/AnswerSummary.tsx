@@ -7,6 +7,8 @@ interface AnswerSummaryProps {
   answers: QuestionAnswer[];
   questions: QuestionDefinition[];
   query: string;
+  currentStep: number;
+  totalSteps: number;
   onConfirm: () => void;
   onSkip: () => void;
 }
@@ -28,7 +30,8 @@ function chipLabel(answer: QuestionAnswer, question: QuestionDefinition): string
   return "";
 }
 
-export default function AnswerSummary({ answers, questions, query, onConfirm, onSkip }: AnswerSummaryProps) {
+export default function AnswerSummary({ answers, questions, query, currentStep, totalSteps, onConfirm, onSkip }: AnswerSummaryProps) {
+  const isLastStep = currentStep === totalSteps - 1;
   const chips = answers
     .map((a) => {
       const q = questions.find((q) => q.id === a.questionId);
@@ -73,28 +76,45 @@ export default function AnswerSummary({ answers, questions, query, onConfirm, on
         </div>
       )}
 
-      {/* Buttons */}
+      {/* Buttons — confirm only on last step */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center" }}>
-        <motion.button
-          className="font-heading"
-          onClick={onConfirm}
-          whileTap={{ scale: 0.97 }}
-          whileHover={{ scale: 1.03, boxShadow: "0 8px 28px rgba(255,107,138,0.5)" }}
-          style={{
-            background: "linear-gradient(135deg, #FF6B8A, #2ECC71)",
-            color: "white",
-            border: "none",
-            borderRadius: 100,
-            padding: "12px 28px",
-            fontSize: 14,
-            fontWeight: 800,
-            cursor: "pointer",
-            letterSpacing: "0.02em",
-            boxShadow: "0 4px 20px rgba(255,107,138,0.4)",
-          }}
-        >
-          Find my {productWord} →
-        </motion.button>
+        {isLastStep ? (
+          <motion.button
+            className="font-heading"
+            onClick={onConfirm}
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.03, boxShadow: "0 8px 28px rgba(255,107,138,0.5)" }}
+            style={{
+              background: "linear-gradient(135deg, #FF6B8A, #2ECC71)",
+              color: "white",
+              border: "none",
+              borderRadius: 100,
+              padding: "12px 28px",
+              fontSize: 14,
+              fontWeight: 800,
+              cursor: "pointer",
+              letterSpacing: "0.02em",
+              boxShadow: "0 4px 20px rgba(255,107,138,0.4)",
+            }}
+          >
+            Find my {productWord} →
+          </motion.button>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: i === currentStep ? 16 : 6,
+                  height: 6,
+                  borderRadius: 100,
+                  background: i < currentStep ? "#2ECC71" : i === currentStep ? "#FF6B8A" : "#d6d3d1",
+                  transition: "all 0.3s ease",
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         <button
           onClick={onSkip}
@@ -109,7 +129,7 @@ export default function AnswerSummary({ answers, questions, query, onConfirm, on
             textDecorationColor: "#d6d3d1",
           }}
         >
-          Skip
+          Skip all
         </button>
       </div>
     </div>

@@ -172,8 +172,8 @@ function LoadingState({ query }: { query: string }) {
 
       {/* Trust line */}
       <div className="flex items-center gap-5 mt-10 text-white/55 text-xs">
-        <span className="flex items-center gap-1.5">🛡️ 12,000+ posts analyzed</span>
-        <span className="flex items-center gap-1.5">⚡ ~30 seconds</span>
+        <span className="flex items-center gap-1.5">🛡️ Real opinions only</span>
+        <span className="flex items-center gap-1.5">🔴 Reddit + 🎵 TikTok</span>
       </div>
     </div>
   );
@@ -289,7 +289,7 @@ function StoreSelector({ stores, onSelect }: { stores: StoreLocation[]; onSelect
 
 // ─── Winner Card ───────────────────────────────────────────────────────────────
 
-function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null; alternatives: Alternative[] }) {
+function WinnerCard({ winner, meta, imageUrl, alternatives, tiktokSentiment }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null; alternatives: Alternative[]; tiktokSentiment?: number }) {
   const [imgError, setImgError] = useState(false);
   const [barsVisible, setBarsVisible] = useState(false);
   useEffect(() => {
@@ -492,20 +492,33 @@ function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; 
         </div>
       </div>
 
-      {/* How it compares — animated score bars */}
+      {/* How it compares — compact with Reddit/TikTok ratio */}
       {alternatives.length > 0 && (
         <div className="mb-8">
-          <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-            <BarChart2 size={13} /> How it compares
-          </h4>
-          <div className="space-y-2.5">
-            {/* Winner row */}
-            <div className="flex items-center gap-3">
-              <div className="w-28 shrink-0">
-                <p className="text-xs font-black text-stone-900 truncate leading-tight">{winner.name.split(" ").slice(-2).join(" ")}</p>
-                <span className="text-[9px] font-bold text-white bg-brand-green rounded-full px-1.5 py-0.5">Top Pick</span>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1.5">
+              <BarChart2 size={13} /> How it compares
+            </h4>
+            {tiktokSentiment !== undefined && (
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FF4500]/10 text-[#FF4500]">
+                  <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="10"/><text x="10" y="14" textAnchor="middle" fontSize="11" fill="white" fontWeight="700">r</text></svg>
+                  Reddit {winner.sentiment}%
+                </span>
+                <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-900/8 text-stone-700">
+                  🎵 TikTok {tiktokSentiment}%
+                </span>
               </div>
-              <div className="flex-1 h-7 bg-stone-100 rounded-full overflow-hidden relative">
+            )}
+          </div>
+          <div className="space-y-2">
+            {/* Winner row */}
+            <div className="flex items-center gap-2.5 bg-brand-green/5 rounded-xl px-3 py-2">
+              <div className="w-24 shrink-0">
+                <p className="text-[11px] font-black text-stone-900 truncate leading-tight">{winner.name.split(" ").slice(-2).join(" ")}</p>
+                <span className="text-[9px] font-bold text-brand-green">🏆 Top Pick</span>
+              </div>
+              <div className="flex-1 h-4 bg-stone-100 rounded-full overflow-hidden relative">
                 <div
                   className="h-full rounded-full transition-all ease-out"
                   style={{
@@ -514,23 +527,23 @@ function WinnerCard({ winner, meta, imageUrl, alternatives }: { winner: Winner; 
                     transitionDuration: "1.2s",
                   }}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-stone-700 mix-blend-multiply">{winner.score}</span>
               </div>
+              <span className="text-xs font-black text-brand-green shrink-0 w-7 text-right">{winner.score}</span>
             </div>
             {/* Alt rows */}
             {alternatives.slice(0, 3).map((alt) => (
-              <div key={alt.id} className="flex items-center gap-3">
-                <div className="w-28 shrink-0">
-                  <p className="text-xs font-medium text-stone-600 truncate leading-tight">{alt.name.split(" ").slice(-2).join(" ")}</p>
+              <div key={alt.id} className="flex items-center gap-2.5 px-3 py-1.5">
+                <div className="w-24 shrink-0">
+                  <p className="text-[11px] font-medium text-stone-600 truncate leading-tight">{alt.name.split(" ").slice(-2).join(" ")}</p>
                   <p className="text-[9px] text-stone-400 truncate">{alt.brand}</p>
                 </div>
-                <div className="flex-1 h-7 bg-stone-100 rounded-full overflow-hidden relative">
+                <div className="flex-1 h-3 bg-stone-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-stone-300 transition-all ease-out"
                     style={{ width: barsVisible ? `${alt.score}%` : "0%", transitionDuration: "1.2s" }}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-stone-500">{alt.score}</span>
                 </div>
+                <span className="text-[11px] font-semibold text-stone-400 shrink-0 w-7 text-right">{alt.score}</span>
               </div>
             ))}
           </div>
@@ -607,14 +620,18 @@ function AlternativesSection({ alternatives, query }: { alternatives: Alternativ
       {expanded && (
         <div className="mt-3 space-y-3">
           {alternatives.map((alt) => (
-            <div key={alt.id} className="bg-white rounded-2xl border border-stone-200 p-5">
+            <Link
+              key={alt.id}
+              href={`/results?q=${encodeURIComponent(alt.name)}`}
+              className="block bg-white rounded-2xl border border-stone-200 p-5 hover:border-brand-pink/40 hover:shadow-md transition-all group"
+            >
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-xl bg-stone-50 border border-stone-100 flex items-center justify-center text-3xl shrink-0">
                   {alt.emoji}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-stone-400 mb-0.5">{alt.brand}</p>
-                  <p className="font-semibold text-stone-900 text-sm leading-tight">{alt.name}</p>
+                  <p className="font-semibold text-stone-900 text-sm leading-tight group-hover:text-brand-pink transition-colors">{alt.name}</p>
                   <p className="text-xs text-stone-500 mt-1">{alt.sentiment}% positive · {alt.mentions} mentions</p>
                   <p className="text-xs text-stone-400 italic mt-1">{alt.whyNotWinner}</p>
                 </div>
@@ -625,9 +642,10 @@ function AlternativesSection({ alternatives, query }: { alternatives: Alternativ
                   }`}>
                     {alt.score}/100
                   </span>
+                  <p className="text-[10px] text-stone-300 group-hover:text-brand-pink transition-colors mt-1">Search →</p>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -702,9 +720,43 @@ function detectSentiment(text: string): "positive" | "negative" | "neutral" {
   return "neutral";
 }
 
-function RedditAvatar({ avatarUrl, author, bg, size = 44 }: { avatarUrl: string | null; author: string; bg?: string; size?: number }) {
+// Picksy-brand avatar: mini mascot face with color variants
+function PicksyAvatar({ bg, index = 0, size = 42 }: { bg: string; index?: number; size?: number }) {
+  const v = index % 3;
+  return (
+    <svg width={size} height={size} viewBox="0 0 42 42" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="21" cy="21" r="21" fill={bg} />
+      <circle cx="21" cy="22" r="13" fill="#FF9EC8" />
+      <ellipse cx="15.5" cy="25" rx="3" ry="2" fill="#FF6B8A" opacity="0.4" />
+      <ellipse cx="26.5" cy="25" rx="3" ry="2" fill="#FF6B8A" opacity="0.4" />
+      {v === 0 && (
+        <>
+          <path d="M 14 20 Q 17.5 15.5 21 20" stroke="#1A1A2E" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 21 20 Q 24.5 15.5 28 20" stroke="#1A1A2E" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+        </>
+      )}
+      {v === 1 && (
+        <>
+          <path d="M 14 20 Q 17.5 15.5 21 20" stroke="#1A1A2E" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <line x1="22" y1="18" x2="28" y2="18" stroke="#1A1A2E" strokeWidth="1.8" strokeLinecap="round" />
+        </>
+      )}
+      {v === 2 && (
+        <>
+          <circle cx="17" cy="19" r="2.5" fill="#1A1A2E" />
+          <circle cx="25" cy="19" r="2.5" fill="#1A1A2E" />
+          <circle cx="18" cy="18.2" r="0.9" fill="white" />
+          <circle cx="26" cy="18.2" r="0.9" fill="white" />
+        </>
+      )}
+      <path d="M 15 26 Q 21 31.5 27 26" stroke="#1A1A2E" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <path d="M 7 7 L 8.1 9.6 L 11 11 L 8.1 12.4 L 7 15 L 5.9 12.4 L 3 11 L 5.9 9.6 Z" fill="white" opacity="0.9" />
+    </svg>
+  );
+}
+
+function RedditAvatar({ avatarUrl, author, bg, index = 0, size = 44 }: { avatarUrl: string | null; author: string; bg?: string; index?: number; size?: number }) {
   const [imgError, setImgError] = useState(false);
-  const initial = author.replace("[deleted]", "?")[0]?.toUpperCase() ?? "?";
   const cls = `rounded-full object-cover shrink-0 border-2 border-white shadow-sm`;
 
   if (avatarUrl && !imgError) {
@@ -718,14 +770,7 @@ function RedditAvatar({ avatarUrl, author, bg, size = 44 }: { avatarUrl: string 
       />
     );
   }
-  return (
-    <div
-      className={`${cls} flex items-center justify-center text-white font-black`}
-      style={{ width: size, height: size, background: bg || "#FF4500", fontSize: size * 0.36 }}
-    >
-      {initial}
-    </div>
-  );
+  return <PicksyAvatar bg={bg || "#FF4500"} index={index} size={size} />;
 }
 
 // Single comment card — two variants: real user comment vs thread excerpt
@@ -746,15 +791,9 @@ function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditCommen
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           {isExcerpt ? (
-            /* Thread excerpt: show Reddit icon + subreddit */
-            <div
-              className="w-[42px] h-[42px] rounded-full shrink-0 flex items-center justify-center text-white font-black text-base"
-              style={{ background: bg }}
-            >
-              r/
-            </div>
+            <PicksyAvatar bg={bg} index={index + cardOffset} size={42} />
           ) : (
-            <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={bg} size={42} />
+            <RedditAvatar avatarUrl={comment.avatarUrl} author={comment.author} bg={bg} index={index + cardOffset} size={42} />
           )}
           <div>
             {!isExcerpt && (
@@ -815,12 +854,7 @@ function TikTokCard({ video, index }: { video: TikTokVideoData; index: number })
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-[42px] h-[42px] rounded-full shrink-0 flex items-center justify-center text-white font-black text-sm"
-            style={{ background: bg }}
-          >
-            {video.author[0]?.toUpperCase() || "T"}
-          </div>
+          <PicksyAvatar bg={bg} index={index + 5} size={42} />
           <div>
             <p className="text-[13px] font-bold text-stone-800 leading-tight">@{video.author}</p>
             <div className="flex items-center gap-1.5">
@@ -914,12 +948,8 @@ function RedditCommentsSection({ threadUrls, query, initialComments, tiktokVideo
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2.5">
             {AVATAR_BG_COLORS.slice(0, 5).map((color, i) => (
-              <div
-                key={i}
-                className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-[10px] font-black shadow-sm"
-                style={{ background: color }}
-              >
-                {["A", "J", "M", "R", "K"][i]}
+              <div key={i} className="rounded-full border-2 border-white shadow-sm" style={{ width: 32, height: 32 }}>
+                <PicksyAvatar bg={color} index={i} size={28} />
               </div>
             ))}
           </div>
@@ -1072,6 +1102,11 @@ function ResultsContent() {
   const [redditThreadUrls, setRedditThreadUrls] = useState<string[]>([]);
   const [preloadedComments, setPreloadedComments] = useState<RedditCommentData[]>([]);
   const [tiktokVideos, setTiktokVideos] = useState<TikTokVideoData[]>([]);
+  const tiktokSentiment = tiktokVideos.length > 0
+    ? Math.round(tiktokVideos.filter(v =>
+        detectSentiment(v.description + " " + v.topComments.join(" ")) === "positive"
+      ).length / tiktokVideos.length * 100)
+    : undefined;
   const [productImageUrl, setProductImageUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
@@ -1280,16 +1315,26 @@ function ResultsContent() {
         </main>
       )}
 
-      {/* Results — white sheet slides up from below green */}
+      {/* Results — warm cream sheet slides up from below green */}
       {showResults && result && (
         <div
-          className={`bg-white rounded-t-[2.5rem] mt-3 shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`rounded-t-[2.5rem] mt-3 shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] relative overflow-hidden ${
             resultVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
           }`}
-          style={{ minHeight: "calc(100vh - 4rem)" }}
+          style={{ minHeight: "calc(100vh - 4rem)", background: "#FEFAF5" }}
         >
-          <main className="max-w-5xl mx-auto px-4 py-8">
-            <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} />
+          {/* Decorative bg blobs */}
+          <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,107,138,0.06) 0%, transparent 70%)", transform: "translate(40%, -40%)" }} />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(46,204,113,0.05) 0%, transparent 70%)", transform: "translate(-40%, 40%)" }} />
+          <div className="absolute top-1/2 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,217,61,0.04) 0%, transparent 70%)", transform: "translate(50%, -50%)" }} />
+          <svg className="absolute top-32 left-8 opacity-[0.04] pointer-events-none" width="60" height="60" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#FF6B8A" />
+          </svg>
+          <svg className="absolute bottom-1/3 right-12 opacity-[0.05] pointer-events-none" width="40" height="40" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#2ECC71" />
+          </svg>
+          <main className="max-w-5xl mx-auto px-4 py-8 relative z-10">
+            <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} tiktokSentiment={tiktokSentiment} />
             <RedditCommentsSection threadUrls={redditThreadUrls} query={query} initialComments={preloadedComments} tiktokVideos={tiktokVideos} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
