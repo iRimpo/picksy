@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRedditToken, redditHeaders, redditApiUrl } from "@/lib/reddit-auth";
 
 export interface RedditComment {
   author: string;
@@ -87,13 +88,15 @@ function extractComments(
   }
 }
 
-async function fetchCommentsFromThread(threadUrl: string): Promise<RedditComment[]> {
-  // Ensure we use the JSON endpoint
-  const jsonUrl = threadUrl.replace(/\/?$/, ".json") + "?limit=25&sort=top";
+async function fetchCommentsFromThread(threadUrl: string, token: string | null): Promise<RedditComment[]> {
+  const jsonUrl = redditApiUrl(
+    threadUrl.replace(/\/?$/, ".json") + "?limit=25&sort=top",
+    token
+  );
 
   try {
     const res = await fetch(jsonUrl, {
-      headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+      headers: redditHeaders(token),
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
@@ -120,11 +123,12 @@ async function fetchCommentsFromThread(threadUrl: string): Promise<RedditComment
   }
 }
 
-async function searchRedditForThreads(query: string): Promise<string[]> {
+async function searchRedditForThreads(query: string, token: string | null): Promise<string[]> {
   try {
-    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&type=link&sort=relevance&limit=5`;
+    const base = redditApiUrl("https://www.reddit.com/search.json", token);
+    const url = `${base}?q=${encodeURIComponent(query)}&type=link&sort=relevance&limit=5`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+      headers: redditHeaders(token),
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
@@ -143,6 +147,8 @@ export async function GET(req: NextRequest) {
   const urlsParam = req.nextUrl.searchParams.get("urls");
   const queryParam = req.nextUrl.searchParams.get("query");
 
+  const token = await getRedditToken();
+
   let threadUrls: string[] = [];
 
   if (urlsParam) {
@@ -155,7 +161,7 @@ export async function GET(req: NextRequest) {
 
   // Fallback: search Reddit directly if no URLs were provided
   if (threadUrls.length === 0 && queryParam) {
-    threadUrls = await searchRedditForThreads(queryParam);
+    threadUrls = await searchRedditForThreads(queryParam, token);
   }
 
   if (threadUrls.length === 0) {
@@ -166,7 +172,7 @@ export async function GET(req: NextRequest) {
   const limited = threadUrls.slice(0, 3);
 
   // Fetch comments from all threads in parallel
-  const allCommentArrays = await Promise.all(limited.map(fetchCommentsFromThread));
+  const allCommentArrays = await Promise.all(limited.map((u) => fetchCommentsFromThread(u, token)));
   const allComments = allCommentArrays.flat();
 
   // Deduplicate by author+body and sort by upvotes

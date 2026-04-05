@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { decodeQuery } from "@/lib/query-decoder";
+import { getRedditToken, redditHeaders, redditApiUrl } from "@/lib/reddit-auth";
 
 export const maxDuration = 60; // Vercel function timeout — 60s
 
@@ -191,13 +192,14 @@ function extractTopComments(children: Record<string, unknown>[], subreddit: stri
 }
 
 async function fetchActualRedditComments(threadUrls: string[]): Promise<ActualComment[]> {
+  const token = await getRedditToken();
   const all: ActualComment[] = [];
   await Promise.all(
     threadUrls.slice(0, 3).map(async (url) => {
       try {
-        const jsonUrl = url.replace(/\/?$/, ".json") + "?limit=20&sort=top";
+        const jsonUrl = redditApiUrl(url.replace(/\/?$/, ".json") + "?limit=20&sort=top", token);
         const res = await fetch(jsonUrl, {
-          headers: { "User-Agent": "Picksy/1.0 (electronics recommendation app)" },
+          headers: redditHeaders(token),
           next: { revalidate: 3600 },
         });
         if (!res.ok) return;
