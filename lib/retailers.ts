@@ -14,7 +14,8 @@ function searchQuery(brand: string, name: string): string {
   return encodeURIComponent(`${brand} ${name}`.trim());
 }
 
-export function getStoreUrl(store: string, productName: string, brand: string): string {
+export function getStoreUrl(store: string, productName: string, brand: string, directUrl?: string): string {
+  if (directUrl) return directUrl;
   const q = searchQuery(brand, productName);
   const lower = store.toLowerCase();
 

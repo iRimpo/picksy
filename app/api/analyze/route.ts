@@ -324,7 +324,7 @@ interface AnalysisOutput {
     whyItWon: string;
     pros: string[];
     cons: string[];
-    buyLinks: { store: string; price: number }[];
+    buyLinks: { store: string; price: number; url?: string }[];
     redditQuote: string;
   };
   alternatives: {
@@ -341,12 +341,67 @@ interface AnalysisOutput {
   subreddits: string[];
 }
 
+// ─── Direct Product Link Fetcher ──────────────────────────────────────────────
+
+async function fetchProductDirectLinks(
+  productName: string,
+  brand: string
+): Promise<{ store: string; url: string; price?: number }[]> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: `${brand} ${productName} buy`,
+        search_depth: "basic",
+        include_domains: ["amazon.com", "bestbuy.com", "walmart.com", "target.com"],
+        max_results: 8,
+      }),
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const links: { store: string; url: string; price?: number }[] = [];
+
+    for (const r of (data.results || []) as { url?: string; content?: string }[]) {
+      const url = String(r.url || "");
+      const content = String(r.content || "");
+      const priceMatch = content.match(/\$\s*([\d,]+\.?\d*)/);
+      const price = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, "")) : undefined;
+
+      if ((url.includes("amazon.com/dp/") || url.includes("amazon.com/gp/product/")) && !links.find(l => l.store === "Amazon")) {
+        links.push({ store: "Amazon", url, price });
+      } else if (url.match(/bestbuy\.com\/site\/.+\/\d+\.p/) && !links.find(l => l.store === "Best Buy")) {
+        links.push({ store: "Best Buy", url, price });
+      } else if (url.match(/walmart\.com\/(ip|product)\//) && !links.find(l => l.store === "Walmart")) {
+        links.push({ store: "Walmart", url, price });
+      } else if (url.includes("target.com/p/") && !links.find(l => l.store === "Target")) {
+        links.push({ store: "Target", url, price });
+      }
+
+      if (links.length >= 3) break;
+    }
+
+    return links;
+  } catch {
+    return [];
+  }
+}
+
+// ─── Gemini Analysis ───────────────────────────────────────────────────────────
+
 async function analyzeWithGemini(
   query: string,
   results: SearchResult[],
   preferencesSummary?: string,
   actualComments?: ActualComment[],
-  tiktokVideos?: TikTokVideo[]
+  tiktokVideos?: TikTokVideo[],
+  budget?: number | null
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -370,6 +425,10 @@ async function analyzeWithGemini(
       .filter(Boolean)
   )) as string[];
 
+  const budgetBlock = budget
+    ? `\n⚠️ HARD BUDGET LIMIT: $${budget}. You MUST only recommend products priced AT OR BELOW $${budget}. Do NOT recommend anything above this price. If the most popular product exceeds the budget, pick the best one that fits within $${budget} instead. All buyLinks prices must also be at or below $${budget}.\n`
+    : "";
+
   const preferencesBlock = preferencesSummary
     ? `\nUSER PREFERENCES (collected via interactive refinement):\n${preferencesSummary}\n\nUse these preferences to bias your recommendation toward products that match.\n`
     : "";
@@ -389,7 +448,7 @@ async function analyzeWithGemini(
 
   const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and TikTok reviews.
 
-A user searched for: "${query}"${preferencesBlock}
+A user searched for: "${query}"${budgetBlock}${preferencesBlock}
 ${actualCommentsBlock}${tiktokBlock}
 REDDIT SEARCH SNIPPETS (${redditResults.length} found):
 ${formatResults(redditResults)}
@@ -445,7 +504,7 @@ Rules:
 - buyLinks should cover where this product is realistically sold
 - emoji should match the product type
 - price should be realistic for the product category
-- scoreLabel should be 1–3 words (e.g. "Best Pick", "Strong Pick", "Budget Pick", "Gentle Pick")`.trim();
+- scoreLabel should be 1–3 words (e.g. "Best Pick", "Strong Pick", "Budget Pick", "Gentle Pick")${budget ? `\n- CRITICAL: winner price and ALL buyLinks prices MUST be $${budget} or less — this is a hard constraint` : ""}`.trim();
 
   try {
     const controller = new AbortController();
@@ -608,19 +667,28 @@ export async function POST(req: NextRequest) {
             return { author: "", body: r.content.slice(0, 400), upvotes: 0, subreddit: sub, permalink: r.url };
           });
 
-    // 3. Use Gemini to analyze results + actual comments + TikTok
+    // 3. Gemini analysis + direct product link fetching run in parallel
     let analysis: AnalysisOutput | null = null;
     let geminiStatus = 0;
-    try {
-      analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos);
-    } catch (err) {
-      geminiStatus = (err as Error & { status?: number }).status ?? 0;
+    // We speculatively fetch product links for the query — Tavily returns the
+    // right product pages even without knowing the exact winner name yet
+    const [geminiResult, speculativeLinks] = await Promise.allSettled([
+      analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget),
+      fetchProductDirectLinks(query, ""),
+    ]);
+
+    if (geminiResult.status === "fulfilled") {
+      analysis = geminiResult.value;
+    } else {
+      geminiStatus = (geminiResult.reason as Error & { status?: number }).status ?? 0;
     }
+
+    const directLinks = speculativeLinks.status === "fulfilled" ? speculativeLinks.value : [];
 
     // Retry with training knowledge only — skip if rate-limited (429)
     if (!analysis && geminiStatus !== 429) {
       try {
-        analysis = await analyzeWithGemini(query, [], preferencesSummary, [], []);
+        analysis = await analyzeWithGemini(query, [], preferencesSummary, [], [], budget);
       } catch { /* fall through to hard fail */ }
     }
 
@@ -633,6 +701,22 @@ export async function POST(req: NextRequest) {
     }
 
     const { winner, alternatives, subreddits } = analysis;
+
+    // Merge direct product URLs into buyLinks when available
+    if (directLinks.length > 0) {
+      winner.buyLinks = winner.buyLinks.map((link) => {
+        const match = directLinks.find(
+          (d) => d.store.toLowerCase() === link.store.toLowerCase()
+        );
+        return match ? { ...link, url: match.url, price: match.price ?? link.price } : link;
+      });
+      // Add any stores found by Tavily that Gemini didn't include
+      for (const d of directLinks) {
+        if (!winner.buyLinks.find((l) => l.store.toLowerCase() === d.store.toLowerCase())) {
+          winner.buyLinks.push({ store: d.store, price: d.price ?? winner.price, url: d.url });
+        }
+      }
+    }
 
     // 4. If a store was mentioned, find matching buy link price
     if (detectedStore) {

@@ -15,7 +15,7 @@ import { PicksyMascot } from "@/components/shared/picksy-mascot";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface BuyLink { store: string; price: number }
+interface BuyLink { store: string; price: number; url?: string }
 interface Winner {
   id: string;
   name: string;
@@ -384,7 +384,7 @@ function WinnerCard({ winner, meta, imageUrl, alternatives, tiktokSentiment }: {
               return (
                 <a
                   key={link.store}
-                  href={getStoreUrl(link.store, winner.name, winner.brand)}
+                  href={getStoreUrl(link.store, winner.name, winner.brand, link.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() =>
