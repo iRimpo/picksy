@@ -94,20 +94,41 @@ function TikTokEntry({ video }: { video: TikTokVideoData }) {
   );
 }
 
-function CommunityComments({ productId }: { productId: string }) {
+function CommunityComments({ productId, productName }: { productId: string; productName: string }) {
   const [reddit, setReddit] = useState<RedditCommentData[]>([]);
   const [tiktok, setTikTok] = useState<TikTokVideoData[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Fast path: use cached data from the analyze flow
     try {
       const raw = sessionStorage.getItem(`picksy_comments_${productId}`);
-      if (!raw) return;
-      const { reddit: r, tiktok: t } = JSON.parse(raw);
-      setReddit(Array.isArray(r) ? r : []);
-      setTikTok(Array.isArray(t) ? t : []);
+      if (raw) {
+        const { reddit: r, tiktok: t } = JSON.parse(raw);
+        setReddit(Array.isArray(r) ? r : []);
+        setTikTok(Array.isArray(t) ? t : []);
+        return;
+      }
     } catch { /* ignore */ }
-  }, [productId]);
+
+    // Fallback: fetch Reddit comments directly (e.g. direct/shared links)
+    setLoading(true);
+    fetch(`/api/reddit-comments?query=${encodeURIComponent(productName)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setReddit(Array.isArray(data.comments) ? data.comments : []);
+      })
+      .catch(() => { /* fail silently */ })
+      .finally(() => setLoading(false));
+  }, [productId, productName]);
+
+  if (loading) return (
+    <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8">
+      <h3 className="text-2xl font-black text-stone-900 mb-1">Voices from the Community</h3>
+      <p className="text-stone-400 text-sm mt-2 animate-pulse">Loading community comments…</p>
+    </section>
+  );
 
   if (reddit.length === 0 && tiktok.length === 0) return null;
 
@@ -379,7 +400,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </section>
 
         {/* Community Comments */}
-        <CommunityComments productId={id} />
+        <CommunityComments productId={id} productName={product.name} />
 
         {/* SECTION 2: Sentiment */}
         <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
