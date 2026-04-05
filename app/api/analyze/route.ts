@@ -544,10 +544,22 @@ export async function POST(req: NextRequest) {
       .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
       .map((r) => r.url)
       .slice(0, 3);
-    const [actualComments, tiktokVideos] = await Promise.all([
+    const [directComments, tiktokVideos] = await Promise.all([
       fetchActualRedditComments(threadUrls),
       fetchTikTokContent(query),
     ]);
+
+    // Fall back to Tavily snippets when direct Reddit fetch returns empty
+    // (Vercel IPs are often blocked by Reddit's unauthenticated API)
+    const actualComments: ActualComment[] = directComments.length > 0
+      ? directComments
+      : results
+          .filter((r) => r.source === "reddit" && r.content.length > 60)
+          .slice(0, 8)
+          .map((r) => {
+            const sub = r.url.match(/reddit\.com\/r\/([^/]+)/)?.[1] ?? "reddit";
+            return { author: sub, body: r.content.slice(0, 400), upvotes: 0, subreddit: sub };
+          });
 
     // 3. Use Gemini to analyze results + actual comments + TikTok
     let analysis: AnalysisOutput | null = null;
