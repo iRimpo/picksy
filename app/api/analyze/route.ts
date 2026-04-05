@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { decodeQuery } from "@/lib/query-decoder";
 
 export const maxDuration = 60; // Vercel function timeout — 60s
@@ -8,10 +9,48 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash";
 
-// ─── In-memory result cache (avoids burning rate limit on repeated queries) ────
+// ─── L1: In-memory cache (fast, same function instance) ──────────────────────
 interface CacheEntry { payload: unknown; ts: number }
 const analyzeCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const L1_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// ─── L2: Supabase persistent cache (survives cold starts, shared across instances)
+const DB_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function getDbCache(cacheKey: string): Promise<unknown | null> {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return null;
+    const { data } = await supabase
+      .from("analysis_cache")
+      .select("payload")
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    return data?.payload ?? null;
+  } catch {
+    return null; // cache miss is never fatal
+  }
+}
+
+function setDbCache(cacheKey: string, payload: unknown): void {
+  // Fire-and-forget — never await this, don't slow down the response
+  const supabase = getSupabase();
+  if (!supabase) return;
+  const expiresAt = new Date(Date.now() + DB_CACHE_TTL_MS).toISOString();
+  supabase
+    .from("analysis_cache")
+    .upsert({ cache_key: cacheKey, payload, expires_at: expiresAt })
+    .then(() => {}) // intentional fire-and-forget
+    .catch(() => {});
+}
 
 // ─── Rate-limit cooldown (prevents hammering Gemini after a 429) ───────────────
 let rateLimitedUntil = 0; // epoch ms — both models exhausted until this time
@@ -615,6 +654,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
+    // Fail fast if no API key configured — no point running the rest of the pipeline
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("[analyze] GEMINI_API_KEY is not set");
+      return NextResponse.json({ error: "Service not configured" }, { status: 503 });
+    }
+
     // Rate-limit cooldown check — if both models were recently exhausted, fail fast
     if (Date.now() < rateLimitedUntil) {
       return NextResponse.json(
@@ -626,8 +671,16 @@ export async function POST(req: NextRequest) {
     // Cache check — skip expensive API calls for repeated queries
     const cacheKey = `${query}::${storeOverride || ""}::${preferences?.summary || ""}`;
     const cached = analyzeCache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.ts < L1_TTL_MS) {
       return NextResponse.json(cached.payload);
+    }
+
+    // L2: Supabase persistent cache (survives cold starts / new function instances)
+    const dbCached = await getDbCache(cacheKey);
+    if (dbCached) {
+      // Populate L1 so subsequent requests in this instance are instant
+      analyzeCache.set(cacheKey, { payload: dbCached, ts: Date.now() });
+      return NextResponse.json(dbCached);
     }
 
     // 0. Validate that the query is electronics-related
@@ -699,15 +752,12 @@ export async function POST(req: NextRequest) {
 
     const directLinks = speculativeLinks.status === "fulfilled" ? speculativeLinks.value : [];
 
-    // Retry: if primary model is rate-limited, try fallback model (separate quota pool)
-    // If primary failed for other reasons, retry with training knowledge only
+    // Retry with fallback model regardless of failure reason:
+    // - 429: fallback has a separate quota pool
+    // - other: different model may handle the request better
     if (!analysis) {
       try {
-        const retryModel = geminiStatus === 429 ? GEMINI_FALLBACK_MODEL : GEMINI_MODEL;
-        const retryResults = geminiStatus === 429 ? results : [];
-        const retryComments = geminiStatus === 429 ? actualComments : [];
-        const retryTiktok = geminiStatus === 429 ? tiktokVideos : [];
-        analysis = await analyzeWithGemini(query, retryResults, preferencesSummary, retryComments, retryTiktok, budget, retryModel);
+        analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_FALLBACK_MODEL);
         geminiStatus = 0; // reset so we don't return 429 below
       } catch (retryErr) {
         geminiStatus = (retryErr as Error & { status?: number }).status ?? geminiStatus;
@@ -796,8 +846,10 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    // Cache for 10 minutes so repeat searches skip the API calls
+    // L1: in-memory (fast, same instance)
     analyzeCache.set(cacheKey, { payload: responsePayload, ts: Date.now() });
+    // L2: Supabase (survives cold starts, shared across instances)
+    setDbCache(cacheKey, responsePayload);
 
     return NextResponse.json(responsePayload);
   } catch {
