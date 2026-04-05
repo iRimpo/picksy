@@ -176,7 +176,34 @@ interface TikTokVideo {
   description: string;
   likes: number;
   views: number;
-  topComments: string[]; // actual viewer comments from the video
+  topComments: string[];
+  transcript?: string; // parsed from auto-captions when available
+  videoUrl: string;
+}
+
+function parseCaptions(raw: string): string {
+  return raw
+    .replace(/WEBVTT\n?/, "")
+    .replace(/NOTE[^\n]*\n/g, "")
+    .replace(/\d+:\d+:\d+[.,]\d+\s*-->\s*\d+:\d+:\d+[.,]\d+[^\n]*/g, "")
+    .replace(/^\d+$/gm, "")
+    .replace(/<[^>]+>/g, "")
+    .split("\n").map((s) => s.trim()).filter(Boolean).join(" ")
+    .replace(/\s+/g, " ").trim()
+    .slice(0, 800);
+}
+
+async function fetchTranscript(
+  subtitleLinks: Array<{ language?: string; link?: string }>,
+  signal: AbortSignal
+): Promise<string> {
+  const preferred = subtitleLinks.find((s) => s.language?.startsWith("en")) ?? subtitleLinks[0];
+  if (!preferred?.link) return "";
+  try {
+    const res = await fetch(preferred.link, { signal });
+    if (!res.ok) return "";
+    return parseCaptions(await res.text());
+  } catch { return ""; }
 }
 
 async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
@@ -218,49 +245,60 @@ async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
         likes: Number(v.diggCount || 0),
         views: Number(v.playCount || 0),
         webVideoUrl: String(v.webVideoUrl || ""),
+        subtitleLinks: Array.isArray(v.subtitleLinks) ? v.subtitleLinks as Array<{ language?: string; link?: string }> : [],
         topComments: [] as string[],
+        transcript: "",
       }));
 
-    // Step 2: Fetch viewer comments for top 2 videos in one batch call
     const topUrls = videos.slice(0, 2).map((v) => v.webVideoUrl).filter(Boolean);
-    if (topUrls.length > 0) {
-      try {
-        const commentsRes = await fetch(
-          `https://api.apify.com/v2/acts/clockworks~tiktok-comments-scraper/run-sync-get-dataset-items?token=${apiKey}&timeout=15`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ postURLs: topUrls, maxComments: 8 }),
-            signal: controller.signal,
-            cache: "no-store",
-          }
-        );
-        if (commentsRes.ok) {
-          const allComments = await commentsRes.json();
-          if (Array.isArray(allComments)) {
-            for (const c of allComments) {
-              const commentText = String(c.text || "").trim();
-              if (!commentText || commentText.length < 5) continue;
-              // Skip non-English comments (>30% non-ASCII characters)
-              const nonAscii = (commentText.match(/[^\x00-\x7F]/g) || []).length;
-              if (nonAscii / commentText.length > 0.3) continue;
-              const videoUrl = String(c.videoWebUrl || c.submittedVideoUrl || "");
-              const idx = videos.findIndex((v) => videoUrl.includes(v.webVideoUrl.split("/video/")[1] || "NONE"));
-              if (idx >= 0 && videos[idx].topComments.length < 4) {
-                videos[idx].topComments.push(commentText.slice(0, 200));
-              }
+
+    // Step 2: Fetch viewer comments + transcripts in parallel
+    await Promise.all([
+      // Comments
+      topUrls.length > 0
+        ? fetch(
+            `https://api.apify.com/v2/acts/clockworks~tiktok-comments-scraper/run-sync-get-dataset-items?token=${apiKey}&timeout=15`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ postURLs: topUrls, maxComments: 8 }),
+              signal: controller.signal,
+              cache: "no-store",
             }
-          }
-        }
-      } catch {
-        // fail silently — comments are bonus signal
-      }
-    }
+          )
+            .then((r) => r.ok ? r.json() : [])
+            .then((allComments) => {
+              if (!Array.isArray(allComments)) return;
+              for (const c of allComments) {
+                const commentText = String(c.text || "").trim();
+                if (!commentText || commentText.length < 5) continue;
+                const nonAscii = (commentText.match(/[^\x00-\x7F]/g) || []).length;
+                if (nonAscii / commentText.length > 0.3) continue;
+                const vUrl = String(c.videoWebUrl || c.submittedVideoUrl || "");
+                const idx = videos.findIndex((v) => vUrl.includes(v.webVideoUrl.split("/video/")[1] || "NONE"));
+                if (idx >= 0 && videos[idx].topComments.length < 4) {
+                  videos[idx].topComments.push(commentText.slice(0, 200));
+                }
+              }
+            })
+            .catch(() => { /* fail silently */ })
+        : Promise.resolve(),
+
+      // Transcripts — fetch subtitle files for top 2 videos
+      ...videos.slice(0, 2).map((v, i) =>
+        v.subtitleLinks.length > 0
+          ? fetchTranscript(v.subtitleLinks, controller.signal)
+              .then((t) => { videos[i].transcript = t; })
+              .catch(() => { /* fail silently */ })
+          : Promise.resolve()
+      ),
+    ]);
 
     clearTimeout(timeout);
-    // Strip internal webVideoUrl before returning
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return videos.map(({ webVideoUrl: _url, ...rest }) => rest);
+    return videos.map(({ webVideoUrl, subtitleLinks: _sl, ...rest }) => ({
+      ...rest,
+      videoUrl: webVideoUrl,
+    }));
   } catch {
     return []; // fail silently — TikTok is best-effort enrichment
   }

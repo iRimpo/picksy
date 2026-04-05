@@ -15,7 +15,7 @@ import { getStoreUrl } from "@/lib/retailers";
 // ─── Community Comments ────────────────────────────────────────────────────────
 
 interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number }
-interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[] }
+interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[]; transcript?: string; videoUrl?: string }
 
 function avatarColor(name: string): string {
   let hash = 0;
@@ -63,7 +63,7 @@ function RedditComment({ comment, expanded, onToggle }: { comment: RedditComment
 
 function TikTokEntry({ video }: { video: TikTokVideoData }) {
   const color = avatarColor(video.author);
-  return (
+  const inner = (
     <div className="flex gap-3 py-4 border-b border-stone-100 last:border-0">
       <div
         className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white"
@@ -82,6 +82,12 @@ function TikTokEntry({ video }: { video: TikTokVideoData }) {
           )}
         </div>
         <p className="text-sm text-stone-600 leading-relaxed">{video.description}</p>
+        {video.transcript && (
+          <div className="mt-2 bg-stone-50 border border-stone-100 rounded-lg px-3 py-2">
+            <p className="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">Transcript</p>
+            <p className="text-xs text-stone-500 leading-relaxed line-clamp-4">{video.transcript}</p>
+          </div>
+        )}
         {video.topComments.length > 0 && (
           <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-stone-100">
             {video.topComments.map((c, i) => (
@@ -92,6 +98,11 @@ function TikTokEntry({ video }: { video: TikTokVideoData }) {
       </div>
     </div>
   );
+  return video.videoUrl ? (
+    <a href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="block hover:bg-stone-50 rounded-xl transition-colors -mx-2 px-2">
+      {inner}
+    </a>
+  ) : inner;
 }
 
 function CommunityComments({ productId, productName }: { productId: string; productName: string }) {

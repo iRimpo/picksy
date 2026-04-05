@@ -69,7 +69,7 @@ interface RedditComment {
   permalink: string;
 }
 interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number; permalink?: string }
-interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[] }
+interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[]; transcript?: string; videoUrl?: string }
 interface AnalysisResult { winner: Winner; alternatives: Alternative[]; meta: AnalysisMeta; comments?: RedditCommentData[]; tiktokVideos?: TikTokVideoData[] }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -802,7 +802,66 @@ function CommentCard({ comment, index, cardOffset = 0 }: { comment: RedditCommen
   );
 }
 
-function RedditCommentsSection({ threadUrls, query, initialComments }: { threadUrls: string[]; query: string; initialComments?: RedditCommentData[] }) {
+function TikTokCard({ video, index }: { video: TikTokVideoData; index: number }) {
+  const bg = AVATAR_BG_COLORS[index % AVATAR_BG_COLORS.length];
+  const cardStyle = COMMENT_CARD_STYLES[index % 4];
+  const href = video.videoUrl || `https://www.tiktok.com/search?q=${encodeURIComponent(video.author)}`;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex flex-col rounded-2xl p-4 border hover:shadow-md hover:-translate-y-0.5 transition-all group ${cardStyle}`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-[42px] h-[42px] rounded-full shrink-0 flex items-center justify-center text-white font-black text-sm"
+            style={{ background: bg }}
+          >
+            {video.author[0]?.toUpperCase() || "T"}
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-stone-800 leading-tight">@{video.author}</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-900 text-white">🎵 TikTok</span>
+              {video.likes > 0 && (
+                <span className="text-[10px] text-stone-400">
+                  ♥ {video.likes >= 1000 ? `${(video.likes / 1000).toFixed(1)}k` : video.likes}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 space-y-2">
+        <p className="text-sm text-stone-700 leading-relaxed">{video.description}</p>
+
+        {video.transcript && (
+          <div className="bg-stone-50 border border-stone-100 rounded-lg px-3 py-2">
+            <p className="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">Transcript</p>
+            <p className="text-xs text-stone-600 leading-relaxed line-clamp-3">{video.transcript}</p>
+          </div>
+        )}
+
+        {video.topComments.length > 0 && (
+          <div className="space-y-1 border-l-2 border-stone-100 pl-3">
+            {video.topComments.slice(0, 2).map((c, i) => (
+              <p key={i} className="text-xs text-stone-500 italic">&ldquo;{c}&rdquo;</p>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p className="text-[10px] text-stone-300 group-hover:text-brand-pink transition-colors mt-3 text-right">
+        Watch on TikTok →
+      </p>
+    </a>
+  );
+}
+
+function RedditCommentsSection({ threadUrls, query, initialComments, tiktokVideos }: { threadUrls: string[]; query: string; initialComments?: RedditCommentData[]; tiktokVideos?: TikTokVideoData[] }) {
   const [comments, setComments] = useState<RedditComment[]>([]);
   const [parsedThreadUrls, setParsedThreadUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -974,6 +1033,21 @@ function RedditCommentsSection({ threadUrls, query, initialComments }: { threadU
           )}
         </>
       )}
+
+      {/* TikTok videos */}
+      {tiktokVideos && tiktokVideos.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">🎵 TikTok Reviews</span>
+            <span className="text-[10px] text-stone-300">{tiktokVideos.length} videos</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {tiktokVideos.map((video, i) => (
+              <TikTokCard key={i} video={video} index={i} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -997,6 +1071,7 @@ function ResultsContent() {
   const [notElectronicsMessage, setNotElectronicsMessage] = useState("");
   const [redditThreadUrls, setRedditThreadUrls] = useState<string[]>([]);
   const [preloadedComments, setPreloadedComments] = useState<RedditCommentData[]>([]);
+  const [tiktokVideos, setTiktokVideos] = useState<TikTokVideoData[]>([]);
   const [productImageUrl, setProductImageUrl] = useState<string | null>(null);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(null);
@@ -1045,6 +1120,7 @@ function ResultsContent() {
       setResult(data);
       setRedditThreadUrls(data.meta.redditThreadUrls || []);
       setPreloadedComments(data.comments || []);
+      setTiktokVideos(data.tiktokVideos || []);
       // Cache comments for the product detail page
       if (data.winner?.id) {
         try {
@@ -1214,7 +1290,7 @@ function ResultsContent() {
         >
           <main className="max-w-5xl mx-auto px-4 py-8">
             <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} />
-            <RedditCommentsSection threadUrls={redditThreadUrls} query={query} initialComments={preloadedComments} />
+            <RedditCommentsSection threadUrls={redditThreadUrls} query={query} initialComments={preloadedComments} tiktokVideos={tiktokVideos} />
             <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
 
             <div className="max-w-4xl mx-auto text-center pb-8">
