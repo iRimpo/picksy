@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Share2, Heart, ExternalLink,
@@ -264,9 +264,9 @@ function StoreTile({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ProductDetailPage({ params }: { params: { id: string } }) {
   useAnimateIn();
-  const { id } = use(params);
+  const { id } = params;
   const product = products.find(p => p.id === id) || products[0];
 
   usePageView("product_detail", { product_name: product.name, product_id: id });
