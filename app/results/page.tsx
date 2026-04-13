@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Search, ArrowLeft, ExternalLink, MapPin, AlertCircle, X,
   Loader2, Bookmark, Share2, RotateCcw, MessageCircle, FileText,
-  TrendingUp, Users, BarChart2, ThumbsUp, ThumbsDown, ChevronDown,
+  Users, BarChart2, ChevronDown,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
@@ -289,6 +289,49 @@ function StoreSelector({ stores, onSelect }: { stores: StoreLocation[]; onSelect
 
 // ─── Winner Card ───────────────────────────────────────────────────────────────
 
+// Dots visualization — colors by positive/negative sentiment ratio
+function MentionDotsSimple({ sentiment }: { sentiment: number }) {
+  const TOTAL = 60;
+  const positiveCount = Math.round((sentiment / 100) * TOTAL);
+  const positiveSet = new Set(
+    Array.from({ length: TOTAL }, (_, i) => i)
+      .sort(
+        (a, b) =>
+          (((Math.sin(a * 9.301) * 43758.5453) % 1 + 1) % 1) -
+          (((Math.sin(b * 9.301) * 43758.5453) % 1 + 1) % 1)
+      )
+      .slice(0, positiveCount)
+  );
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5 justify-center mb-3">
+        {Array.from({ length: TOTAL }, (_, i) => (
+          <div
+            key={i}
+            className="rounded-full"
+            style={{
+              width: 9,
+              height: 9,
+              background: positiveSet.has(i) ? "#2ECC71" : "#FF6B8A",
+              opacity: 0.85,
+            }}
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-center gap-5 text-xs">
+        <span className="flex items-center gap-1.5 text-brand-green font-semibold">
+          <span className="w-2.5 h-2.5 rounded-full bg-brand-green inline-block" />
+          {Math.round(sentiment)}% positive
+        </span>
+        <span className="flex items-center gap-1.5 text-brand-pink font-semibold">
+          <span className="w-2.5 h-2.5 rounded-full bg-brand-pink inline-block" />
+          {Math.round(100 - sentiment)}% critical
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function WinnerCard({ winner, meta, imageUrl, alternatives, tiktokSentiment }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null; alternatives: Alternative[]; tiktokSentiment?: number }) {
   const [imgError, setImgError] = useState(false);
   const [barsVisible, setBarsVisible] = useState(false);
@@ -301,270 +344,323 @@ function WinnerCard({ winner, meta, imageUrl, alternatives, tiktokSentiment }: {
     : winner.price;
   const pageTitle = getPageTitle(meta.category, meta.query);
 
+  // Score context
+  const scoreLabel =
+    winner.score >= 90 ? "Exceptional" :
+    winner.score >= 80 ? "Excellent" :
+    winner.score >= 70 ? "Very Good" :
+    winner.score >= 60 ? "Good" : "Decent";
+  const topPercent = Math.round(100 - winner.score);
+
   return (
     <div className="max-w-4xl mx-auto">
 
-      {/* Page title */}
-      <h2 className="font-heading font-black text-2xl text-brand-dark mb-4">{pageTitle}</h2>
+      {/* ── 1. Community Says — dark panel first ── */}
+      <div
+        className="rounded-3xl mb-6 relative overflow-hidden"
+        style={{ background: "#1A1A2E", padding: "32px 28px" }}
+      >
+        {/* Floating bg shapes */}
+        <div className="absolute top-4 left-4 w-16 h-16 rounded-full bg-brand-pink/10 animate-float pointer-events-none" />
+        <div className="absolute bottom-6 right-8 w-12 h-12 rounded-full bg-brand-green/10 animate-floatSlow pointer-events-none" />
+        <svg className="absolute top-8 right-16 opacity-10 pointer-events-none" width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#FFD93D" />
+        </svg>
 
-      {/* Badges + actions row */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f0e6d3] text-[#7c4a1e] text-xs font-semibold rounded-full">
-            🏆 Reddit&apos;s Top Pick
-          </span>
-          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#d8ede9] text-[#2d7a6a] text-xs font-semibold rounded-full">
-            {winner.score}/100 · {getScoreBadgeLabel(winner.score, winner.scoreLabel)}
-          </span>
+        {/* Label */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-7 h-7 rounded-full bg-brand-pink flex items-center justify-center shrink-0">
+            <Users size={13} className="text-white" />
+          </div>
+          <span className="text-white/60 text-xs font-bold uppercase tracking-widest">Community Says</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Save"><Bookmark size={18} /></button>
-          <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Share"><Share2 size={18} /></button>
-          <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Refresh"><RotateCcw size={18} /></button>
+
+        {/* Big mention count */}
+        <div className="mb-1">
+          <span className="text-5xl font-black text-white">{winner.mentions.toLocaleString()}</span>
+          <span className="text-white/50 text-lg ml-2">people talked about this</span>
+        </div>
+        <p className="text-white/40 text-sm mb-6">across {winner.postsAnalyzed}+ Reddit threads</p>
+
+        {/* Dots visualization */}
+        <MentionDotsSimple sentiment={winner.sentiment} />
+
+        {/* Featured quote */}
+        {winner.redditQuote && (
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 relative">
+            <MessageCircle size={14} className="text-white/20 absolute top-4 right-4" />
+            <p className="text-white/80 text-sm italic leading-relaxed pr-6">&ldquo;{winner.redditQuote}&rdquo;</p>
+            <p className="text-white/30 text-xs mt-2">— Reddit community</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── 2. Product Hero ── */}
+      <div className="mb-6">
+        {/* Page title */}
+        <h2 className="font-heading font-black text-2xl text-brand-dark mb-4">{pageTitle}</h2>
+
+        {/* Badges + actions row */}
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f0e6d3] text-[#7c4a1e] text-xs font-semibold rounded-full">
+              🏆 Reddit&apos;s Top Pick
+            </span>
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#d8ede9] text-[#2d7a6a] text-xs font-semibold rounded-full">
+              {winner.score}/100 · {getScoreBadgeLabel(winner.score, winner.scoreLabel)}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Save"><Bookmark size={18} /></button>
+            <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Share"><Share2 size={18} /></button>
+            <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Refresh"><RotateCcw size={18} /></button>
+          </div>
+        </div>
+
+        {/* Brand + product name */}
+        <p className="text-stone-400 text-sm mb-1">{winner.brand}</p>
+        <h1 className="font-heading font-black text-3xl md:text-4xl text-brand-dark mb-6 leading-tight">{winner.name}</h1>
+
+        {/* Two-column: image left, info right */}
+        <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] gap-6">
+
+          {/* Left: image + thumbnails */}
+          <div>
+            <div className="w-full aspect-square rounded-2xl bg-white border border-stone-100 overflow-hidden flex items-center justify-center">
+              {imageUrl && !imgError ? (
+                <img
+                  src={imageUrl}
+                  alt={winner.name}
+                  className="w-full h-full object-contain p-4"
+                  onError={() => setImgError(true)}
+                />
+              ) : imageUrl === null ? (
+                <div className="w-full h-full bg-stone-100 animate-pulse rounded-2xl" />
+              ) : (
+                <span className="text-8xl">{winner.emoji}</span>
+              )}
+            </div>
+            <div className="flex gap-2 mt-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className={`w-[72px] h-[72px] rounded-xl bg-white border overflow-hidden flex items-center justify-center cursor-pointer transition-colors ${
+                    i === 0 ? "border-brand-pink shadow-sm" : "border-stone-200 hover:border-stone-300"
+                  }`}
+                >
+                  {imageUrl && !imgError ? (
+                    <img src={imageUrl} alt="" className="w-full h-full object-contain p-1" aria-hidden />
+                  ) : (
+                    <span className="text-2xl">{winner.emoji}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: score + why it won */}
+          <div className="flex flex-col gap-4">
+
+            {/* Score panel */}
+            <div className="rounded-2xl bg-white border border-stone-100 p-5">
+              <div className="flex items-center gap-4 mb-4">
+                {/* Arc score ring */}
+                <div className="relative w-20 h-20 shrink-0">
+                  <svg width="80" height="80" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="32" fill="none" stroke="#f1f5f9" strokeWidth="8" />
+                    <circle
+                      cx="40" cy="40" r="32" fill="none"
+                      stroke={winner.score >= 80 ? "#2ECC71" : winner.score >= 60 ? "#FFD93D" : "#FF6B8A"}
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(winner.score / 100) * 201} 201`}
+                      transform="rotate(-90 40 40)"
+                      style={{ transition: "stroke-dasharray 1.4s ease-out" }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-black text-stone-900 leading-none">{winner.score}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-black text-stone-900 text-lg leading-tight">{scoreLabel}</p>
+                  {topPercent < 25 && (
+                    <p className="text-brand-green text-xs font-semibold mt-0.5">Top {topPercent}% of everything analyzed</p>
+                  )}
+                  <p className="text-stone-400 text-xs mt-1">{winner.sentiment}% positive · {winner.mentions.toLocaleString()} mentions</p>
+                </div>
+              </div>
+
+              {/* Score spectrum bar */}
+              <div className="mb-1">
+                <div className="h-2.5 rounded-full overflow-hidden mb-1" style={{ background: "linear-gradient(90deg, #FF6B8A, #FFD93D 50%, #2ECC71)" }}>
+                  <div
+                    className="absolute h-3 w-3 rounded-full bg-white border-2 border-stone-700 shadow"
+                    style={{ left: `calc(${winner.score}% - 6px)`, top: 0 }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-stone-400 mt-1">
+                  <span>Avoid</span>
+                  <span className="font-semibold text-stone-600">{winner.score}/100</span>
+                  <span>Best-in-class</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Price */}
+            <div>
+              <p className="text-3xl font-bold text-stone-900 mb-1">
+                ${(winner.storePrice ?? winner.price).toFixed(2)}
+              </p>
+              <p className="text-xs text-stone-400 flex items-center gap-1">
+                <FileText size={11} className="shrink-0" />
+                Based on {winner.postsAnalyzed}+ Reddit discussions
+              </p>
+            </div>
+
+            {/* Why this won */}
+            <div>
+              <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1.5">✨ Why This Won</p>
+              <p className="text-stone-600 text-sm leading-relaxed">{winner.whyItWon}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Brand + product name */}
-      <p className="text-stone-400 text-sm mb-1">{winner.brand}</p>
-      <h1 className="font-heading font-black text-3xl md:text-4xl text-brand-dark mb-6 leading-tight">{winner.name}</h1>
+      {/* ── 3. Where to Buy — dark animated tiles ── */}
+      <div
+        className="rounded-3xl mb-6 relative overflow-hidden"
+        style={{ background: "#1A1A2E", padding: "28px" }}
+      >
+        <div className="absolute top-3 right-4 w-10 h-10 rounded-full bg-brand-yellow/10 animate-floatSlow pointer-events-none" />
+        <div className="absolute bottom-4 left-12 w-7 h-7 rounded-full bg-brand-pink/10 animate-float pointer-events-none" />
 
-      {/* Two-column: image left, info right */}
-      <div className="grid grid-cols-1 md:grid-cols-[380px_1fr] gap-8 mb-10">
+        <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5">🛒 Where to Buy</p>
+        <p className="text-white/30 text-xs mb-5">Click to get the best price</p>
 
-        {/* Left: image + thumbnails */}
-        <div>
-          <div className="w-full aspect-square rounded-2xl bg-white border border-stone-100 overflow-hidden flex items-center justify-center">
-            {imageUrl && !imgError ? (
-              <img
-                src={imageUrl}
-                alt={winner.name}
-                className="w-full h-full object-contain p-4"
-                onError={() => setImgError(true)}
-              />
-            ) : imageUrl === null ? (
-              /* Pulse skeleton while image is loading */
-              <div className="w-full h-full bg-stone-100 animate-pulse rounded-2xl" />
-            ) : (
-              <span className="text-8xl">{winner.emoji}</span>
-            )}
-          </div>
-          <div className="flex gap-2 mt-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={`w-[72px] h-[72px] rounded-xl bg-white border overflow-hidden flex items-center justify-center cursor-pointer transition-colors ${
-                  i === 0 ? "border-brand-pink shadow-sm" : "border-stone-200 hover:border-stone-300"
-                }`}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {winner.buyLinks.slice(0, 3).map((link, idx) => {
+            const isBest = link.price === lowestPrice;
+            return (
+              <a
+                key={link.store}
+                href={getStoreUrl(link.store, winner.name, winner.brand, link.url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() =>
+                  track("buy_click", {
+                    page: "results",
+                    query: meta.query,
+                    product_name: winner.name,
+                    store_name: link.store,
+                    price: link.price,
+                    score: winner.score,
+                    properties: { position: "top_pick" },
+                  })
+                }
+                className="group relative rounded-2xl border p-4 flex flex-col gap-2 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl"
+                style={{
+                  background: isBest ? "rgba(46,204,113,0.12)" : "rgba(255,255,255,0.06)",
+                  borderColor: isBest ? "rgba(46,204,113,0.5)" : "rgba(255,255,255,0.1)",
+                  animationDelay: `${idx * 80}ms`,
+                }}
               >
-                {imageUrl && !imgError ? (
-                  <img src={imageUrl} alt="" className="w-full h-full object-contain p-1" aria-hidden />
-                ) : (
-                  <span className="text-2xl">{winner.emoji}</span>
+                {isBest && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2.5 py-0.5 bg-brand-green text-white rounded-full whitespace-nowrap">
+                    Best Price ✓
+                  </span>
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: price, stores, why it won */}
-        <div className="flex flex-col">
-
-          {/* Price */}
-          <p className="text-4xl font-bold text-stone-900 mb-4">
-            ${(winner.storePrice ?? winner.price).toFixed(2)}
-          </p>
-
-          {/* Store cards */}
-          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            🛒 Where to Buy
-          </p>
-          <div className="grid grid-cols-3 gap-2 mb-6">
-            {winner.buyLinks.slice(0, 3).map((link) => {
-              const isBest = link.price === lowestPrice;
-              return (
-                <a
-                  key={link.store}
-                  href={getStoreUrl(link.store, winner.name, winner.brand, link.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    track("buy_click", {
-                      page: "results",
-                      query: meta.query,
-                      product_name: winner.name,
-                      store_name: link.store,
-                      price: link.price,
-                      score: winner.score,
-                      properties: { position: "top_pick" },
-                    })
-                  }
-                  className={`relative rounded-xl border p-3 flex items-center gap-2 hover:shadow-md transition-all group ${
-                    isBest
-                      ? "border-brand-green/30 bg-brand-green/5 hover:border-brand-green/50"
-                      : "border-stone-200 bg-white hover:border-stone-300"
-                  }`}
-                >
-                  {isBest && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 bg-brand-green text-white rounded-full whitespace-nowrap">
-                      Best Price
-                    </span>
-                  )}
-                  <div className="w-7 h-7 rounded-full bg-stone-800 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-white/10 text-white text-base font-black flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
                     {link.store[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-stone-600 truncate">{link.store}</p>
-                    <p className={`text-sm font-bold leading-tight ${isBest ? "text-brand-green" : "text-stone-900"}`}>
+                    <p className="text-white/60 text-xs">{link.store}</p>
+                    <p className={`text-base font-black leading-tight ${isBest ? "text-brand-green" : "text-white"}`}>
                       ${link.price.toFixed(2)}
                     </p>
                   </div>
-                  <ExternalLink size={12} className="text-stone-400 shrink-0 group-hover:text-stone-600 transition-colors" />
-                </a>
-              );
-            })}
-          </div>
-
-          {/* Why This Won */}
-          <div className="mb-5">
-            <h3 className="text-base font-semibold text-stone-900 mb-2 flex items-center gap-1.5">
-              ✨ Why This Won
-            </h3>
-            <p className="text-stone-600 text-sm leading-relaxed">{winner.whyItWon}</p>
-          </div>
-
-          <p className="text-xs text-stone-400 flex items-center gap-1.5 mt-auto">
-            <FileText size={12} className="shrink-0" />
-            Based on {winner.postsAnalyzed}+ Reddit discussions and verified review sources.
-          </p>
+                </div>
+                <div className="flex items-center gap-1 text-white/30 group-hover:text-white/60 transition-colors">
+                  <ExternalLink size={10} />
+                  <span className="text-[10px] font-medium">Shop now →</span>
+                </div>
+              </a>
+            );
+          })}
         </div>
       </div>
 
-      {/* Pros & Cons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
-        <div>
-          <h4 className="text-base font-semibold text-stone-800 mb-4 flex items-center gap-2">
-            <ThumbsUp size={15} className="text-stone-400" /> Pros
-          </h4>
-          <ul className="space-y-3">
-            {winner.pros.map((pro, i) => (
-              <li key={i} className="flex items-center gap-2.5 text-sm text-stone-700">
-                <span className="w-5 h-5 rounded-full border-2 border-brand-green flex items-center justify-center shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-brand-green" />
-                </span>
-                {pro}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-base font-semibold text-stone-800 mb-4 flex items-center gap-2">
-            <ThumbsDown size={15} className="text-stone-400" /> Cons
-          </h4>
-          <ul className="space-y-3">
-            {winner.cons.map((con, i) => (
-              <li key={i} className="flex items-center gap-2.5 text-sm text-stone-700">
-                <span className="w-5 h-5 rounded-full border-2 border-brand-pink/40 flex items-center justify-center shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-brand-pink/40" />
-                </span>
-                {con}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Stats bar */}
-      <div className="bg-brand-green/10 rounded-2xl px-6 py-5 flex flex-wrap gap-6 mb-8">
-        <div className="flex items-center gap-2">
-          <TrendingUp size={16} className="text-brand-green shrink-0" />
-          <span className="text-xl font-bold text-stone-900">{winner.sentiment}%</span>
-          <span className="text-sm text-stone-500">positive sentiment</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Users size={16} className="text-brand-green shrink-0" />
-          <span className="text-xl font-bold text-stone-900">{winner.mentions.toLocaleString()}</span>
-          <span className="text-sm text-stone-500">mentions</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <BarChart2 size={16} className="text-brand-green shrink-0" />
-          <span className="text-xl font-bold text-stone-900">{winner.postsAnalyzed}+</span>
-          <span className="text-sm text-stone-500">posts analyzed</span>
-        </div>
-      </div>
-
-      {/* How it compares — compact with Reddit/TikTok ratio */}
+      {/* ── 4. Community Ranking — green panel ── */}
       {alternatives.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1.5">
-              <BarChart2 size={13} /> How it compares
-            </h4>
-            {tiktokSentiment !== undefined && (
-              <div className="flex items-center gap-1.5">
-                <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FF4500]/10 text-[#FF4500]">
-                  <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="10"/><text x="10" y="14" textAnchor="middle" fontSize="11" fill="white" fontWeight="700">r</text></svg>
-                  Reddit {winner.sentiment}%
-                </span>
-                <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-900/8 text-stone-700">
-                  🎵 TikTok {tiktokSentiment}%
-                </span>
-              </div>
-            )}
+        <div
+          className="rounded-3xl mb-6 relative overflow-hidden"
+          style={{ background: "#2ECC71", padding: "28px" }}
+        >
+          <div className="absolute top-4 right-8 w-14 h-14 rounded-full bg-white/15 animate-floatSlow pointer-events-none" />
+          <div className="absolute bottom-3 left-4 w-8 h-8 rounded-full bg-white/10 animate-float pointer-events-none" />
+          <svg className="absolute bottom-8 right-4 opacity-15 pointer-events-none" width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+          </svg>
+
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart2 size={14} className="text-white/70" />
+            <span className="text-white/70 text-xs font-bold uppercase tracking-widest">Community Ranking</span>
           </div>
+          <p className="text-white font-black text-xl mb-1">Picksy ranks it #1</p>
+          <p className="text-white/70 text-sm mb-5">
+            Scored across {winner.postsAnalyzed}+ Reddit posts · {winner.mentions.toLocaleString()} community mentions
+          </p>
+
           <div className="space-y-2">
             {/* Winner row */}
-            <div className="flex items-center gap-2.5 bg-brand-green/5 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2.5 bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2.5">
               <div className="w-24 shrink-0">
-                <p className="text-[11px] font-black text-stone-900 truncate leading-tight">{winner.name.split(" ").slice(-2).join(" ")}</p>
-                <span className="text-[9px] font-bold text-brand-green">🏆 Top Pick</span>
+                <p className="text-[11px] font-black text-white truncate leading-tight">{winner.name.split(" ").slice(-2).join(" ")}</p>
+                <span className="text-[9px] font-bold text-white/80">🏆 Top Pick</span>
               </div>
-              <div className="flex-1 h-4 bg-stone-100 rounded-full overflow-hidden relative">
+              <div className="flex-1 h-4 bg-white/20 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all ease-out"
                   style={{
                     width: barsVisible ? `${winner.score}%` : "0%",
-                    background: "linear-gradient(90deg, #2ECC71, #25A855)",
+                    background: "rgba(255,255,255,0.9)",
                     transitionDuration: "1.2s",
                   }}
                 />
               </div>
-              <span className="text-xs font-black text-brand-green shrink-0 w-7 text-right">{winner.score}</span>
+              <span className="text-sm font-black text-white shrink-0 w-7 text-right">{winner.score}</span>
             </div>
-            {/* Alt rows */}
+            {/* Alternatives */}
             {alternatives.slice(0, 3).map((alt) => (
-              <div key={alt.id} className="flex items-center gap-2.5 px-3 py-1.5">
+              <div key={alt.id} className="flex items-center gap-2.5 px-3 py-2">
                 <div className="w-24 shrink-0">
-                  <p className="text-[11px] font-medium text-stone-600 truncate leading-tight">{alt.name.split(" ").slice(-2).join(" ")}</p>
-                  <p className="text-[9px] text-stone-400 truncate">{alt.brand}</p>
+                  <p className="text-[11px] font-medium text-white/80 truncate leading-tight">{alt.name.split(" ").slice(-2).join(" ")}</p>
+                  <p className="text-[9px] text-white/50 truncate">{alt.brand}</p>
                 </div>
-                <div className="flex-1 h-3 bg-stone-100 rounded-full overflow-hidden">
+                <div className="flex-1 h-3 bg-white/20 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-stone-300 transition-all ease-out"
+                    className="h-full rounded-full bg-white/50 transition-all ease-out"
                     style={{ width: barsVisible ? `${alt.score}%` : "0%", transitionDuration: "1.2s" }}
                   />
                 </div>
-                <span className="text-[11px] font-semibold text-stone-400 shrink-0 w-7 text-right">{alt.score}</span>
+                <span className="text-[11px] font-semibold text-white/70 shrink-0 w-7 text-right">{alt.score}</span>
               </div>
             ))}
           </div>
+
+          {/* Cross-platform signal if TikTok data available */}
+          {tiktokSentiment !== undefined && (
+            <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-3 flex-wrap">
+              <span className="text-white/60 text-xs">Cross-platform signal:</span>
+              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white/20 text-white">🔴 Reddit {winner.sentiment}%</span>
+              <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white/20 text-white">🎵 TikTok {tiktokSentiment}%</span>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Top Quotes */}
-      {winner.redditQuote && (
-        <div className="mb-8">
-          <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-            <MessageCircle size={13} /> Top Quotes
-          </h4>
-          <div className="space-y-3">
-            <blockquote className="border-l-2 border-stone-300 pl-4 text-sm text-stone-600 italic leading-relaxed">
-              {winner.redditQuote}
-            </blockquote>
-          </div>
-        </div>
-      )}
-
-      {/* Data Sources */}
+      {/* ── 5. Data sources ── */}
       <div className="flex items-center gap-2 flex-wrap text-xs text-stone-400 mb-1">
         <span className="flex items-center gap-1 shrink-0">
           <span className="w-3.5 h-3.5 rounded-full border border-stone-300 inline-flex items-center justify-center text-[8px]">○</span>
