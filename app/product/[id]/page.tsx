@@ -3,16 +3,16 @@
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, Share2, Heart, ChevronDown, ExternalLink,
+  ArrowLeft, Share2, Heart, ExternalLink,
   Play, CheckCircle, AlertTriangle, ChevronUp,
 } from "lucide-react";
-import { products } from "@/lib/data/products";
+import { products, type Product } from "@/lib/data/products";
 import { useAnimateIn } from "@/lib/hooks/use-animate-in";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
 import { getStoreUrl } from "@/lib/retailers";
 
-// ─── Community Comments ────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 interface RedditCommentData { author: string; body: string; subreddit: string; upvotes: number }
 interface TikTokVideoData { author: string; description: string; likes: number; views: number; topComments: string[]; transcript?: string; videoUrl?: string }
@@ -20,37 +20,37 @@ interface TikTokVideoData { author: string; description: string; likes: number; 
 function avatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  const h = Math.abs(hash) % 360;
-  return `hsl(${h}, 55%, 48%)`;
+  return `hsl(${Math.abs(hash) % 360}, 55%, 48%)`;
 }
 
 function initials(name: string): string {
   return name.replace(/^u\/|^@/, "").slice(0, 2).toUpperCase();
 }
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  Headphones: "🎧", Laptops: "💻", Smartphones: "📱",
+  TVs: "📺", Mice: "🖱️", Earbuds: "🎵", Monitors: "🖥️",
+};
+
+// ─── Reddit Comment ───────────────────────────────────────────────────────────
+
 function RedditComment({ comment, expanded, onToggle }: { comment: RedditCommentData; expanded: boolean; onToggle: () => void }) {
   const long = comment.body.length > 220;
   const body = long && !expanded ? comment.body.slice(0, 220) + "…" : comment.body;
-  const color = avatarColor(comment.author);
   return (
-    <div className="flex gap-3 py-4 border-b border-stone-100 last:border-0">
-      <div
-        className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white"
-        style={{ background: color }}
-      >
+    <div className="flex gap-3 py-4 border-b border-white/10 last:border-0">
+      <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white" style={{ background: avatarColor(comment.author) }}>
         {initials(comment.author)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-sm font-bold text-stone-900">u/{comment.author}</span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+          <span className="text-sm font-bold text-white">u/{comment.author}</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-pink/20 text-brand-pink border border-brand-pink/20">
             r/{comment.subreddit}
           </span>
-          {comment.upvotes > 0 && (
-            <span className="text-[10px] text-stone-400">▲ {comment.upvotes.toLocaleString()}</span>
-          )}
+          {comment.upvotes > 0 && <span className="text-[10px] text-stone-400">▲ {comment.upvotes.toLocaleString()}</span>}
         </div>
-        <p className="text-sm text-stone-600 leading-relaxed">{body}</p>
+        <p className="text-sm text-stone-300 leading-relaxed">{body}</p>
         {long && (
           <button onClick={onToggle} className="mt-1 text-xs font-semibold text-brand-pink hover:underline flex items-center gap-0.5">
             {expanded ? <><ChevronUp size={12} /> Show less</> : <>Show more</>}
@@ -61,49 +61,41 @@ function RedditComment({ comment, expanded, onToggle }: { comment: RedditComment
   );
 }
 
+// ─── TikTok Entry ─────────────────────────────────────────────────────────────
+
 function TikTokEntry({ video }: { video: TikTokVideoData }) {
-  const color = avatarColor(video.author);
   const inner = (
-    <div className="flex gap-3 py-4 border-b border-stone-100 last:border-0">
-      <div
-        className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white"
-        style={{ background: color }}
-      >
+    <div className="flex gap-3 py-4 border-b border-white/10 last:border-0">
+      <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-black text-white" style={{ background: avatarColor(video.author) }}>
         {initials(video.author)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-sm font-bold text-stone-900">@{video.author}</span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-900 text-white">
-            🎵 TikTok
-          </span>
-          {video.likes > 0 && (
-            <span className="text-[10px] text-stone-400">♥ {video.likes.toLocaleString()}</span>
-          )}
+          <span className="text-sm font-bold text-white">@{video.author}</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-white">🎵 TikTok</span>
+          {video.likes > 0 && <span className="text-[10px] text-stone-400">♥ {video.likes.toLocaleString()}</span>}
         </div>
-        <p className="text-sm text-stone-600 leading-relaxed">{video.description}</p>
+        <p className="text-sm text-stone-300 leading-relaxed">{video.description}</p>
         {video.transcript && (
-          <div className="mt-2 bg-stone-50 border border-stone-100 rounded-lg px-3 py-2">
+          <div className="mt-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
             <p className="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">Transcript</p>
-            <p className="text-xs text-stone-500 leading-relaxed line-clamp-4">{video.transcript}</p>
+            <p className="text-xs text-stone-400 leading-relaxed line-clamp-4">{video.transcript}</p>
           </div>
         )}
         {video.topComments.length > 0 && (
-          <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-stone-100">
-            {video.topComments.map((c, i) => (
-              <p key={i} className="text-xs text-stone-500 italic">&ldquo;{c}&rdquo;</p>
-            ))}
+          <div className="mt-2 space-y-1.5 pl-3 border-l-2 border-white/10">
+            {video.topComments.map((c, i) => <p key={i} className="text-xs text-stone-400 italic">&ldquo;{c}&rdquo;</p>)}
           </div>
         )}
       </div>
     </div>
   );
-  return video.videoUrl ? (
-    <a href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="block hover:bg-stone-50 rounded-xl transition-colors -mx-2 px-2">
-      {inner}
-    </a>
-  ) : inner;
+  return video.videoUrl
+    ? <a href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="block hover:bg-white/5 rounded-xl transition-colors -mx-2 px-2">{inner}</a>
+    : inner;
 }
+
+// ─── Community Comments ───────────────────────────────────────────────────────
 
 function CommunityComments({ productId, productName }: { productId: string; productName: string }) {
   const [reddit, setReddit] = useState<RedditCommentData[]>([]);
@@ -112,7 +104,6 @@ function CommunityComments({ productId, productName }: { productId: string; prod
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Fast path: use cached data from the analyze flow
     try {
       const raw = sessionStorage.getItem(`picksy_comments_${productId}`);
       if (raw) {
@@ -122,129 +113,48 @@ function CommunityComments({ productId, productName }: { productId: string; prod
         return;
       }
     } catch { /* ignore */ }
-
-    // Fallback: fetch Reddit comments directly (e.g. direct/shared links)
     setLoading(true);
     fetch(`/api/reddit-comments?query=${encodeURIComponent(productName)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setReddit(Array.isArray(data.comments) ? data.comments : []);
-      })
-      .catch(() => { /* fail silently */ })
+      .then(res => res.json())
+      .then(data => setReddit(Array.isArray(data.comments) ? data.comments : []))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [productId, productName]);
 
-  if (loading) return (
-    <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8">
-      <h3 className="text-2xl font-black text-stone-900 mb-1">Voices from the Community</h3>
-      <p className="text-stone-400 text-sm mt-2 animate-pulse">Loading community comments…</p>
-    </section>
-  );
-
+  if (loading) return <p className="text-stone-400 text-sm animate-pulse">Loading community voices…</p>;
   if (reddit.length === 0 && tiktok.length === 0) return null;
 
   const toggle = (i: number) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) { next.delete(i); } else { next.add(i); }
-      return next;
+    setExpanded(prev => {
+      const n = new Set(prev);
+      if (n.has(i)) { n.delete(i); } else { n.add(i); }
+      return n;
     });
 
   return (
-    <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-      <h3 className="text-2xl font-black text-stone-900 mb-1">Voices from the Community</h3>
-      <p className="text-stone-400 text-sm mb-6">
-        The actual comments we analyzed to make this recommendation
-      </p>
-
+    <div>
       {reddit.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-base">💬</span>
-            <span className="text-sm font-bold text-stone-700">Reddit</span>
-            <span className="text-xs text-stone-400">{reddit.length} comments</span>
-          </div>
-          <div>
-            {reddit.map((c, i) => (
-              <RedditComment
-                key={i}
-                comment={c}
-                expanded={expanded.has(i)}
-                onToggle={() => toggle(i)}
-              />
-            ))}
-          </div>
+        <div className="mb-4">
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">💬 Reddit · {reddit.length} comments</p>
+          {reddit.map((c, i) => <RedditComment key={i} comment={c} expanded={expanded.has(i)} onToggle={() => toggle(i)} />)}
         </div>
       )}
-
       {tiktok.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-base">🎵</span>
-            <span className="text-sm font-bold text-stone-700">TikTok</span>
-            <span className="text-xs text-stone-400">{tiktok.length} videos</span>
-          </div>
-          <div>
-            {tiktok.map((v, i) => (
-              <TikTokEntry key={i} video={v} />
-            ))}
-          </div>
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">🎵 TikTok · {tiktok.length} videos</p>
+          {tiktok.map((v, i) => <TikTokEntry key={i} video={v} />)}
         </div>
       )}
-    </section>
-  );
-}
-
-function ScoreGauge({ score, label }: { score: number; label: string }) {
-  const [mounted, setMounted] = useState(false);
-  const circumference = 2 * Math.PI * 45;
-  const offset = circumference - (score / 100) * circumference;
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(t);
-  }, []);
-
-  const color = score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444";
-
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-40 h-40">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="#f3f4f6" strokeWidth="8" />
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke={color}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={mounted ? offset : circumference}
-            className="gauge-circle"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-black text-stone-900">{score}</span>
-          <span className="text-xs text-stone-400">/100</span>
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-1.5">
-        {score >= 80 && <CheckCircle size={16} className="text-green-500" />}
-        <span className="font-bold text-stone-900">{label}</span>
-      </div>
     </div>
   );
 }
 
+// ─── Score Bar ────────────────────────────────────────────────────────────────
+
 function ScoreBar({ label, score, detail }: { label: string; score: number; detail: string }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 200);
-    return () => clearTimeout(t);
-  }, []);
-  const color = score >= 80 ? "from-green-400 to-green-500" : score >= 50 ? "from-yellow-400 to-yellow-500" : "from-red-400 to-red-500";
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 200); return () => clearTimeout(t); }, []);
+  const color = score >= 80 ? "from-brand-green to-emerald-400" : score >= 50 ? "from-yellow-400 to-yellow-500" : "from-red-400 to-red-500";
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1.5">
@@ -252,39 +162,136 @@ function ScoreBar({ label, score, detail }: { label: string; score: number; deta
         <span className="text-sm font-bold text-stone-900">{score}/100</span>
       </div>
       <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full bg-gradient-to-r ${color} bar-fill`}
-          style={{ width: mounted ? `${score}%` : "0%" }}
-        />
+        <div className={`h-full rounded-full bg-gradient-to-r ${color} bar-fill`} style={{ width: mounted ? `${score}%` : "0%" }} />
       </div>
       <p className="text-xs text-stone-400 mt-1">{detail}</p>
     </div>
   );
 }
 
+// ─── Mention Dots ─────────────────────────────────────────────────────────────
+
+function MentionDots({ product }: { product: Product }) {
+  const platforms = [
+    { color: "#FF6B8A", mentions: product.platforms.reddit.mentions },
+    { color: "#2ECC71", mentions: product.platforms.tiktok.mentions },
+    { color: "#FFD93D", mentions: product.platforms.youtube.mentions },
+    { color: "#4EADFF", mentions: product.platforms.instagram.mentions },
+  ];
+  const total = platforms.reduce((s, p) => s + p.mentions, 0) || 1;
+  const MAX = 72;
+
+  const dots: string[] = [];
+  platforms.forEach(({ color, mentions }) => {
+    const count = Math.round((mentions / total) * MAX);
+    for (let i = 0; i < count; i++) dots.push(color);
+  });
+  // Deterministic shuffle using sine-based key
+  const shuffled = dots
+    .map((c, i) => ({ c, k: ((Math.sin(i * 9.301) * 43758.5453) % 1 + 1) % 1 }))
+    .sort((a, b) => a.k - b.k)
+    .map(x => x.c);
+
+  return (
+    <div className="mb-6">
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {shuffled.map((color, i) => {
+          const big = i % 11 === 0;
+          return (
+            <div
+              key={i}
+              className="rounded-full"
+              style={{ width: big ? 14 : 10, height: big ? 14 : 10, background: color, opacity: 0.85 }}
+            />
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-stone-500 font-medium">
+        Each dot ≈ {Math.ceil(total / MAX).toLocaleString()} people
+      </p>
+    </div>
+  );
+}
+
+// ─── Store Tile ───────────────────────────────────────────────────────────────
+
+function StoreTile({
+  retailer, productName, brand, productId, score, lowestPrice,
+}: {
+  retailer: Product["retailers"][0];
+  productName: string; brand: string; productId: string; score: number; lowestPrice: number;
+}) {
+  const isBest = retailer.price === lowestPrice;
+  return (
+    <a
+      href={getStoreUrl(retailer.name, productName, brand, retailer.url)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => track("buy_click", {
+        page: "product_detail", product_name: productName,
+        store_name: retailer.name, price: retailer.price, score,
+        properties: { product_id: productId, position: "buy_tiles" },
+      })}
+      className={`relative block rounded-2xl p-5 border-2 transition-all duration-300 group hover:-translate-y-2 hover:shadow-2xl ${
+        isBest
+          ? "border-brand-green bg-brand-green/10 shadow-glow-green"
+          : "border-white/10 bg-white/5 hover:bg-white/10"
+      }`}
+    >
+      {isBest && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-green text-white text-[10px] font-black px-3 py-1 rounded-full whitespace-nowrap">
+          🏆 Best Price
+        </div>
+      )}
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm mb-3 ${isBest ? "bg-brand-green text-white" : "bg-white/10 text-white"}`}>
+        {retailer.name[0]}
+      </div>
+      <p className="font-bold text-white/70 text-sm mb-1">{retailer.name}</p>
+      <p className={`text-2xl font-black ${isBest ? "text-brand-green" : "text-white"}`}>
+        ${retailer.price.toFixed(2)}
+      </p>
+      {retailer.url && (
+        <p className="text-[10px] text-brand-green font-bold mt-2 flex items-center gap-1">
+          <CheckCircle size={10} /> Direct link
+        </p>
+      )}
+      <div className={`mt-4 flex items-center gap-1.5 text-xs font-black transition-colors ${isBest ? "text-brand-green" : "text-white/40 group-hover:text-white"}`}>
+        Shop now <ExternalLink size={11} />
+      </div>
+    </a>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   useAnimateIn();
   const { id } = use(params);
-  const product = products.find((p) => p.id === id) || products[0];
+  const product = products.find(p => p.id === id) || products[0];
 
-  usePageView("product_detail", {
-    product_name: product.name,
-    product_id: id,
-  });
+  usePageView("product_detail", { product_name: product.name, product_id: id });
+
   const [saved, setSaved] = useState(false);
-  const [showWhereToBuy, setShowWhereToBuy] = useState(false);
   const [expandedTranscripts, setExpandedTranscripts] = useState<number[]>([]);
-  const [showMorePros, setShowMorePros] = useState(false);
-  const [showMoreCons, setShowMoreCons] = useState(false);
   const [transcriptFilter, setTranscriptFilter] = useState("all");
+  const [productImageUrl, setProductImageUrl] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
   const stickyRef = useRef<HTMLDivElement>(null);
 
-  const toggleTranscript = (i: number) =>
-    setExpandedTranscripts((prev) =>
-      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
-    );
+  useEffect(() => {
+    setProductImageUrl(null);
+    setImgError(false);
+    const q = encodeURIComponent(`${product.brand} ${product.name} product`);
+    fetch(`/api/product-image?q=${q}`)
+      .then(r => r.json())
+      .then(data => setProductImageUrl(data.imageUrl ?? ""))
+      .catch(() => setProductImageUrl(""));
+  }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filteredTranscripts = product.transcripts.filter((t) => {
+  const toggleTranscript = (i: number) =>
+    setExpandedTranscripts(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+
+  const filteredTranscripts = product.transcripts.filter(t => {
     if (transcriptFilter === "positive") return t.sentimentScore >= 70;
     if (transcriptFilter === "negative") return t.sentimentScore < 60;
     if (transcriptFilter === "sponsored") return t.sponsored;
@@ -292,23 +299,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return true;
   });
 
+  const lowestPrice = product.retailers.length > 0
+    ? Math.min(...product.retailers.map(r => r.price))
+    : product.price;
+
+  const scoreContext =
+    product.score >= 95 ? "Top 2% of everything Picksy has ever analyzed" :
+    product.score >= 90 ? "Top 5% — exceptionally well-loved" :
+    product.score >= 80 ? "Top 15% — highly recommended by the community" :
+    "Above average across all platforms";
+
+  const categoryEmoji = CATEGORY_EMOJI[product.category] ?? "📦";
+
   return (
-    <div className="min-h-screen bg-white pb-24">
-      {/* Sticky header */}
+    <div className="min-h-screen pb-24 relative overflow-x-hidden" style={{ background: "#FFFBF7" }}>
+
+      {/* Ambient blobs */}
+      <div className="blob-pink pointer-events-none" style={{ top: -80, left: -100 }} />
+      <div className="blob-yellow pointer-events-none" style={{ top: 300, right: -80 }} />
+      <div className="blob-cyan pointer-events-none" style={{ top: 900, left: -60 }} />
+
+      {/* ── Sticky header ───────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-stone-100">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 flex items-center gap-4">
-          <Link
-            href="/results"
-            className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors shrink-0"
-          >
+          <Link href="/results" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors shrink-0">
             <ArrowLeft size={16} /> Back
           </Link>
-          <h1 className="flex-1 font-bold text-sm text-stone-900 truncate">
-            {product.name}
-          </h1>
-          <button className="text-stone-400 hover:text-stone-600 transition-colors" aria-label="Share">
-            <Share2 size={18} />
-          </button>
+          <h1 className="flex-1 font-bold text-sm text-stone-900 truncate">{product.name}</h1>
+          <button className="text-stone-400 hover:text-stone-600 transition-colors" aria-label="Share"><Share2 size={18} /></button>
           <button
             onClick={() => setSaved(!saved)}
             className={`transition-colors ${saved ? "text-brand-pink" : "text-stone-400 hover:text-stone-600"}`}
@@ -320,20 +338,35 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       </header>
 
       <main className="max-w-5xl mx-auto px-4 md:px-8 py-8">
-        {/* Hero section */}
-        <section className="flex flex-col md:flex-row gap-8 mb-12">
+
+        {/* ── HERO ─────────────────────────────────────────────────────────── */}
+        <section className="flex flex-col md:flex-row gap-8 mb-8">
+
           {/* Image */}
-          <div className="md:w-[40%] shrink-0 anim-left">
-            <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center border border-stone-100">
-              <span className="text-8xl">🧴</span>
+          <div className="md:w-[42%] shrink-0 anim-left">
+            <div className="w-full aspect-square rounded-3xl bg-white border border-stone-100 overflow-hidden flex items-center justify-center shadow-sm relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-pink/5 via-transparent to-brand-green/5 pointer-events-none" />
+              {/* Decorative circle shapes */}
+              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-yellow/10 pointer-events-none" />
+              <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-brand-pink/10 pointer-events-none" />
+
+              {productImageUrl && !imgError ? (
+                <img src={productImageUrl} alt={product.name} className="relative w-full h-full object-contain p-6" onError={() => setImgError(true)} />
+              ) : productImageUrl === null ? (
+                <div className="w-full h-full bg-stone-100 animate-pulse rounded-3xl" />
+              ) : (
+                <div className="relative flex flex-col items-center gap-3">
+                  <span className="text-7xl">{categoryEmoji}</span>
+                  <span className="text-xs text-stone-400 font-medium">{product.brand}</span>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 mt-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="w-16 h-16 rounded-xl bg-stone-50 border border-stone-100 flex items-center justify-center cursor-pointer hover:border-stone-300 transition-colors"
-                >
-                  <span className="text-2xl">🧴</span>
+              {[0, 1, 2].map(i => (
+                <div key={i} className={`w-16 h-16 rounded-xl bg-white border overflow-hidden flex items-center justify-center cursor-pointer transition-all duration-200 ${i === 0 ? "border-brand-pink shadow-sm scale-105" : "border-stone-100 hover:border-stone-300"}`}>
+                  {productImageUrl && !imgError
+                    ? <img src={productImageUrl} alt="" className="w-full h-full object-contain p-1" aria-hidden />
+                    : <div className="w-full h-full bg-stone-50 rounded-xl" />}
                 </div>
               ))}
             </div>
@@ -341,126 +374,258 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Info */}
           <div className="flex-1 anim-right anim-d1">
-            <p className="text-brand-pink text-sm font-semibold mb-1">{product.brand}</p>
-            <h2 className="text-3xl font-black text-stone-900 mb-1">{product.name}</h2>
-            <p className="text-stone-400 text-sm mb-4">{product.category}</p>
-            <p className="text-4xl font-black text-stone-900 mb-6">
-              ${product.price.toFixed(2)}
+            {/* Trust pills */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {product.badge && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-orange-600 text-xs font-black rounded-full border border-orange-100">
+                  🏆 {product.badge}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-green/10 text-brand-green text-xs font-black rounded-full border border-brand-green/20">
+                ✓ {product.mentions.toLocaleString()} voices
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-stone-100 text-stone-600 text-xs font-semibold rounded-full">
+                {product.sentiment}% positive
+              </span>
+            </div>
+
+            <p className="text-stone-400 text-xs font-semibold uppercase tracking-widest mb-2">
+              {product.brand} · {product.category}
+            </p>
+            <h2 className="font-heading text-3xl md:text-4xl font-black text-stone-900 mb-5 leading-tight">
+              {product.name}
+            </h2>
+
+            {/* Score pill */}
+            <div className="flex items-center gap-3 mb-5 flex-wrap">
+              <div className="flex items-center gap-2 bg-brand-green/10 border border-brand-green/20 px-4 py-2.5 rounded-2xl">
+                <span className="text-2xl font-black text-brand-green leading-none">{product.score}</span>
+                <div>
+                  <p className="text-[10px] font-black text-stone-400 uppercase tracking-wider leading-none mb-0.5">Picksy Score</p>
+                  <p className="text-xs font-bold text-brand-green leading-none">{product.scoreLabel}</p>
+                </div>
+              </div>
+              <p className="text-xs text-stone-500 leading-snug max-w-[200px]">{scoreContext}</p>
+            </div>
+
+            <div className="flex items-baseline gap-3 mb-6">
+              <p className="text-4xl font-black text-stone-900">${product.price.toFixed(2)}</p>
+              <span className="text-sm text-stone-400">starting price</span>
+            </div>
+
+            {/* Primary CTA */}
+            <a
+              href={getStoreUrl(product.retailers[0]?.name ?? "Amazon", product.name, product.brand, product.retailers[0]?.url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-gradient inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-base"
+            >
+              Buy for ${lowestPrice.toFixed(2)} →
+            </a>
+            <p className="text-[11px] text-stone-400 mt-2">
+              Best price found across {product.retailers.length} stores
+            </p>
+          </div>
+        </section>
+
+        {/* ── SECTION 1: Community Says ─────────────────────────────────────── */}
+        <section className="rounded-3xl p-8 mb-6 relative overflow-hidden fade-in-section" style={{ background: "#1A1A2E" }}>
+          {/* Inner glow shapes */}
+          <div className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,107,138,0.15) 0%, transparent 70%)" }} />
+          <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(46,204,113,0.12) 0%, transparent 70%)" }} />
+          {/* Decorative floating circles */}
+          <div className="absolute top-8 right-1/4 w-6 h-6 rounded-full bg-brand-yellow/30 pointer-events-none animate-float" />
+          <div className="absolute top-16 right-12 w-4 h-4 rounded-full bg-brand-pink/40 pointer-events-none animate-floatSlow" />
+          <div className="absolute bottom-10 right-8 w-8 h-8 rounded-full bg-brand-green/20 pointer-events-none animate-floatDelay" />
+
+          <div className="relative">
+            <p className="text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] mb-2">💬 Community Says</p>
+            <h3 className="font-heading text-3xl md:text-4xl font-black text-white mb-1 leading-tight">
+              {product.mentions.toLocaleString()}<br />
+              <span className="text-brand-green">real voices.</span>
+            </h3>
+            <p className="text-stone-400 text-sm mb-6">
+              Across Reddit, TikTok, YouTube & Instagram — what people actually said.
             </p>
 
-            {/* Where to buy */}
-            <div className="relative mb-4">
-              <button
-                onClick={() => setShowWhereToBuy(!showWhereToBuy)}
-                className="w-full btn-gradient px-6 py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2"
-              >
-                Where to Buy <ChevronDown size={16} className={`transition-transform ${showWhereToBuy ? "rotate-180" : ""}`} />
-              </button>
-              {showWhereToBuy && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-stone-100 rounded-xl shadow-lg overflow-hidden z-30">
-                  {product.retailers.map((r) => (
-                    <a
-                      key={r.name}
-                      href={getStoreUrl(r.name, product.name, product.brand)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() =>
-                        track("buy_click", {
-                          page: "product_detail",
-                          product_name: product.name,
-                          store_name: r.name,
-                          price: r.price,
-                          score: product.score,
-                          properties: { product_id: id, position: "product_detail" },
-                        })
-                      }
-                      className="flex items-center justify-between px-5 py-3 hover:bg-stone-50 transition-colors"
-                    >
-                      <span className="font-medium text-stone-900 text-sm">{r.name}</span>
-                      <span className="flex items-center gap-2 text-sm">
-                        <span className="font-bold text-stone-900">${r.price.toFixed(2)}</span>
-                        <ExternalLink size={14} className="text-stone-400" />
-                      </span>
-                    </a>
-                  ))}
-                  <p className="px-5 py-2 text-[10px] text-stone-300 border-t border-stone-50">
-                    We earn from qualifying purchases
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+            {/* People dot visualization */}
+            <MentionDots product={product} />
 
-        {/* SECTION 1: Hype Score */}
-        <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-          <h3 className="text-2xl font-black text-stone-900 mb-6">Hype vs Reality Score</h3>
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <ScoreGauge score={product.score} label={`${product.scoreLabel} ${product.score >= 80 ? "✅" : ""}`} />
-            <div className="flex-1 w-full">
-              <p className="text-stone-500 text-sm mb-6">
-                This product shows sustained quality with consistent positive reviews over time.
-              </p>
-              <ScoreBar label="Viral Velocity" score={82} detail="Gradual growth ✅" />
-              <ScoreBar label="Sentiment Consistency" score={90} detail="Very stable ✅" />
-              <ScoreBar label="Paid Promotion %" score={28} detail="Mostly organic ✅" />
-              <ScoreBar label="Platform Consensus" score={95} detail="All platforms agree ✅" />
-              <ScoreBar label="Review Depth" score={88} detail="Detailed reviews ✅" />
-            </div>
-          </div>
-        </section>
-
-        {/* Community Comments */}
-        <CommunityComments productId={id} productName={product.name} />
-
-        {/* SECTION 2: Sentiment */}
-        <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-          <h3 className="text-2xl font-black text-stone-900 mb-2">What People Think</h3>
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl font-black text-green-600">{product.sentiment}%</span>
-            <span className="text-stone-500">Positive</span>
-          </div>
-          <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden mb-8">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-green-400 to-green-500"
-              style={{ width: `${product.sentiment}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {(["reddit", "tiktok", "youtube", "instagram"] as const).map((platform) => {
-              const p = product.platforms[platform];
-              const icon = { reddit: "💬", tiktok: "🎵", youtube: "📺", instagram: "📸" }[platform];
-              return (
-                <div key={platform} className="bg-stone-50 rounded-xl p-4 border border-stone-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">{icon}</span>
-                    <span className="font-bold text-sm text-stone-900 capitalize">{platform}</span>
+            {/* Platform legend */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-8">
+              {(["reddit", "tiktok", "youtube", "instagram"] as const).map(p => {
+                const plat = product.platforms[p];
+                const colors = { reddit: "#FF6B8A", tiktok: "#2ECC71", youtube: "#FFD93D", instagram: "#4EADFF" };
+                const icons  = { reddit: "💬", tiktok: "🎵", youtube: "📺", instagram: "📸" };
+                return (
+                  <div key={p} className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: colors[p] }} />
+                    <span className="text-xs text-stone-400">{icons[p]} {p.charAt(0).toUpperCase() + p.slice(1)}</span>
+                    <span className="text-xs font-bold text-white">{plat.mentions.toLocaleString()}</span>
                   </div>
-                  <p className={`text-2xl font-black ${p.sentiment >= 80 ? "text-green-600" : p.sentiment >= 60 ? "text-yellow-600" : "text-red-500"}`}>
-                    {p.sentiment}%
-                  </p>
-                  <p className="text-xs text-stone-400">{p.mentions.toLocaleString()} mentions</p>
-                  <span className="inline-block mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white border border-stone-100 text-stone-500">
-                    {p.badge}
-                  </span>
+                );
+              })}
+            </div>
+
+            {/* Real fetched comments */}
+            <CommunityComments productId={id} productName={product.name} />
+          </div>
+        </section>
+
+        {/* ── SECTION 2: The Score ──────────────────────────────────────────── */}
+        <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-6 fade-in-section">
+          <p className="text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] mb-2">📊 Picksy Score</p>
+          <h3 className="font-heading text-2xl font-black text-stone-900 mb-1">
+            What does {product.score}/100 mean?
+          </h3>
+          <p className="text-stone-500 text-sm mb-8">{scoreContext}</p>
+
+          <div className="flex flex-col md:flex-row items-start gap-10 mb-8">
+            {/* Score ring */}
+            <div className="shrink-0 mx-auto md:mx-0">
+              <div className="relative w-40 h-40">
+                <div className="absolute inset-0 rounded-full border-4 border-brand-green/10" />
+                <div className="absolute inset-2 rounded-full border-4 border-brand-green/20" />
+                <div className="absolute inset-4 rounded-full border-4 border-brand-green/30 bg-brand-green/5" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-5xl font-black text-stone-900 leading-none">{product.score}</span>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">/ 100</span>
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green/10 text-brand-green text-sm font-black rounded-full border border-brand-green/20">
+                  <CheckCircle size={13} /> {product.scoreLabel}
+                </span>
+              </div>
+            </div>
+
+            {/* Sub-scores */}
+            <div className="flex-1 w-full">
+              <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-4">
+                Calculated from {product.mentions.toLocaleString()} community signals:
+              </p>
+              <ScoreBar label="Viral Velocity" score={82} detail="Gradual organic growth — not a hype spike ✅" />
+              <ScoreBar label="Sentiment Consistency" score={90} detail="Positive reviews stayed stable over time ✅" />
+              <ScoreBar label="Paid Promotion %" score={28} detail="Mostly organic recommendations ✅" />
+              <ScoreBar label="Platform Consensus" score={95} detail="Reddit, TikTok, YouTube all agree ✅" />
+              <ScoreBar label="Review Depth" score={88} detail="Detailed, experience-based reviews ✅" />
+            </div>
+          </div>
+
+          {/* Score spectrum bar */}
+          <div className="bg-stone-50 rounded-2xl p-5 border border-stone-100">
+            <p className="text-xs font-bold text-stone-500 mb-3">Where this lands vs everything Picksy has analyzed:</p>
+            <div className="relative w-full h-5 bg-stone-200 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-400 via-yellow-400 to-brand-green"
+                style={{ width: "100%" }}
+              />
+              {/* Marker */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-stone-900 shadow"
+                style={{ left: `calc(${product.score}% - 8px)` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1.5 text-[10px] text-stone-400 font-medium">
+              <span>Avoid</span>
+              <span>Average</span>
+              <span>Perfect</span>
+            </div>
+            <p className="text-xs font-bold text-brand-green mt-3">
+              {product.score >= 90
+                ? `👆 Top ${Math.round(100 - product.score + 5)}% of all products — that's exceptional.`
+                : `👆 ${product.score >= 80 ? "Well above average." : "Above average."}`}
+            </p>
+          </div>
+        </section>
+
+        {/* ── SECTION 3: Where to Buy ───────────────────────────────────────── */}
+        <section className="rounded-3xl p-8 mb-6 relative overflow-hidden fade-in-section" style={{ background: "#1A1A2E" }}>
+          {/* Glow shapes */}
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,217,61,0.18) 0%, transparent 70%)" }} />
+          <div className="absolute bottom-0 left-1/4 w-40 h-40 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,107,138,0.12) 0%, transparent 70%)" }} />
+          <div className="absolute top-12 left-8 w-5 h-5 rounded-full bg-brand-yellow/40 animate-float pointer-events-none" />
+          <div className="absolute bottom-8 right-16 w-4 h-4 rounded-full bg-brand-pink/30 animate-floatSlow pointer-events-none" />
+
+          <div className="relative">
+            <p className="text-brand-yellow text-[10px] font-black uppercase tracking-[0.2em] mb-2">🛒 Where to Buy</p>
+            <h3 className="font-heading text-2xl font-black text-white mb-1">Ready to get it?</h3>
+            <p className="text-stone-400 text-sm mb-8">
+              We found {product.retailers.length} stores — pick the best deal.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 stagger-children">
+              {product.retailers.map(r => (
+                <StoreTile
+                  key={r.name}
+                  retailer={r}
+                  productName={product.name}
+                  brand={product.brand}
+                  productId={id}
+                  score={product.score}
+                  lowestPrice={lowestPrice}
+                />
+              ))}
+            </div>
+            <p className="text-[10px] text-stone-600 mt-5">Prices verified at time of analysis. We may earn from qualifying purchases.</p>
+          </div>
+        </section>
+
+        {/* ── SECTION 4: Community Breakdown ───────────────────────────────── */}
+        <section className="rounded-3xl p-8 mb-6 fade-in-section" style={{ background: "#2ECC71" }}>
+          <p className="text-brand-dark/60 text-[10px] font-black uppercase tracking-[0.2em] mb-2">🌐 Community Breakdown</p>
+          <h3 className="font-heading text-2xl font-black text-brand-dark mb-2">Who powered this score?</h3>
+          <p className="text-brand-dark/70 text-sm mb-8">
+            Picksy aggregates real feedback from across the internet. Here&apos;s the breakdown:
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 stagger-children">
+            {([
+              { key: "reddit",    icon: "💬", label: "Reddit",    sub: "r/community" },
+              { key: "tiktok",    icon: "🎵", label: "TikTok",    sub: "#TechReviews" },
+              { key: "youtube",   icon: "📺", label: "YouTube",   sub: "Expert Reviews" },
+              { key: "instagram", icon: "📸", label: "Instagram", sub: "#TechSetup" },
+            ] as const).map(({ key, icon, label, sub }) => {
+              const p = product.platforms[key];
+              return (
+                <div key={key} className="bg-white/30 backdrop-blur-sm rounded-2xl p-5 border border-white/40 anim-scale card-hover">
+                  <span className="text-2xl mb-2 block">{icon}</span>
+                  <p className="font-black text-brand-dark text-sm mb-0.5">{label}</p>
+                  <p className="text-brand-dark/60 text-[10px] mb-3">{sub}</p>
+                  <p className="text-2xl font-black text-brand-dark">{p.sentiment}%</p>
+                  <p className="text-brand-dark/70 text-[10px] font-semibold">positive</p>
+                  <p className="text-brand-dark/50 text-[10px] mt-1">{p.mentions.toLocaleString()} voices</p>
+                  <div className="mt-3 h-1.5 bg-white/40 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-brand-dark/40" style={{ width: `${p.sentiment}%` }} />
+                  </div>
                 </div>
               );
             })}
           </div>
+
+          {/* How Picksy works callout */}
+          <div className="bg-white/25 rounded-2xl p-5 border border-white/30">
+            <p className="text-brand-dark font-black text-sm mb-1">This is how Picksy works 💡</p>
+            <p className="text-brand-dark/70 text-xs leading-relaxed">
+              We scan thousands of real posts, reviews, and videos. Every score is built from what actual people said — not paid reviews, not brand marketing. Pure community signal.
+            </p>
+          </div>
         </section>
 
-        {/* SECTION 3: Transcripts */}
+        {/* ── SECTION 5: Creator Reviews (if data exists) ───────────────────── */}
         {product.transcripts.length > 0 && (
-          <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-            <h3 className="text-2xl font-black text-stone-900 mb-1">
-              What Creators Actually Said 🎬
-            </h3>
+          <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-6 fade-in-section">
+            <p className="text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] mb-2">🎬 Creator Reviews</p>
+            <h3 className="font-heading text-2xl font-black text-stone-900 mb-1">What creators actually said</h3>
             <p className="text-stone-400 text-sm mb-6">
               We analyzed {product.mentions.toLocaleString()} reviews and extracted these quotes
             </p>
-            {/* Filter chips */}
             <div className="flex flex-wrap gap-2 mb-6">
-              {["all", "positive", "negative", "sponsored", "organic"].map((f) => (
+              {["all", "positive", "negative", "sponsored", "organic"].map(f => (
                 <button
                   key={f}
                   onClick={() => setTranscriptFilter(f)}
@@ -477,40 +642,28 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="space-y-5">
               {filteredTranscripts.map((t, i) => {
                 const authColor =
-                  t.authenticity >= 80
-                    ? "text-green-600 bg-green-50 border-green-100"
-                    : t.authenticity >= 60
-                    ? "text-yellow-600 bg-yellow-50 border-yellow-200"
-                    : "text-red-500 bg-red-50 border-red-100";
+                  t.authenticity >= 80 ? "text-green-600 bg-green-50 border-green-100" :
+                  t.authenticity >= 60 ? "text-yellow-600 bg-yellow-50 border-yellow-200" :
+                  "text-red-500 bg-red-50 border-red-100";
                 return (
-                  <div key={i} className="bg-stone-50 rounded-xl p-5 border border-stone-100">
-                    {/* Video thumbnail */}
-                    <div className="w-full h-32 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden bg-stone-50">
+                  <div key={i} className="bg-stone-50 rounded-2xl p-5 border border-stone-100">
+                    <div className="w-full h-28 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden bg-stone-100">
                       <div className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-sm">
                         <Play size={20} className="text-stone-700 ml-0.5" />
                       </div>
-                      <div className="absolute bottom-2 left-2 bg-stone-900/70 text-white rounded-md px-2 py-0.5 text-xs">
-                        {t.duration}
-                      </div>
-                      <div className="absolute bottom-2 right-2 text-xs text-stone-500 bg-white/80 rounded-md px-2 py-0.5">
-                        {t.views} views
-                      </div>
+                      <div className="absolute bottom-2 left-2 bg-stone-900/70 text-white rounded-md px-2 py-0.5 text-xs">{t.duration}</div>
+                      <div className="absolute bottom-2 right-2 text-xs text-stone-500 bg-white/80 rounded-md px-2 py-0.5">{t.views} views</div>
                     </div>
-
-                    {/* Creator */}
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-9 h-9 rounded-full shrink-0 bg-brand-pink/15" />
                       <div className="flex-1">
                         <p className="font-bold text-sm text-stone-900">
-                          {t.creator}{" "}
-                          {t.verified && <CheckCircle size={12} className="inline text-brand-pink" />}
+                          {t.creator} {t.verified && <CheckCircle size={12} className="inline text-brand-pink" />}
                         </p>
                         <p className="text-stone-400 text-xs">{t.followers} followers</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${authColor}`}>
-                          {t.authenticity}/100
-                        </span>
+                        <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${authColor}`}>{t.authenticity}/100</span>
                         {t.sponsored && (
                           <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200 flex items-center gap-1">
                             <AlertTriangle size={10} /> Paid
@@ -518,51 +671,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         )}
                       </div>
                     </div>
-
-                    {/* Quotes */}
                     {t.quotes.slice(0, expandedTranscripts.includes(i) ? undefined : 1).map((q, qi) => (
-                      <div key={qi} className="bg-white rounded-lg p-3 mb-2 border border-stone-100">
-                        <p className="text-sm text-stone-600 italic">
-                          💬 &ldquo;{q}&rdquo;
-                        </p>
+                      <div key={qi} className="bg-white rounded-xl p-3 mb-2 border border-stone-100">
+                        <p className="text-sm text-stone-600 italic">💬 &ldquo;{q}&rdquo;</p>
                       </div>
                     ))}
-
-                    {/* Sentiment + aspects */}
                     <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <span className="text-xs text-stone-500">
-                        {t.sentimentEmoji} {t.sentimentLabel} ({t.sentimentScore}/100)
-                      </span>
-                      {t.aspects.map((a) => (
-                        <span
-                          key={a.name}
-                          className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                            a.status === "positive"
-                              ? "bg-green-50 text-green-600"
-                              : a.status === "warning"
-                              ? "bg-yellow-50 text-yellow-600"
-                              : "bg-red-50 text-red-500"
-                          }`}
-                        >
+                      <span className="text-xs text-stone-500">{t.sentimentEmoji} {t.sentimentLabel} ({t.sentimentScore}/100)</span>
+                      {t.aspects.map(a => (
+                        <span key={a.name} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${a.status === "positive" ? "bg-green-50 text-green-600" : a.status === "warning" ? "bg-yellow-50 text-yellow-600" : "bg-red-50 text-red-500"}`}>
                           {a.status === "positive" ? "✅" : "⚠️"} {a.name}
                         </span>
                       ))}
                     </div>
-
                     {t.quotes.length > 1 && (
-                      <button
-                        onClick={() => toggleTranscript(i)}
-                        className="mt-3 text-xs font-semibold text-brand-pink hover:underline"
-                      >
-                        {expandedTranscripts.includes(i)
-                          ? "Show Less ▲"
-                          : `See Full Transcript ▼`}
+                      <button onClick={() => toggleTranscript(i)} className="mt-3 text-xs font-semibold text-brand-pink hover:underline">
+                        {expandedTranscripts.includes(i) ? "Show Less ▲" : "See Full Transcript ▼"}
                       </button>
                     )}
-
                     {t.sponsored && (
                       <p className="mt-2 text-[10px] text-yellow-600 bg-yellow-50 rounded-lg px-3 py-1.5 border border-yellow-100">
-                        ⚠️ High praise + sponsorship = take with grain of salt
+                        ⚠️ High praise + sponsorship = take with a grain of salt
                       </p>
                     )}
                   </div>
@@ -572,215 +701,39 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </section>
         )}
 
-        {/* SECTION 4: Pros vs Cons */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Pros */}
-          <div className="bg-white rounded-3xl border border-stone-100 shadow-sm p-6 anim-left">
-            <h3 className="text-xl font-black text-stone-900 mb-5 flex items-center gap-2">
-              <span className="text-green-500">✅</span> Pros
-            </h3>
-            <div className="space-y-4">
-              {product.pros
-                .slice(0, showMorePros ? undefined : 3)
-                .map((pro) => (
-                  <div key={pro.title} className="flex gap-3">
-                    <span className="text-xl shrink-0">{pro.icon}</span>
-                    <div>
-                      <p className="font-bold text-sm text-stone-900">{pro.title}</p>
-                      <p className="text-xs text-stone-400">
-                        Mentioned {pro.count} times
-                      </p>
-                      <p className="text-xs text-stone-500 mt-0.5">{pro.detail}</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-            {product.pros.length > 3 && (
-              <button
-                onClick={() => setShowMorePros(!showMorePros)}
-                className="mt-4 text-xs font-semibold text-brand-pink hover:underline"
-              >
-                {showMorePros
-                  ? "Show less ▲"
-                  : `Show ${product.pros.length - 3} more pros ▼`}
-              </button>
-            )}
-          </div>
-
-          {/* Cons */}
-          <div className="bg-white rounded-3xl border border-stone-100 shadow-sm p-6 anim-right anim-d1">
-            <h3 className="text-xl font-black text-stone-900 mb-5 flex items-center gap-2">
-              <span className="text-yellow-500">⚠️</span> Cons
-            </h3>
-            <div className="space-y-4">
-              {product.cons
-                .slice(0, showMoreCons ? undefined : 3)
-                .map((con) => (
-                  <div key={con.title} className="flex gap-3">
-                    <span className="text-xl shrink-0">{con.icon}</span>
-                    <div>
-                      <p className="font-bold text-sm text-stone-900">{con.title}</p>
-                      <p className="text-xs text-stone-400">
-                        Mentioned {con.count} times
-                      </p>
-                      <p className="text-xs text-stone-500 mt-0.5">{con.detail}</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-            {product.cons.length > 3 && (
-              <button
-                onClick={() => setShowMoreCons(!showMoreCons)}
-                className="mt-4 text-xs font-semibold text-brand-pink hover:underline"
-              >
-                {showMoreCons
-                  ? "Show less ▲"
-                  : `Show ${product.cons.length - 3} more cons ▼`}
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* SECTION 5: Community Breakdown */}
-        <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-          <h3 className="text-2xl font-black text-stone-900 mb-6">Who Recommends This?</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-            {([
-              { platform: "Reddit", sub: "r/headphones", icon: "💬", comment: "Best ANC you can buy. Nothing touches it on a plane." },
-              { platform: "TikTok", sub: "#TechReviews", icon: "🎵", comment: "Mixed on price, but the sound quality praise is near-universal." },
-              { platform: "YouTube", sub: "Expert Reviews", icon: "📺", comment: "MKBHD gave it the top spot in his ANC headphone tier list." },
-              { platform: "Instagram", sub: "#TechSetup", icon: "📸", comment: "Desk setup posts featuring these as the go-to headphone pick." },
-            ] as const).map((item) => {
-              const p = product.platforms[item.platform.toLowerCase() as keyof typeof product.platforms];
-              return (
-                <div key={item.platform} className="bg-stone-50 rounded-xl p-4 border border-stone-100 anim-scale hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{item.icon}</span>
-                    <div>
-                      <p className="font-bold text-sm text-stone-900">{item.platform}</p>
-                      <p className="text-[10px] text-stone-400">{item.sub}</p>
-                    </div>
-                  </div>
-                  <p className={`text-xl font-black ${p.sentiment >= 80 ? "text-green-600" : "text-yellow-600"}`}>
-                    {p.sentiment}% positive
-                  </p>
-                  <p className="text-xs text-stone-400 mb-2">{p.mentions} mentions</p>
-                  <div className="bg-white rounded-lg p-2.5 border border-stone-100">
-                    <p className="text-xs text-stone-500 italic">
-                      💬 &ldquo;{item.comment}&rdquo;
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* SECTION 6: Claim Verification */}
-        {product.claims.length > 0 && (
-          <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-            <h3 className="text-2xl font-black text-stone-900 mb-1">
-              Fact-Checking the Marketing 🔍
-            </h3>
-            <p className="text-stone-400 text-sm mb-6">
-              We verified brand claims against real user experiences
-            </p>
-            <div className="space-y-5">
-              {product.claims.map((claim, i) => (
-                <div key={i} className="bg-stone-50 rounded-xl p-5 border border-stone-100">
-                  <p className="text-xs text-stone-400 font-semibold uppercase tracking-wider mb-1">
-                    Brand Says:
-                  </p>
-                  <p className="font-bold text-stone-900 mb-4">
-                    &ldquo;{claim.claim}&rdquo;
-                  </p>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="text-center">
-                      <p className="text-xl font-black text-stone-900">{claim.testedBy}</p>
-                      <p className="text-[10px] text-stone-400">Tested by</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-black text-green-600">{claim.confirmed}</p>
-                      <p className="text-[10px] text-stone-400">Confirmed</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-black text-red-500">{claim.disputed}</p>
-                      <p className="text-[10px] text-stone-400">Disputed</p>
-                    </div>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden mb-4">
-                    <div
-                      className="h-full rounded-full bg-green-500"
-                      style={{ width: `${(claim.confirmed / claim.testedBy) * 100}%` }}
-                    />
-                  </div>
-                  {/* Quotes */}
-                  <div className="space-y-2 mb-4">
-                    {claim.quotes.map((q, qi) => (
-                      <div key={qi} className="flex items-start gap-2 text-xs">
-                        <span>{q.positive ? "✅" : "⚠️"}</span>
-                        <p className="text-stone-500 italic">
-                          &ldquo;{q.text}&rdquo; — <span className="font-medium">{q.author}</span>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Verdict */}
-                  <div className={`rounded-lg px-4 py-2.5 border ${
-                    claim.verdictColor === "green"
-                      ? "bg-green-50 border-green-100"
-                      : "bg-yellow-50 border-yellow-200"
-                  }`}>
-                    <p className={`text-sm font-bold ${
-                      claim.verdictColor === "green" ? "text-green-700" : "text-yellow-700"
-                    }`}>
-                      Verdict: {claim.verdict}
-                    </p>
-                    <p className="text-xs text-stone-500 mt-0.5">{claim.reality}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SECTION 7: Alternatives */}
-        <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-8 fade-in-section">
-          <h3 className="text-2xl font-black text-stone-900 mb-6">You Might Also Like</h3>
+        {/* ── SECTION 6: You might also like ───────────────────────────────── */}
+        <section className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-6 fade-in-section">
+          <p className="text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] mb-2">✨ Alternatives</p>
+          <h3 className="font-heading text-2xl font-black text-stone-900 mb-6">You might also like</h3>
           <div className="flex gap-4 overflow-x-auto pb-2">
-            {products
-              .filter((p) => p.id !== product.id)
-              .slice(0, 3)
-              .map((alt) => (
-                <Link
-                  key={alt.id}
-                  href={`/product/${alt.id}`}
-                  className="shrink-0 w-56 bg-stone-50 rounded-xl p-4 border border-stone-100 hover:border-brand-pink/30 hover:shadow-md transition-all hover:-translate-y-1.5 hover:bg-white"
-                >
-                  <div className="w-full h-24 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center mb-3">
-                    <span className="text-3xl">🧴</span>
-                  </div>
-                  <p className="font-bold text-sm text-stone-900 mb-0.5 line-clamp-1">{alt.name}</p>
-                  <p className="text-xs text-stone-400 mb-2">{alt.brand}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="font-black text-stone-900">${alt.price.toFixed(2)}</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      alt.score >= 80 ? "bg-green-50 text-green-600" : "bg-yellow-50 text-yellow-600"
-                    }`}>
-                      {alt.score}/100
-                    </span>
-                  </div>
-                </Link>
-              ))}
+            {products.filter(p => p.id !== product.id).slice(0, 4).map(alt => (
+              <Link
+                key={alt.id}
+                href={`/product/${alt.id}`}
+                className="shrink-0 w-52 bg-stone-50 rounded-2xl p-4 border border-stone-100 hover:border-brand-pink/30 hover:shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:bg-white"
+              >
+                <div className="w-full h-24 rounded-xl bg-gradient-to-br from-stone-100 to-stone-50 flex items-center justify-center mb-3 text-3xl">
+                  {CATEGORY_EMOJI[alt.category] ?? "📦"}
+                </div>
+                <p className="font-bold text-sm text-stone-900 mb-0.5 line-clamp-1">{alt.name}</p>
+                <p className="text-xs text-stone-400 mb-2">{alt.brand}</p>
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-stone-900">${alt.price.toFixed(2)}</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${alt.score >= 80 ? "bg-brand-green/10 text-brand-green" : "bg-yellow-50 text-yellow-600"}`}>
+                    {alt.score}/100
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
+
       </main>
 
-      {/* SECTION 8: Sticky CTA Footer */}
+      {/* ── Sticky footer CTA ───────────────────────────────────────────────── */}
       <div
         ref={stickyRef}
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-t border-stone-100"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-stone-100"
       >
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4">
           <div className="hidden sm:block">
@@ -788,9 +741,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex items-center gap-2 text-xs">
               <span className="font-black text-stone-900">${product.price.toFixed(2)}</span>
               <span className="text-stone-300">&bull;</span>
-              <span className="flex items-center gap-1 text-green-600 font-semibold">
-                {product.score >= 80 && <CheckCircle size={12} />}
-                {product.scoreLabel} &bull; {product.score}/100
+              <span className="flex items-center gap-1 text-brand-green font-semibold">
+                <CheckCircle size={12} /> {product.scoreLabel} · {product.score}/100
               </span>
             </div>
           </div>
@@ -798,29 +750,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <button
               onClick={() => setSaved(!saved)}
               className={`px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${
-                saved
-                  ? "border-brand-pink text-brand-pink bg-brand-pink/5"
-                  : "border-stone-200 text-stone-600 hover:border-stone-300"
+                saved ? "border-brand-pink text-brand-pink bg-brand-pink/5" : "border-stone-200 text-stone-600 hover:border-stone-300"
               }`}
             >
               {saved ? "💖 Saved" : "🤍 Save"}
             </button>
-            <button
-              onClick={() => {
-                if (!showWhereToBuy) {
-                  track("buy_click", {
-                    page: "product_detail",
-                    product_name: product.name,
-                    score: product.score,
-                    properties: { product_id: id, position: "sticky_footer", action: "open_where_to_buy" },
-                  });
-                }
-                setShowWhereToBuy(!showWhereToBuy);
-              }}
+            <a
+              href={getStoreUrl(product.retailers[0]?.name ?? "Amazon", product.name, product.brand, product.retailers[0]?.url)}
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-gradient px-6 py-2.5 rounded-2xl text-sm"
             >
-              Where to Buy &rarr;
-            </button>
+              Buy Now →
+            </a>
           </div>
         </div>
       </div>

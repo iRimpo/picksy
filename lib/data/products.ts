@@ -41,7 +41,7 @@ export interface Product {
     sentimentEmoji: string;
     aspects: { name: string; status: "positive" | "warning" | "negative" }[];
   }[];
-  retailers: { name: string; price: number }[];
+  retailers: { name: string; price: number; url?: string }[];
 }
 
 export const products: Product[] = [
@@ -149,9 +149,9 @@ export const products: Product[] = [
       },
     ],
     retailers: [
-      { name: "Amazon", price: 279.99 },
-      { name: "Best Buy", price: 279.99 },
-      { name: "Walmart", price: 269.00 },
+      { name: "Amazon", price: 279.99, url: "https://www.amazon.com/dp/B09XS7JWHH" },
+      { name: "Best Buy", price: 279.99, url: "https://www.bestbuy.com/site/sony-wh-1000xm5-wireless-noise-canceling-over-ear-headphones-black/6505726.p" },
+      { name: "Walmart", price: 269.00, url: "https://www.walmart.com/ip/Sony-WH1000XM5-Wireless-Noise-Canceling-Headphones-Black/1845892963" },
     ],
   },
   {
@@ -183,8 +183,8 @@ export const products: Product[] = [
     claims: [],
     transcripts: [],
     retailers: [
-      { name: "Amazon", price: 1099.00 },
-      { name: "Best Buy", price: 1099.00 },
+      { name: "Amazon", price: 1099.00, url: "https://www.amazon.com/dp/B0CYDQFMSV" },
+      { name: "Best Buy", price: 1099.00, url: "https://www.bestbuy.com/site/apple-macbook-air-13-inch-laptop-apple-m3-chip-8gb-memory-256gb-ssd-midnight/6534606.p" },
       { name: "Walmart", price: 1079.00 },
     ],
   },
@@ -216,8 +216,8 @@ export const products: Product[] = [
     claims: [],
     transcripts: [],
     retailers: [
-      { name: "Amazon", price: 799.99 },
-      { name: "Best Buy", price: 799.99 },
+      { name: "Amazon", price: 799.99, url: "https://www.amazon.com/dp/B0DQXB1SL2" },
+      { name: "Best Buy", price: 799.99, url: "https://www.bestbuy.com/site/samsung-galaxy-s25-256gb-unlocked-icyblue/6609382.p" },
       { name: "Walmart", price: 779.00 },
     ],
   },
@@ -248,8 +248,8 @@ export const products: Product[] = [
     claims: [],
     transcripts: [],
     retailers: [
-      { name: "Amazon", price: 1296.99 },
-      { name: "Best Buy", price: 1296.99 },
+      { name: "Amazon", price: 1296.99, url: "https://www.amazon.com/dp/B0CVSXSMX1" },
+      { name: "Best Buy", price: 1296.99, url: "https://www.bestbuy.com/site/lg-55-class-c4-series-oled-4k-uhd-smart-webos-tv-2024/6576753.p" },
       { name: "Walmart", price: 1249.00 },
     ],
   },
@@ -280,8 +280,8 @@ export const products: Product[] = [
     claims: [],
     transcripts: [],
     retailers: [
-      { name: "Amazon", price: 99.99 },
-      { name: "Best Buy", price: 99.99 },
+      { name: "Amazon", price: 99.99, url: "https://www.amazon.com/dp/B09HM94VDS" },
+      { name: "Best Buy", price: 99.99, url: "https://www.bestbuy.com/site/logitech-mx-master-3s-wireless-laser-mouse-with-ultrafast-scrolling-graphite/6502511.p" },
       { name: "Target", price: 99.99 },
     ],
   },
@@ -312,9 +312,9 @@ export const products: Product[] = [
     claims: [],
     transcripts: [],
     retailers: [
-      { name: "Amazon", price: 179.00 },
-      { name: "Best Buy", price: 179.00 },
-      { name: "Target", price: 179.00 },
+      { name: "Amazon", price: 179.00, url: "https://www.amazon.com/dp/B0CHWRXH8B" },
+      { name: "Best Buy", price: 179.00, url: "https://www.bestbuy.com/site/apple-airpods-pro-2nd-generation-white/4900964.p" },
+      { name: "Target", price: 179.00, url: "https://www.target.com/p/apple-airpods-pro-2nd-generation-with-magsafe-case-usb-c/-/A-85978622" },
     ],
   },
   {
@@ -344,8 +344,8 @@ export const products: Product[] = [
     claims: [],
     transcripts: [],
     retailers: [
-      { name: "Amazon", price: 349.99 },
-      { name: "Best Buy", price: 349.99 },
+      { name: "Amazon", price: 349.99, url: "https://www.amazon.com/dp/B09TPMHYNL" },
+      { name: "Best Buy", price: 349.99, url: "https://www.bestbuy.com/site/dell-s2722qc-27-ips-led-4k-uhd-monitor-with-hdr-400-dark-grey/6463914.p" },
       { name: "Walmart", price: 339.00 },
     ],
   },
