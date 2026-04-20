@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { decodeQuery } from "@/lib/query-decoder";
 import { getRedditToken, redditHeaders, redditApiUrl } from "@/lib/reddit-auth";
@@ -55,6 +56,9 @@ function setDbCache(cacheKey: string, payload: unknown): void {
 
 // ─── Rate-limit cooldown (prevents hammering Gemini after a 429) ───────────────
 let rateLimitedUntil = 0; // epoch ms — both models exhausted until this time
+
+// ─── In-flight deduplication (prevents duplicate concurrent Gemini calls) ─────
+const inFlight = new Map<string, Promise<AnalysisOutput | null>>();
 
 // ─── Electronics Validation ────────────────────────────────────────────────────
 
@@ -161,6 +165,9 @@ async function fetchSearchResults(query: string, subreddits: string[]): Promise<
     return [];
   }
 }
+
+// Cache Tavily results for 24 hours — matches Supabase analysis cache TTL; Reddit threads don't change that fast
+const getCachedSearchResults = unstable_cache(fetchSearchResults, ["tavily-search"], { revalidate: 86400 });
 
 // ─── Fetch Actual Reddit Thread Content ────────────────────────────────────────
 
@@ -557,35 +564,40 @@ Rules:
 - scoreLabel should be 1–3 words (e.g. "Best Pick", "Strong Pick", "Budget Pick", "Gentle Pick")${budget ? `\n- CRITICAL: winner price and ALL buyLinks prices MUST be $${budget} or less — this is a hard constraint` : ""}`.trim();
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000); // 25s hard cap
-
-    const res = await fetch(
-      `${GEMINI_API_URL}/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            responseMimeType: "application/json",
+    // Retry up to 2 times on 429 with exponential backoff (1s, 2s)
+    let res: Response | null = null;
+    for (let attempt = 0; attempt <= 2; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 25000); // 25s hard cap
+      res = await fetch(
+        `${GEMINI_API_URL}/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
           },
-        }),
-        signal: controller.signal,
-        cache: "no-store",
-      }
-    );
-    clearTimeout(timeout);
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.3,
+              responseMimeType: "application/json",
+            },
+          }),
+          signal: controller.signal,
+          cache: "no-store",
+        }
+      );
+      clearTimeout(timeout);
+      if (res.status !== 429) break;
+    }
 
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => "(unreadable)");
-      console.error(`Gemini error ${res.status} for model ${model}:`, errBody.slice(0, 500));
-      const err = new Error(`Gemini error: ${res.status}`);
-      (err as Error & { status: number }).status = res.status;
+    if (!res || !res.ok) {
+      const errBody = await res?.text().catch(() => "(unreadable)") ?? "(no response)";
+      console.error(`Gemini error ${res?.status} for model ${model}:`, errBody.slice(0, 500));
+      const err = new Error(`Gemini error: ${res?.status}`);
+      (err as Error & { status: number }).status = res?.status ?? 0;
       throw err;
     }
 
@@ -818,7 +830,7 @@ export async function POST(req: NextRequest) {
     const searchQuery = preferencesSummary ? `${query} ${preferencesSummary}` : query;
 
     // 1. Search Reddit via Tavily (with category-specific subreddits)
-    const results = await fetchSearchResults(searchQuery, categorySubreddits);
+    const results = await getCachedSearchResults(searchQuery, categorySubreddits);
 
     // 2. Fetch Reddit thread content + TikTok reviews in parallel
     const threadUrls = results
@@ -846,10 +858,19 @@ export async function POST(req: NextRequest) {
     // 3. Gemini analysis + direct product link fetching run in parallel
     let analysis: AnalysisOutput | null = null;
     let geminiStatus = 0;
+    // Deduplicate concurrent Gemini calls for the same query — if a request is
+    // already in-flight, await the same promise instead of launching a new one
+    const dedupeKey = `${query}|${preferencesSummary || ""}`;
+    let geminiPromise = inFlight.get(dedupeKey);
+    if (!geminiPromise) {
+      geminiPromise = analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_MODEL, budgetStrict);
+      inFlight.set(dedupeKey, geminiPromise);
+      geminiPromise.finally(() => inFlight.delete(dedupeKey));
+    }
     // We speculatively fetch product links for the query — Tavily returns the
     // right product pages even without knowing the exact winner name yet
     const [geminiResult, speculativeLinks] = await Promise.allSettled([
-      analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_MODEL, budgetStrict),
+      geminiPromise,
       fetchProductDirectLinks(query, ""),
     ]);
 
