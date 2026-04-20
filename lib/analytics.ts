@@ -68,7 +68,9 @@ export type EventType =
   /** User completes /refine and navigates to results */
   | "refine_completed"
   /** User navigates from results to a product detail page */
-  | "product_detail_viewed";
+  | "product_detail_viewed"
+  /** User clicks a quick-fill chip on the homepage */
+  | "quick_fill_click";
 
 // ─── Track ────────────────────────────────────────────────────────────────────
 
