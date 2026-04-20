@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight, ChevronDown } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { isVagueQuery } from "@/lib/query-decoder";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
@@ -37,88 +37,133 @@ const QUICK_FILLS = [
   { emoji: "🎮", label: "Gaming mouse", query: "best gaming mouse under $60" },
 ];
 
-const WHY_PICKSY = [
-  { from: "10 listicle articles", to: "1 clear winner", icon: "🏆" },
-  { from: "Paid affiliate reviews", to: "Real Reddit voices", icon: "💬" },
-  { from: "Hours of research", to: "60 seconds", icon: "⚡" },
-];
+// ─── Platform logo SVGs ───────────────────────────────────────────────────────
 
-const AVATAR_COLORS = ["#FF8FB3", "#4EADFF", "#FFD93D", "#B39DDB", "#2ECC71", "#FFA07A", "#87CEEB"];
-const AVATAR_INITIALS = ["A", "J", "M", "R", "K", "S", "T"];
-
-// ─── Result Preview Teaser ────────────────────────────────────────────────────
-
-function ResultPreview() {
-  const [open, setOpen] = useState(false);
-
+function RedditLogo({ size = 22 }: { size?: number }) {
   return (
-    <div className="w-full">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/15 border border-white/25 backdrop-blur-sm hover:bg-white/22 transition-all"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="text-lg">👀</span>
-          <div className="text-left">
-            <p className="text-white text-sm font-bold leading-tight">See an example result</p>
-            <p className="text-white/45 text-xs">What Picksy gives you after searching</p>
-          </div>
-        </div>
-        <ChevronDown
-          size={16}
-          className={`text-white/50 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="10" fill="#FF4500" />
+      <circle cx="15.5" cy="4.5" r="1.6" fill="white" />
+      <path d="M10 6.5 Q13 5 15.5 4.5" stroke="white" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <circle cx="7.2" cy="9.5" r="1.3" fill="white" />
+      <circle cx="12.8" cy="9.5" r="1.3" fill="white" />
+      <ellipse cx="7.2" cy="9.5" rx="0.6" ry="0.6" fill="#FF4500" />
+      <ellipse cx="12.8" cy="9.5" rx="0.6" ry="0.6" fill="#FF4500" />
+      <path d="M7.5 13 Q10 15 12.5 13" stroke="white" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <ellipse cx="5.5" cy="12" rx="2.1" ry="1.4" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="14.5" cy="12" rx="2.1" ry="1.4" fill="rgba(255,255,255,0.15)" />
+    </svg>
+  );
+}
 
-      <div
-        style={{
-          maxHeight: open ? "500px" : "0px",
-          overflow: "hidden",
-          transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1)",
-        }}
-      >
-        <div className="mt-2 rounded-2xl bg-white p-5 shadow-2xl">
-          {/* Badges */}
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f0e6d3] text-[#7c4a1e] text-xs font-semibold rounded-full">
-              🏆 Reddit&apos;s Top Pick
-            </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#d8ede9] text-[#2d7a6a] text-xs font-semibold rounded-full">
-              94/100 · Exceptional
-            </span>
-          </div>
+function TikTokLogo({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="10" fill="#000" />
+      <path d="M36 14c-3.3 0-6-2.7-6-6h-5v21c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4c.5 0 .9.1 1.3.2v-5.3c-.4-.1-.8-.1-1.3-.1-4.9 0-9 4.1-9 9s4.1 9 9 9 9-4.1 9-9V18.2c1.9 1.1 4 1.8 6.3 1.8V14H36z" fill="#69C9D0" />
+      <path d="M38 14c-3.3 0-6-2.7-6-6h-5v21c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4c.5 0 .9.1 1.3.2v-5.3c-.4-.1-.8-.1-1.3-.1-4.9 0-9 4.1-9 9s4.1 9 9 9 9-4.1 9-9V18.2c1.9 1.1 4 1.8 6.3 1.8V14H38z" fill="#EE1D52" />
+      <path d="M37 14c-3.3 0-6-2.7-6-6h-5v21c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4c.5 0 .9.1 1.3.2v-5.3c-.4-.1-.8-.1-1.3-.1-4.9 0-9 4.1-9 9s4.1 9 9 9 9-4.1 9-9V18.2c1.9 1.1 4 1.8 6.3 1.8V14H37z" fill="white" />
+    </svg>
+  );
+}
 
-          {/* Product */}
-          <p className="text-stone-400 text-xs mb-0.5">Sony</p>
-          <h3 className="font-black text-stone-900 text-xl mb-3 leading-tight">WH-1000XM5 Headphones</h3>
+function YouTubeLogo({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="10" fill="#FF0000" />
+      <path d="M38.9 18.3A4.5 4.5 0 0 0 35.7 15C33.1 14 24 14 24 14s-9.1 0-11.7.9a4.5 4.5 0 0 0-3.2 3.3C8.2 20.9 8 24 8 24s.2 3.1 1.1 5.7A4.5 4.5 0 0 0 12.3 33c2.6.9 11.7.9 11.7.9s9.1 0 11.7-.9a4.5 4.5 0 0 0 3.2-3.3C39.8 27.1 40 24 40 24s-.2-3.1-1.1-5.7z" fill="white" />
+      <polygon points="21,18 21,30 31,24" fill="#FF0000" />
+    </svg>
+  );
+}
 
-          {/* Community quote */}
-          <div className="bg-[#1A1A2E] rounded-xl p-3.5 mb-3">
-            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1.5">💬 Community Says</p>
-            <p className="text-white/85 text-sm italic leading-relaxed">
-              &ldquo;The noise cancellation completely shuts out the world. Best I&apos;ve ever used.&rdquo;
-            </p>
-            <p className="text-white/30 text-[10px] mt-1.5">r/headphones · ▲ 2.4k upvotes</p>
-          </div>
+// ─── How Picksy Works pipeline ────────────────────────────────────────────────
 
-          {/* Store + stats */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 bg-brand-green/10 border border-brand-green/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-stone-400 font-semibold">Best price</p>
-                <p className="text-stone-900 font-black text-lg leading-tight">$279.99</p>
-              </div>
-              <span className="text-brand-green text-xs font-black">Buy →</span>
+function HowItWorks() {
+  return (
+    <div className="w-full max-w-[620px]">
+      <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] text-center mb-4">
+        How Picksy works
+      </p>
+
+      <div className="rounded-3xl bg-white/10 border border-white/20 backdrop-blur-sm px-5 py-5">
+        <div className="flex items-center gap-0">
+
+          {/* ── Source pills ── */}
+          <div className="flex flex-col gap-2 flex-shrink-0 w-[126px]">
+            {/* Reddit — LIVE */}
+            <div className="flex items-center gap-2 bg-[rgba(255,69,0,0.18)] border border-[rgba(255,69,0,0.45)] rounded-2xl px-2.5 py-2">
+              <RedditLogo size={20} />
+              <span className="font-bold text-[rgba(255,170,130,0.95)] text-[11px] flex-1">Reddit</span>
+              <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 shadow-[0_0_6px_rgba(74,222,128,0.7)]" title="Live" />
             </div>
-            <div className="text-right">
-              <p className="text-stone-900 font-bold text-sm">12,400 voices</p>
-              <p className="text-brand-green text-xs font-semibold">89% positive</p>
+            {/* TikTok — BETA */}
+            <div className="flex items-center gap-2 bg-black/40 border border-[rgba(105,201,208,0.45)] rounded-2xl px-2.5 py-2">
+              <TikTokLogo size={20} />
+              <span className="font-bold text-[rgba(105,201,208,0.95)] text-[11px] flex-1">TikTok</span>
+              <span className="text-[8px] font-black text-yellow-300 flex-shrink-0 tracking-wide">BETA</span>
+            </div>
+            {/* YouTube — SOON */}
+            <div className="flex items-center gap-2 bg-white/5 border border-white/12 rounded-2xl px-2.5 py-2 opacity-50">
+              <YouTubeLogo size={20} />
+              <span className="font-bold text-white/55 text-[11px] flex-1">YouTube</span>
+              <span className="text-[8px] font-black text-white/35 flex-shrink-0 tracking-wide">SOON</span>
             </div>
           </div>
 
-          <p className="text-stone-300 text-[10px] mt-3 text-center">
-            Based on 847+ Reddit threads · No affiliate links · Pure community data
-          </p>
+          {/* ── Arrow 1 ── */}
+          <div className="flex-1 flex flex-col items-center gap-1.5 px-1 min-w-0">
+            <span className="text-white/35 text-[9px] font-bold text-center leading-tight whitespace-nowrap">reads posts</span>
+            <div className="relative w-full flex items-center">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-white/20" />
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
+                <path d="M0 5 L8 5 M5 1 L9 5 L5 9" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* ── Picksy brain ── */}
+          <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+            <div
+              className="w-[68px] h-[68px] rounded-full flex items-center justify-center"
+              style={{
+                background: "rgba(26,26,46,0.7)",
+                border: "2.5px solid rgba(255,255,255,0.22)",
+                boxShadow: "0 0 28px rgba(255,255,255,0.1), inset 0 0 12px rgba(255,255,255,0.04)",
+              }}
+            >
+              <PicksyMascot size={44} />
+            </div>
+            <span className="text-white/50 text-[9px] font-bold text-center">AI weighs signal</span>
+          </div>
+
+          {/* ── Arrow 2 ── */}
+          <div className="flex-1 flex flex-col items-center gap-1.5 px-1 min-w-0">
+            <span className="text-white/35 text-[9px] font-bold text-center leading-tight whitespace-nowrap">~10 secs</span>
+            <div className="relative w-full flex items-center">
+              <div className="flex-1 h-px bg-gradient-to-r from-white/25 via-white/35 to-transparent" />
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
+                <path d="M0 5 L8 5 M5 1 L9 5 L5 9" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          {/* ── One Pick ── */}
+          <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+            <div
+              className="w-[68px] h-[68px] rounded-[18px] flex flex-col items-center justify-center gap-1"
+              style={{
+                background: "rgba(26,26,46,0.85)",
+                border: "2.5px solid #FFD93D",
+                boxShadow: "0 0 22px rgba(255,217,61,0.25)",
+              }}
+            >
+              <span className="text-2xl leading-none">🏆</span>
+              <span className="font-black text-[10px] text-[#FFD93D] leading-tight text-center">One Pick</span>
+            </div>
+            <span className="text-white/50 text-[9px] font-bold text-center">+ live prices</span>
+          </div>
+
         </div>
       </div>
     </div>
@@ -183,17 +228,8 @@ export default function HomePage() {
       {/* Decorative floating shapes */}
       <div className="absolute top-16 left-8 w-20 h-20 rounded-full bg-white/10 animate-float pointer-events-none" />
       <div className="absolute top-32 right-12 w-14 h-14 rounded-full bg-white/15 animate-floatSlow pointer-events-none" />
-      <div className="absolute top-1/2 left-4 w-10 h-10 rounded-full bg-brand-yellow/30 animate-floatDelay pointer-events-none" />
       <div className="absolute bottom-40 right-8 w-24 h-24 rounded-full bg-white/8 animate-float pointer-events-none" />
-      <div className="absolute bottom-20 left-1/3 w-8 h-8 rounded-full bg-brand-pink/30 animate-floatDelay2 pointer-events-none" />
-      <div className="absolute top-1/3 right-1/4 w-6 h-6 rounded-full bg-white/20 animate-floatSlow pointer-events-none" />
       <svg className="absolute top-20 right-1/3 animate-spinSlow opacity-20 pointer-events-none" width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
-      </svg>
-      <svg className="absolute bottom-32 left-1/4 animate-spinSlow opacity-15 pointer-events-none" width="24" height="24" viewBox="0 0 32 32" fill="none">
-        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
-      </svg>
-      <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 animate-spinSlow opacity-10 pointer-events-none" width="48" height="48" viewBox="0 0 32 32" fill="none">
         <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
       </svg>
 
@@ -223,9 +259,6 @@ export default function HomePage() {
 
           <p className="text-white/80 text-sm md:text-base font-medium text-center max-w-[360px] leading-snug mt-1">
             Stop digging through Reddit threads, TikTok reviews, and YouTube deep-dives. Picksy reads all of it and gives you one clear answer.
-          </p>
-          <p className="text-white/50 text-xs mt-2 font-semibold tracking-wide text-center">
-            One winner &middot; A community score &middot; A direct buy link
           </p>
         </div>
 
@@ -310,40 +343,18 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── Why Picksy — differentiator strip ── */}
+        {/* ── How Picksy Works pipeline ── */}
         <div
-          className={`mt-9 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "200ms" }}
+          className={`mt-7 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "180ms" }}
         >
-          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] text-center mb-3">
-            Why Picksy?
-          </p>
-          <div className="grid grid-cols-3 gap-2.5">
-            {WHY_PICKSY.map(({ from, to, icon }) => (
-              <div
-                key={to}
-                className="rounded-2xl bg-white/15 border border-white/20 backdrop-blur-sm px-3 py-4 flex flex-col items-center text-center gap-1.5"
-              >
-                <span className="text-xl">{icon}</span>
-                <p className="text-white/40 text-[10px] font-medium line-through leading-tight">{from}</p>
-                <p className="text-white font-black text-xs leading-tight">{to}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Example result preview ── */}
-        <div
-          className={`mt-5 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "280ms" }}
-        >
-          <ResultPreview />
+          <HowItWorks />
         </div>
 
         {/* ── Category pills ── */}
         <div
           className={`mt-8 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "340ms" }}
+          style={{ transitionDelay: "400ms" }}
         >
           <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] text-center mb-3">
             Or browse a category
@@ -357,7 +368,7 @@ export default function HomePage() {
                   handleSearch(cat.query);
                 }}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/15 hover:bg-white/30 text-white font-semibold text-sm border border-white/20 hover:border-white/40 transition-all active:scale-95 ${base}`}
-                style={{ transitionDelay: `${340 + i * 25}ms` }}
+                style={{ transitionDelay: `${400 + i * 25}ms` }}
               >
                 <span className="text-sm leading-none">{cat.emoji}</span>
                 {cat.label}
@@ -366,29 +377,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── Community trust bar ── */}
-        <div
-          className={`mt-10 flex flex-col items-center gap-3 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "560ms" }}
-        >
-          <div className="flex -space-x-2.5">
-            {AVATAR_COLORS.map((color, i) => (
-              <div
-                key={i}
-                className="w-9 h-9 rounded-full border-2 border-[#2ECC71] flex items-center justify-center text-white text-xs font-black shadow-sm"
-                style={{ background: color }}
-              >
-                {AVATAR_INITIALS[i]}
-              </div>
-            ))}
-          </div>
-          <p className="text-white/80 text-sm font-semibold text-center">
-            <span className="text-white font-black">15,000+</span> shoppers found their perfect pick
-          </p>
-          <p className="text-white/50 text-xs text-center">
-            ✨ Powered by 12,000+ Reddit discussions & TikTok reviews
-          </p>
-        </div>
 
       </main>
     </div>
