@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Search, ArrowLeft, ExternalLink, MapPin, AlertCircle, X,
-  Loader2, Bookmark, Share2, RotateCcw, MessageCircle, FileText,
-  Users, BarChart2, ChevronDown,
+  Loader2, MessageCircle, FileText,
+  BarChart2, ChevronDown,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
@@ -287,7 +287,131 @@ function StoreSelector({ stores, onSelect }: { stores: StoreLocation[]; onSelect
   );
 }
 
-// ─── Winner Card ───────────────────────────────────────────────────────────────
+// ─── Winner Hero — lives on the green background ──────────────────────────────
+
+function WinnerHero({ winner, meta, imageUrl }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null }) {
+  const [imgError, setImgError] = useState(false);
+  const lowestPrice = winner.buyLinks.length > 0
+    ? Math.min(...winner.buyLinks.map((l) => l.price))
+    : winner.price;
+  const pageTitle = getPageTitle(meta.category, meta.query);
+
+  const scoreContext =
+    winner.score >= 95 ? "Top 2% of everything Picksy analyzed" :
+    winner.score >= 90 ? "Top 5% — exceptionally well-loved" :
+    winner.score >= 80 ? "Top 15% — highly recommended" :
+    "Above average across all platforms";
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+      {/* Page label */}
+      <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-4">{pageTitle}</p>
+
+      <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start">
+
+        {/* Left: product image */}
+        <div className="md:w-[42%] shrink-0">
+          <div className="w-full aspect-square rounded-3xl bg-white/15 backdrop-blur-sm border border-white/20 overflow-hidden flex items-center justify-center shadow-2xl relative">
+            {/* Decorative corner circles */}
+            <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
+            <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-brand-pink/20 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-brand-green/10 pointer-events-none" />
+
+            {imageUrl && !imgError ? (
+              <img
+                src={imageUrl}
+                alt={winner.name}
+                className="relative w-full h-full object-contain p-6"
+                onError={() => setImgError(true)}
+              />
+            ) : imageUrl === null ? (
+              <div className="w-full h-full bg-white/10 animate-pulse rounded-3xl" />
+            ) : (
+              <span className="text-8xl">{winner.emoji}</span>
+            )}
+          </div>
+
+          {/* Thumbnail strip */}
+          <div className="flex gap-2 mt-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className={`w-16 h-16 rounded-xl bg-white/15 border overflow-hidden flex items-center justify-center cursor-pointer transition-all ${
+                  i === 0 ? "border-white/60 shadow-sm scale-105" : "border-white/20 hover:border-white/40"
+                }`}
+              >
+                {imageUrl && !imgError
+                  ? <img src={imageUrl} alt="" className="w-full h-full object-contain p-1" aria-hidden />
+                  : <span className="text-2xl opacity-60">{winner.emoji}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: product info */}
+        <div className="flex-1">
+          {/* Trust pills */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/20 text-white text-xs font-black rounded-full border border-white/30 backdrop-blur-sm">
+              🏆 Reddit&apos;s Top Pick
+            </span>
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-dark/30 text-white text-xs font-semibold rounded-full border border-white/10">
+              {winner.sentiment}% positive
+            </span>
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-dark/30 text-white text-xs font-semibold rounded-full border border-white/10">
+              {winner.mentions.toLocaleString()} voices
+            </span>
+          </div>
+
+          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">{winner.brand}</p>
+          <h1 className="font-heading font-black text-3xl md:text-4xl text-white mb-5 leading-tight drop-shadow-sm">
+            {winner.name}
+          </h1>
+
+          {/* Score pill */}
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            <div className="flex items-center gap-2 bg-brand-dark/40 border border-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-sm">
+              <span className="text-2xl font-black text-white leading-none">{winner.score}</span>
+              <div>
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-wider leading-none mb-0.5">Picksy Score</p>
+                <p className="text-xs font-bold text-brand-yellow leading-none">{getScoreBadgeLabel(winner.score, winner.scoreLabel)}</p>
+              </div>
+            </div>
+            <p className="text-white/60 text-xs leading-snug max-w-[200px]">{scoreContext}</p>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-3 mb-5">
+            <p className="text-4xl font-black text-white drop-shadow">${(winner.storePrice ?? lowestPrice).toFixed(2)}</p>
+            <span className="text-white/50 text-sm">best price</span>
+          </div>
+
+          {/* Primary CTA */}
+          {winner.buyLinks.length > 0 && (
+            <a
+              href={getStoreUrl(winner.buyLinks[0].store, winner.name, winner.brand, winner.buyLinks[0].url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track("buy_click", {
+                page: "results", query: meta.query, product_name: winner.name,
+                store_name: winner.buyLinks[0].store, price: lowestPrice, score: winner.score,
+                properties: { position: "hero_cta" },
+              })}
+              className="btn-gradient inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-base shadow-xl"
+            >
+              Buy for ${lowestPrice.toFixed(2)} →
+            </a>
+          )}
+          <p className="text-white/40 text-[11px] mt-2">
+            Best price across {winner.buyLinks.length} store{winner.buyLinks.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Winner Card — sections only (community, score, buy, compare) ──────────────
 
 // Dots visualization — colors by positive/negative sentiment ratio
 function MentionDotsSimple({ sentiment }: { sentiment: number }) {
@@ -332,17 +456,15 @@ function MentionDotsSimple({ sentiment }: { sentiment: number }) {
   );
 }
 
-function WinnerCard({ winner, meta, imageUrl, alternatives, tiktokSentiment }: { winner: Winner; meta: AnalysisMeta; imageUrl: string | null; alternatives: Alternative[]; tiktokSentiment?: number }) {
-  const [imgError, setImgError] = useState(false);
+function WinnerCard({ winner, meta, alternatives, tiktokSentiment }: { winner: Winner; meta: AnalysisMeta; alternatives: Alternative[]; tiktokSentiment?: number }) {
   const [barsVisible, setBarsVisible] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setBarsVisible(true), 500);
+    const t = setTimeout(() => setBarsVisible(true), 600);
     return () => clearTimeout(t);
   }, []);
   const lowestPrice = winner.buyLinks.length > 0
     ? Math.min(...winner.buyLinks.map((l) => l.price))
     : winner.price;
-  const pageTitle = getPageTitle(meta.category, meta.query);
 
   // Score context
   const scoreLabel =
@@ -355,175 +477,128 @@ function WinnerCard({ winner, meta, imageUrl, alternatives, tiktokSentiment }: {
   return (
     <div className="max-w-4xl mx-auto">
 
-      {/* ── 1. Community Says — dark panel first ── */}
+      {/* ── 1. Community Says — dark panel ── */}
       <div
         className="rounded-3xl mb-6 relative overflow-hidden"
         style={{ background: "#1A1A2E", padding: "32px 28px" }}
       >
-        {/* Floating bg shapes */}
-        <div className="absolute top-4 left-4 w-16 h-16 rounded-full bg-brand-pink/10 animate-float pointer-events-none" />
-        <div className="absolute bottom-6 right-8 w-12 h-12 rounded-full bg-brand-green/10 animate-floatSlow pointer-events-none" />
-        <svg className="absolute top-8 right-16 opacity-10 pointer-events-none" width="28" height="28" viewBox="0 0 32 32" fill="none">
-          <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#FFD93D" />
-        </svg>
+        {/* Inner glow shapes — matching product detail */}
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(255,107,138,0.15) 0%, transparent 70%)" }} />
+        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(46,204,113,0.12) 0%, transparent 70%)" }} />
+        <div className="absolute top-8 right-1/4 w-5 h-5 rounded-full bg-brand-yellow/30 animate-float pointer-events-none" />
+        <div className="absolute top-16 right-12 w-3.5 h-3.5 rounded-full bg-brand-pink/40 animate-floatSlow pointer-events-none" />
+        <div className="absolute bottom-8 right-8 w-6 h-6 rounded-full bg-brand-green/20 animate-floatDelay pointer-events-none" />
 
-        {/* Label */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-full bg-brand-pink flex items-center justify-center shrink-0">
-            <Users size={13} className="text-white" />
-          </div>
-          <span className="text-white/60 text-xs font-bold uppercase tracking-widest">Community Says</span>
+        <div className="relative">
+          {/* Label */}
+          <p className="text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] mb-2">💬 Community Says</p>
+          <h3 className="font-heading text-3xl md:text-4xl font-black text-white mb-1 leading-tight">
+            {winner.mentions.toLocaleString()}<br />
+            <span className="text-brand-green">real voices.</span>
+          </h3>
+          <p className="text-stone-400 text-sm mb-6">Across Reddit threads — what people actually said.</p>
+
+          {/* Dots visualization */}
+          <MentionDotsSimple sentiment={winner.sentiment} />
+
+          {/* Featured quote */}
+          {winner.redditQuote && (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 relative">
+              <MessageCircle size={14} className="text-white/20 absolute top-4 right-4" />
+              <p className="text-white/80 text-sm italic leading-relaxed pr-6">&ldquo;{winner.redditQuote}&rdquo;</p>
+              <p className="text-white/30 text-xs mt-2">— Reddit community</p>
+            </div>
+          )}
         </div>
-
-        {/* Big mention count */}
-        <div className="mb-1">
-          <span className="text-5xl font-black text-white">{winner.mentions.toLocaleString()}</span>
-          <span className="text-white/50 text-lg ml-2">people talked about this</span>
-        </div>
-        <p className="text-white/40 text-sm mb-6">across {winner.postsAnalyzed}+ Reddit threads</p>
-
-        {/* Dots visualization */}
-        <MentionDotsSimple sentiment={winner.sentiment} />
-
-        {/* Featured quote */}
-        {winner.redditQuote && (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 relative">
-            <MessageCircle size={14} className="text-white/20 absolute top-4 right-4" />
-            <p className="text-white/80 text-sm italic leading-relaxed pr-6">&ldquo;{winner.redditQuote}&rdquo;</p>
-            <p className="text-white/30 text-xs mt-2">— Reddit community</p>
-          </div>
-        )}
       </div>
 
-      {/* ── 2. Product Hero ── */}
-      <div className="mb-6">
-        {/* Page title */}
-        <h2 className="font-heading font-black text-2xl text-brand-dark mb-4">{pageTitle}</h2>
+      {/* ── 2. Picksy Score — white card ── */}
+      <div className="bg-white rounded-3xl border border-stone-100 shadow-sm p-8 mb-6">
+        <p className="text-brand-pink text-[10px] font-black uppercase tracking-[0.2em] mb-2">📊 Picksy Score</p>
+        <h3 className="font-heading text-2xl font-black text-stone-900 mb-1">
+          What does {winner.score}/100 mean?
+        </h3>
+        <p className="text-stone-500 text-sm mb-8">
+          {winner.score >= 90 ? "Top 5% — exceptionally well-loved by the community" :
+           winner.score >= 80 ? "Top 15% — highly recommended across Reddit" :
+           "Above average across all platforms analyzed"}
+        </p>
 
-        {/* Badges + actions row */}
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f0e6d3] text-[#7c4a1e] text-xs font-semibold rounded-full">
-              🏆 Reddit&apos;s Top Pick
-            </span>
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#d8ede9] text-[#2d7a6a] text-xs font-semibold rounded-full">
-              {winner.score}/100 · {getScoreBadgeLabel(winner.score, winner.scoreLabel)}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Save"><Bookmark size={18} /></button>
-            <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Share"><Share2 size={18} /></button>
-            <button className="text-stone-400 hover:text-stone-700 transition-colors" aria-label="Refresh"><RotateCcw size={18} /></button>
-          </div>
-        </div>
-
-        {/* Brand + product name */}
-        <p className="text-stone-400 text-sm mb-1">{winner.brand}</p>
-        <h1 className="font-heading font-black text-3xl md:text-4xl text-brand-dark mb-6 leading-tight">{winner.name}</h1>
-
-        {/* Two-column: image left, info right */}
-        <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] gap-6">
-
-          {/* Left: image + thumbnails */}
-          <div>
-            <div className="w-full aspect-square rounded-2xl bg-white border border-stone-100 overflow-hidden flex items-center justify-center">
-              {imageUrl && !imgError ? (
-                <img
-                  src={imageUrl}
-                  alt={winner.name}
-                  className="w-full h-full object-contain p-4"
-                  onError={() => setImgError(true)}
-                />
-              ) : imageUrl === null ? (
-                <div className="w-full h-full bg-stone-100 animate-pulse rounded-2xl" />
-              ) : (
-                <span className="text-8xl">{winner.emoji}</span>
-              )}
+        <div className="flex flex-col md:flex-row items-start gap-10 mb-8">
+          {/* Score ring */}
+          <div className="shrink-0 mx-auto md:mx-0">
+            <div className="relative w-40 h-40">
+              <div className="absolute inset-0 rounded-full border-4 border-brand-green/10" />
+              <div className="absolute inset-2 rounded-full border-4 border-brand-green/20" />
+              <div className="absolute inset-4 rounded-full border-4 border-brand-green/30 bg-brand-green/5" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-5xl font-black text-stone-900 leading-none">{winner.score}</span>
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">/ 100</span>
+              </div>
             </div>
-            <div className="flex gap-2 mt-3">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className={`w-[72px] h-[72px] rounded-xl bg-white border overflow-hidden flex items-center justify-center cursor-pointer transition-colors ${
-                    i === 0 ? "border-brand-pink shadow-sm" : "border-stone-200 hover:border-stone-300"
-                  }`}
-                >
-                  {imageUrl && !imgError ? (
-                    <img src={imageUrl} alt="" className="w-full h-full object-contain p-1" aria-hidden />
-                  ) : (
-                    <span className="text-2xl">{winner.emoji}</span>
-                  )}
+            <div className="mt-3 text-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-green/10 text-brand-green text-sm font-black rounded-full border border-brand-green/20">
+                {scoreLabel}
+              </span>
+            </div>
+          </div>
+
+          {/* Score breakdown */}
+          <div className="flex-1 w-full">
+            <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-4">
+              Calculated from {winner.mentions.toLocaleString()} community signals:
+            </p>
+            <div className="space-y-3">
+              {[
+                { label: "Sentiment Score", val: winner.sentiment, detail: `${winner.sentiment}% of mentions were positive` },
+                { label: "Community Reach", val: Math.min(99, Math.round((winner.mentions / 2000) * 100)), detail: `${winner.mentions.toLocaleString()} unique mentions` },
+                { label: "Discussion Depth", val: Math.min(99, Math.round((winner.postsAnalyzed / 50) * 100)), detail: `${winner.postsAnalyzed}+ threads analyzed` },
+              ].map(({ label, val, detail }) => (
+                <div key={label}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium text-stone-700">{label}</span>
+                    <span className="text-sm font-bold text-stone-900">{val}/100</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-brand-green to-emerald-400 transition-all duration-1000 ease-out"
+                      style={{ width: barsVisible ? `${val}%` : "0%" }}
+                    />
+                  </div>
+                  <p className="text-xs text-stone-400 mt-0.5">{detail}</p>
                 </div>
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Right: score + why it won */}
-          <div className="flex flex-col gap-4">
-
-            {/* Score panel */}
-            <div className="rounded-2xl bg-white border border-stone-100 p-5">
-              <div className="flex items-center gap-4 mb-4">
-                {/* Arc score ring */}
-                <div className="relative w-20 h-20 shrink-0">
-                  <svg width="80" height="80" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="32" fill="none" stroke="#f1f5f9" strokeWidth="8" />
-                    <circle
-                      cx="40" cy="40" r="32" fill="none"
-                      stroke={winner.score >= 80 ? "#2ECC71" : winner.score >= 60 ? "#FFD93D" : "#FF6B8A"}
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(winner.score / 100) * 201} 201`}
-                      transform="rotate(-90 40 40)"
-                      style={{ transition: "stroke-dasharray 1.4s ease-out" }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-black text-stone-900 leading-none">{winner.score}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="font-black text-stone-900 text-lg leading-tight">{scoreLabel}</p>
-                  {topPercent < 25 && (
-                    <p className="text-brand-green text-xs font-semibold mt-0.5">Top {topPercent}% of everything analyzed</p>
-                  )}
-                  <p className="text-stone-400 text-xs mt-1">{winner.sentiment}% positive · {winner.mentions.toLocaleString()} mentions</p>
-                </div>
-              </div>
-
-              {/* Score spectrum bar */}
-              <div className="mb-1">
-                <div className="h-2.5 rounded-full overflow-hidden mb-1" style={{ background: "linear-gradient(90deg, #FF6B8A, #FFD93D 50%, #2ECC71)" }}>
-                  <div
-                    className="absolute h-3 w-3 rounded-full bg-white border-2 border-stone-700 shadow"
-                    style={{ left: `calc(${winner.score}% - 6px)`, top: 0 }}
-                  />
-                </div>
-                <div className="flex justify-between text-[10px] text-stone-400 mt-1">
-                  <span>Avoid</span>
-                  <span className="font-semibold text-stone-600">{winner.score}/100</span>
-                  <span>Best-in-class</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Price */}
-            <div>
-              <p className="text-3xl font-bold text-stone-900 mb-1">
-                ${(winner.storePrice ?? winner.price).toFixed(2)}
-              </p>
-              <p className="text-xs text-stone-400 flex items-center gap-1">
-                <FileText size={11} className="shrink-0" />
-                Based on {winner.postsAnalyzed}+ Reddit discussions
-              </p>
-            </div>
-
-            {/* Why this won */}
-            <div>
-              <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1.5">✨ Why This Won</p>
-              <p className="text-stone-600 text-sm leading-relaxed">{winner.whyItWon}</p>
-            </div>
+        {/* Spectrum bar */}
+        <div className="bg-stone-50 rounded-2xl p-5 border border-stone-100">
+          <p className="text-xs font-bold text-stone-500 mb-3">Where this lands vs everything Picksy has analyzed:</p>
+          <div className="relative w-full h-5 bg-stone-200 rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-red-400 via-yellow-400 to-brand-green" style={{ width: "100%" }} />
+            <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-stone-900 shadow" style={{ left: `calc(${winner.score}% - 8px)` }} />
           </div>
+          <div className="flex justify-between mt-1.5 text-[10px] text-stone-400 font-medium">
+            <span>Avoid</span><span>Average</span><span>Best-in-class</span>
+          </div>
+          {topPercent < 25 && (
+            <p className="text-xs font-bold text-brand-green mt-3">
+              👆 Top {topPercent}% of all products — that&apos;s exceptional.
+            </p>
+          )}
+        </div>
+
+        {/* Why this won */}
+        <div className="mt-6 pt-5 border-t border-stone-100">
+          <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">✨ Why This Won</p>
+          <p className="text-stone-600 text-sm leading-relaxed">{winner.whyItWon}</p>
+          <p className="text-xs text-stone-400 flex items-center gap-1 mt-3">
+            <FileText size={11} className="shrink-0" />
+            Based on {winner.postsAnalyzed}+ Reddit discussions
+          </p>
         </div>
       </div>
 
@@ -1390,10 +1465,19 @@ function ResultsContent() {
 
   return (
     <div className="min-h-screen relative overflow-x-hidden" style={{ background: "#2ECC71" }}>
-      {/* Floating bg shapes — visible while loading */}
-      <div className="absolute top-20 left-6 w-20 h-20 rounded-full bg-white/10 animate-float pointer-events-none" />
-      <div className="absolute top-1/3 right-4 w-14 h-14 rounded-full bg-white/12 animate-floatSlow pointer-events-none" />
-      <div className="absolute bottom-1/2 left-1/3 w-8 h-8 rounded-full bg-brand-pink/20 animate-floatDelay2 pointer-events-none" />
+      {/* Green bg Picksy shapes — always visible */}
+      <div className="absolute top-16 left-6 w-24 h-24 rounded-full bg-white/12 animate-float pointer-events-none" />
+      <div className="absolute top-1/3 right-4 w-16 h-16 rounded-full bg-white/10 animate-floatSlow pointer-events-none" />
+      <div className="absolute top-28 right-1/3 w-10 h-10 rounded-full bg-brand-pink/20 animate-floatDelay pointer-events-none" />
+      <div className="absolute bottom-[55%] left-1/3 w-8 h-8 rounded-full bg-white/15 animate-floatDelay2 pointer-events-none" />
+      <div className="absolute top-40 left-1/2 w-5 h-5 rounded-full bg-brand-dark/15 animate-float pointer-events-none" />
+      {/* Star shapes */}
+      <svg className="absolute top-24 right-10 opacity-20 animate-spinSlow pointer-events-none" width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
+      <svg className="absolute top-1/2 left-8 opacity-15 pointer-events-none" width="20" height="20" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="white" />
+      </svg>
 
       {/* Sticky header — dark */}
       <header className="sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-xl border-b border-white/10">
@@ -1456,39 +1540,46 @@ function ResultsContent() {
         </main>
       )}
 
-      {/* Results — warm cream sheet slides up from below green */}
+      {/* Results — hero on green, then cream sheet below */}
       {showResults && result && (
-        <div
-          className={`rounded-t-[2.5rem] mt-3 shadow-2xl transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] relative overflow-hidden ${
-            resultVisible ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
-          }`}
-          style={{ minHeight: "calc(100vh - 4rem)", background: "#FEFAF5" }}
-        >
-          {/* Decorative bg blobs */}
-          <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,107,138,0.06) 0%, transparent 70%)", transform: "translate(40%, -40%)" }} />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(46,204,113,0.05) 0%, transparent 70%)", transform: "translate(-40%, 40%)" }} />
-          <div className="absolute top-1/2 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,217,61,0.04) 0%, transparent 70%)", transform: "translate(50%, -50%)" }} />
-          <svg className="absolute top-32 left-8 opacity-[0.04] pointer-events-none" width="60" height="60" viewBox="0 0 32 32" fill="none">
-            <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#FF6B8A" />
-          </svg>
-          <svg className="absolute bottom-1/3 right-12 opacity-[0.05] pointer-events-none" width="40" height="40" viewBox="0 0 32 32" fill="none">
-            <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#2ECC71" />
-          </svg>
-          <main className="max-w-5xl mx-auto px-4 py-8 relative z-10">
-            <WinnerCard winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} alternatives={result.alternatives as Alternative[]} tiktokSentiment={tiktokSentiment} />
-            <RedditCommentsSection threadUrls={redditThreadUrls} query={query} initialComments={preloadedComments} tiktokVideos={tiktokVideos} />
-            <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
+        <div className={`transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${resultVisible ? "opacity-100" : "opacity-0 translate-y-8"}`}>
 
-            <div className="max-w-4xl mx-auto text-center pb-8">
-              <p className="text-sm text-stone-400 mb-3">Not quite right?</p>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-stone-200 text-sm font-semibold text-stone-600 hover:border-brand-pink hover:text-brand-pink transition-all"
-              >
-                <Search size={14} /> New Search
-              </Link>
+          {/* ── Hero lives on the green background ── */}
+          <WinnerHero winner={result.winner as Winner} meta={result.meta} imageUrl={productImageUrl} />
+
+          {/* ── Scroll cue ── */}
+          <div className="flex flex-col items-center py-5 relative z-10">
+            <p className="text-white/50 text-xs font-semibold mb-2 tracking-wide">Full analysis below</p>
+            <div className="flex flex-col items-center gap-0.5 animate-bounce">
+              <div className="w-5 h-5 border-b-2 border-r-2 border-white/40 rotate-45" />
             </div>
-          </main>
+          </div>
+
+          {/* ── Cream sheet — sections ── */}
+          <div className="rounded-t-[2.5rem] shadow-2xl relative overflow-hidden" style={{ minHeight: "calc(100vh - 4rem)", background: "#FEFAF5" }}>
+            {/* Ambient blobs inside cream sheet */}
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(255,107,138,0.06) 0%, transparent 70%)", transform: "translate(40%, -40%)" }} />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(46,204,113,0.05) 0%, transparent 70%)", transform: "translate(-40%, 40%)" }} />
+            <svg className="absolute top-32 left-8 opacity-[0.04] pointer-events-none" width="60" height="60" viewBox="0 0 32 32" fill="none">
+              <path d="M16 2 L18.5 13.5 L30 16 L18.5 18.5 L16 30 L13.5 18.5 L2 16 L13.5 13.5 Z" fill="#FF6B8A" />
+            </svg>
+
+            <main className="max-w-5xl mx-auto px-4 py-8 relative z-10">
+              <WinnerCard winner={result.winner as Winner} meta={result.meta} alternatives={result.alternatives as Alternative[]} tiktokSentiment={tiktokSentiment} />
+              <RedditCommentsSection threadUrls={redditThreadUrls} query={query} initialComments={preloadedComments} tiktokVideos={tiktokVideos} />
+              <AlternativesSection alternatives={result.alternatives as Alternative[]} query={query} />
+
+              <div className="max-w-4xl mx-auto text-center pb-8">
+                <p className="text-sm text-stone-400 mb-3">Not quite right?</p>
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-stone-200 text-sm font-semibold text-stone-600 hover:border-brand-pink hover:text-brand-pink transition-all"
+                >
+                  <Search size={14} /> New Search
+                </Link>
+              </div>
+            </main>
+          </div>
         </div>
       )}
     </div>
