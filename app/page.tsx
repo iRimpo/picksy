@@ -218,11 +218,11 @@ export default function HomePage() {
           <PicksyMascot size={80} className="mb-4 drop-shadow-xl" />
 
           <h1 className="font-heading font-black text-4xl md:text-5xl text-white text-center leading-[1.1] drop-shadow mb-2">
-            Stop Googling.<br />Just ask Picksy.
+            Skip the scroll.<br />Picksy decides.
           </h1>
 
-          <p className="text-white/80 text-sm md:text-base font-medium text-center max-w-[340px] leading-snug mt-1">
-            Tell us what you&apos;re trying to buy — Picksy reads Reddit so you don&apos;t have to.
+          <p className="text-white/80 text-sm md:text-base font-medium text-center max-w-[360px] leading-snug mt-1">
+            Stop digging through Reddit threads, TikTok reviews, and YouTube deep-dives. Picksy reads all of it and gives you one clear answer.
           </p>
           <p className="text-white/50 text-xs mt-2 font-semibold tracking-wide text-center">
             One winner &middot; A community score &middot; A direct buy link

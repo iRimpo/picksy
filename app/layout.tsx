@@ -15,7 +15,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Picksy | Stop Overthinking. We'll Tell You What To Buy.",
+  title: "Picksy",
   description:
     "Picksy analyzes Reddit and TikTok discussions to give you one clear recommendation in seconds. Real reviews, real pricing, zero research-induced stress.",
   metadataBase: new URL("https://picksy.app"),
