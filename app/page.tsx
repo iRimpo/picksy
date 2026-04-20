@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight } from "lucide-react";
+import { Search, ArrowRight, ChevronDown } from "lucide-react";
 import { isVagueQuery } from "@/lib/query-decoder";
 import { track } from "@/lib/analytics";
 import { usePageView } from "@/lib/hooks/use-page-view";
@@ -30,14 +30,102 @@ const SUGGESTIONS = [
   "wireless gaming mouse for large hands...",
 ];
 
-const HOW_IT_WORKS = [
-  { icon: "🔍", text: "Scans Reddit & TikTok" },
-  { icon: "🧠", text: "Weighs real opinions" },
-  { icon: "✅", text: "One clear pick" },
+const QUICK_FILLS = [
+  { emoji: "🎧", label: "Headphones under $200", query: "best headphones under $200" },
+  { emoji: "💻", label: "Laptop for college", query: "best laptop for college students" },
+  { emoji: "📺", label: "4K TV for living room", query: "best 4K TV for living room" },
+  { emoji: "🎮", label: "Gaming mouse", query: "best gaming mouse under $60" },
+];
+
+const WHY_PICKSY = [
+  { from: "10 listicle articles", to: "1 clear winner", icon: "🏆" },
+  { from: "Paid affiliate reviews", to: "Real Reddit voices", icon: "💬" },
+  { from: "Hours of research", to: "60 seconds", icon: "⚡" },
 ];
 
 const AVATAR_COLORS = ["#FF8FB3", "#4EADFF", "#FFD93D", "#B39DDB", "#2ECC71", "#FFA07A", "#87CEEB"];
 const AVATAR_INITIALS = ["A", "J", "M", "R", "K", "S", "T"];
+
+// ─── Result Preview Teaser ────────────────────────────────────────────────────
+
+function ResultPreview() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="w-full">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-white/15 border border-white/25 backdrop-blur-sm hover:bg-white/22 transition-all"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-lg">👀</span>
+          <div className="text-left">
+            <p className="text-white text-sm font-bold leading-tight">See an example result</p>
+            <p className="text-white/45 text-xs">What Picksy gives you after searching</p>
+          </div>
+        </div>
+        <ChevronDown
+          size={16}
+          className={`text-white/50 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <div
+        style={{
+          maxHeight: open ? "500px" : "0px",
+          overflow: "hidden",
+          transition: "max-height 0.5s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      >
+        <div className="mt-2 rounded-2xl bg-white p-5 shadow-2xl">
+          {/* Badges */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f0e6d3] text-[#7c4a1e] text-xs font-semibold rounded-full">
+              🏆 Reddit&apos;s Top Pick
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#d8ede9] text-[#2d7a6a] text-xs font-semibold rounded-full">
+              94/100 · Exceptional
+            </span>
+          </div>
+
+          {/* Product */}
+          <p className="text-stone-400 text-xs mb-0.5">Sony</p>
+          <h3 className="font-black text-stone-900 text-xl mb-3 leading-tight">WH-1000XM5 Headphones</h3>
+
+          {/* Community quote */}
+          <div className="bg-[#1A1A2E] rounded-xl p-3.5 mb-3">
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1.5">💬 Community Says</p>
+            <p className="text-white/85 text-sm italic leading-relaxed">
+              &ldquo;The noise cancellation completely shuts out the world. Best I&apos;ve ever used.&rdquo;
+            </p>
+            <p className="text-white/30 text-[10px] mt-1.5">r/headphones · ▲ 2.4k upvotes</p>
+          </div>
+
+          {/* Store + stats */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-brand-green/10 border border-brand-green/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-stone-400 font-semibold">Best price</p>
+                <p className="text-stone-900 font-black text-lg leading-tight">$279.99</p>
+              </div>
+              <span className="text-brand-green text-xs font-black">Buy →</span>
+            </div>
+            <div className="text-right">
+              <p className="text-stone-900 font-bold text-sm">12,400 voices</p>
+              <p className="text-brand-green text-xs font-semibold">89% positive</p>
+            </div>
+          </div>
+
+          <p className="text-stone-300 text-[10px] mt-3 text-center">
+            Based on 847+ Reddit threads · No affiliate links · Pure community data
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Home Page ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const router = useRouter();
@@ -91,6 +179,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: "#2ECC71" }}>
+
       {/* Decorative floating shapes */}
       <div className="absolute top-16 left-8 w-20 h-20 rounded-full bg-white/10 animate-float pointer-events-none" />
       <div className="absolute top-32 right-12 w-14 h-14 rounded-full bg-white/15 animate-floatSlow pointer-events-none" />
@@ -119,31 +208,38 @@ export default function HomePage() {
         <span className="text-white/50 text-xs font-medium">Powered by Reddit & TikTok</span>
       </header>
 
-      {/* Main */}
-      <main className="relative z-10 flex flex-col items-center px-4 pt-4 pb-32">
+      <main className="relative z-10 flex flex-col items-center px-4 pt-2 pb-32">
 
-        {/* Mascot + wordmark + tagline */}
+        {/* ── Mascot + headline ── */}
         <div
-          className={`flex flex-col items-center mb-8 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          className={`flex flex-col items-center mb-7 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
           style={{ transitionDelay: "40ms" }}
         >
-          <PicksyMascot size={96} className="mb-3 drop-shadow-xl" />
-          <span className="font-heading font-black text-4xl text-white tracking-tight drop-shadow">
-            picksy
-          </span>
-          <p className="text-white font-black text-base mt-2 text-center leading-snug">
-            Reddit & TikTok pick the winner.
+          <PicksyMascot size={80} className="mb-4 drop-shadow-xl" />
+
+          <h1 className="font-heading font-black text-4xl md:text-5xl text-white text-center leading-[1.1] drop-shadow mb-2">
+            Stop Googling.<br />Just ask Picksy.
+          </h1>
+
+          <p className="text-white/80 text-sm md:text-base font-medium text-center max-w-[340px] leading-snug mt-1">
+            Tell us what you&apos;re trying to buy — Picksy reads Reddit so you don&apos;t have to.
           </p>
-          <p className="text-white/70 text-sm mt-0.5 font-medium text-center">
-            You get one clear answer.
+          <p className="text-white/50 text-xs mt-2 font-semibold tracking-wide text-center">
+            One winner &middot; A community score &middot; A direct buy link
           </p>
         </div>
 
-        {/* Search bar */}
+        {/* ── Search area ── */}
         <div
-          className={`w-full max-w-[620px] relative ${base} ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+          className={`w-full max-w-[620px] ${base} ${loaded ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
           style={{ transitionDelay: "120ms" }}
         >
+          {/* Label */}
+          <p className="text-white font-black text-sm uppercase tracking-[0.15em] text-center mb-3">
+            What are you shopping for?
+          </p>
+
+          {/* Bar */}
           <div
             className={`flex items-center gap-3 bg-white rounded-full px-5 h-[62px] transition-all duration-300 shadow-2xl ${
               isFocused ? "ring-4 ring-white/40" : ""
@@ -153,7 +249,6 @@ export default function HomePage() {
               size={20}
               className={`shrink-0 transition-colors duration-300 ${isFocused ? "text-brand-green" : "text-stone-400"}`}
             />
-            {/* Animated placeholder overlay */}
             <div className="flex-1 relative">
               {!query && !isFocused && (
                 <span
@@ -177,7 +272,7 @@ export default function HomePage() {
                 onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
                 placeholder=""
                 className="w-full bg-transparent outline-none text-stone-900 text-base relative z-10"
-                aria-label="Search for electronics"
+                aria-label="What are you shopping for?"
               />
             </div>
             {query.trim() && (
@@ -190,35 +285,70 @@ export default function HomePage() {
               </button>
             )}
           </div>
+
+          {/* Hint */}
+          <p className="text-white/45 text-xs text-center mt-2.5 font-medium">
+            Describe your situation — budget, use case, or just the product name
+          </p>
+
+          {/* Quick-fill chips */}
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            {QUICK_FILLS.map((fill) => (
+              <button
+                key={fill.query}
+                onClick={() => {
+                  setQuery(fill.query);
+                  track("quick_fill_click", { page: "home", properties: { label: fill.label } });
+                  inputRef.current?.focus();
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white text-stone-700 text-xs font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
+              >
+                <span className="text-sm">{fill.emoji}</span>
+                {fill.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* How it works — 3-step strip */}
+        {/* ── Why Picksy — differentiator strip ── */}
         <div
-          className={`mt-5 flex items-center gap-1 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "180ms" }}
+          className={`mt-9 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "200ms" }}
         >
-          {HOW_IT_WORKS.map((step, i) => (
-            <div key={step.text} className="flex items-center gap-1">
-              <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full px-3.5 py-1.5">
-                <span className="text-sm leading-none">{step.icon}</span>
-                <span className="text-white text-xs font-semibold whitespace-nowrap">{step.text}</span>
+          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] text-center mb-3">
+            Why Picksy?
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {WHY_PICKSY.map(({ from, to, icon }) => (
+              <div
+                key={to}
+                className="rounded-2xl bg-white/15 border border-white/20 backdrop-blur-sm px-3 py-4 flex flex-col items-center text-center gap-1.5"
+              >
+                <span className="text-xl">{icon}</span>
+                <p className="text-white/40 text-[10px] font-medium line-through leading-tight">{from}</p>
+                <p className="text-white font-black text-xs leading-tight">{to}</p>
               </div>
-              {i < HOW_IT_WORKS.length - 1 && (
-                <span className="text-white/30 text-xs mx-0.5">→</span>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Category pills */}
+        {/* ── Example result preview ── */}
+        <div
+          className={`mt-5 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "280ms" }}
+        >
+          <ResultPreview />
+        </div>
+
+        {/* ── Category pills ── */}
         <div
           className={`mt-8 w-full max-w-[620px] ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          style={{ transitionDelay: "260ms" }}
+          style={{ transitionDelay: "340ms" }}
         >
-          <p className="text-white/60 text-xs font-bold uppercase tracking-widest text-center mb-3">
-            Popular categories
+          <p className="text-white/45 text-[10px] font-bold uppercase tracking-[0.18em] text-center mb-3">
+            Or browse a category
           </p>
-          <div className="flex flex-wrap justify-center gap-2.5">
+          <div className="flex flex-wrap justify-center gap-2">
             {CATEGORIES.map((cat, i) => (
               <button
                 key={cat.label}
@@ -226,20 +356,20 @@ export default function HomePage() {
                   track("category_click", { page: "home", properties: { category: cat.label, query: cat.query } });
                   handleSearch(cat.query);
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/20 hover:bg-white/35 text-white font-semibold text-sm border border-white/20 hover:border-white/40 transition-all active:scale-95 ${base}`}
-                style={{ transitionDelay: `${260 + i * 30}ms` }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/15 hover:bg-white/30 text-white font-semibold text-sm border border-white/20 hover:border-white/40 transition-all active:scale-95 ${base}`}
+                style={{ transitionDelay: `${340 + i * 25}ms` }}
               >
-                <span className="text-base leading-none">{cat.emoji}</span>
+                <span className="text-sm leading-none">{cat.emoji}</span>
                 {cat.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Community trust bar */}
+        {/* ── Community trust bar ── */}
         <div
-          className={`mt-12 flex flex-col items-center gap-3 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
-          style={{ transitionDelay: "540ms" }}
+          className={`mt-10 flex flex-col items-center gap-3 ${base} ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+          style={{ transitionDelay: "560ms" }}
         >
           <div className="flex -space-x-2.5">
             {AVATAR_COLORS.map((color, i) => (
@@ -259,6 +389,7 @@ export default function HomePage() {
             ✨ Powered by 12,000+ Reddit discussions & TikTok reviews
           </p>
         </div>
+
       </main>
     </div>
   );
