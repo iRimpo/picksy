@@ -56,8 +56,8 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
 
 /* Short labels / tags */
 .tag {
-  font-family:var(--H); font-size:11px; font-weight:800;
-  padding:5px 14px; border-radius:999px; letter-spacing:.06em;
+  font-family:var(--H); font-size:14px; font-weight:800;
+  padding:6px 16px; border-radius:999px; letter-spacing:.06em;
   display:inline-flex; align-items:center; gap:5px;
 }
 .tag-g  { background:rgba(46,204,113,.18); border:1.5px solid rgba(46,204,113,.35); color:var(--g); }
@@ -85,12 +85,12 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
 .dots { display:flex; gap:5px; }
 .dot  { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.18); cursor:pointer; transition:background .3s,transform .3s; }
 .dot.on { background:var(--g); transform:scale(1.6); }
-.snum { font-family:var(--H); font-size:10px; opacity:.28; margin-top:3px; text-align:center; }
-#notesBtn { font-family:var(--H); font-weight:700; font-size:11px; padding:6px 13px; border-radius:999px; cursor:pointer; background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.1); color:rgba(255,255,255,.45); }
+.snum { font-family:var(--H); font-size:13px; opacity:.28; margin-top:3px; text-align:center; }
+#notesBtn { font-family:var(--H); font-weight:700; font-size:14px; padding:6px 13px; border-radius:999px; cursor:pointer; background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.1); color:rgba(255,255,255,.45); }
 #notesBtn:hover { background:rgba(255,255,255,.12); color:#fff; }
 #notes { display:none; position:fixed; bottom:58px; left:0; right:0; background:rgba(8,8,18,.97); border-top:1px solid rgba(255,255,255,.08); padding:14px 36px; font-size:13px; line-height:1.7; color:rgba(255,255,255,.72); max-height:170px; overflow-y:auto; }
 #notes.open { display:block; }
-#notes b { font-family:var(--H); font-size:9px; letter-spacing:.14em; display:block; margin-bottom:5px; opacity:.4; }
+#notes b { font-family:var(--H); font-size:12px; letter-spacing:.14em; display:block; margin-bottom:5px; opacity:.4; }
 
 /* ── Shared mascot SVG snippet ── */
 .mascot-sm { display:block; }
@@ -137,7 +137,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
     <span style="opacity:.3;font-size:22px;margin:0 4px;">→</span>
     <span class="tag" style="background:rgba(26,26,46,.8);border-color:rgba(255,255,255,.15);color:#fff;font-size:13px;padding:7px 20px;">✅ One Pick</span>
   </div>
-  <div style="margin-top:22px;font-family:var(--H);font-size:10px;opacity:.28;letter-spacing:.18em;">APRIL 2026</div>
+  <div style="margin-top:22px;font-family:var(--H);font-size:13px;opacity:.28;letter-spacing:.18em;">APRIL 2026</div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -170,7 +170,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
         </svg>
       </div>
       <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(255,120,60,.9);">Reddit</div>
-      <div style="font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">200+ threads</div>
+      <div style="font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.4);">200+ threads</div>
     </div>
 
     <!-- connector -->
@@ -188,7 +188,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
         </svg>
       </div>
       <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(105,201,208,.9);">TikTok</div>
-      <div style="font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">80+ videos</div>
+      <div style="font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.4);">80+ videos</div>
     </div>
 
     <!-- connector -->
@@ -204,7 +204,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
         </svg>
       </div>
       <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(255,100,100,.9);">YouTube</div>
-      <div style="font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.4);">40+ reviews</div>
+      <div style="font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.4);">40+ reviews</div>
     </div>
 
     <!-- Big arrow -->
@@ -221,7 +221,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
     <!-- Arrow out -->
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 8px;">
       <div style="font-size:32px;opacity:.2;">→</div>
-      <div style="font-family:var(--H);font-size:10px;font-weight:700;opacity:.3;white-space:nowrap;">still unsure</div>
+      <div style="font-family:var(--H);font-size:13px;font-weight:700;opacity:.3;white-space:nowrap;">still unsure</div>
     </div>
 
     <!-- No answer -->
@@ -286,7 +286,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
 
     <!-- Arrow + label -->
     <div style="flex:1;position:relative;padding:0 12px;display:flex;flex-direction:column;align-items:center;gap:6px;">
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;color:rgba(255,255,255,.5);">reads hundreds of posts</div>
+      <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(255,255,255,.5);">reads hundreds of posts</div>
       <div style="width:100%;height:2px;background:linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,.1));position:relative;">
         <div style="position:absolute;right:-8px;top:-8px;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-left:12px solid rgba(255,255,255,.35);"></div>
       </div>
@@ -304,12 +304,12 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
           <path d="M22 16L25 23L32 26L25 29L22 36L19 29L12 26L19 23Z" fill="white"/>
         </svg>
       </div>
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;color:rgba(255,255,255,.7);">AI scores + weighs</div>
+      <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(255,255,255,.7);">AI scores + weighs</div>
     </div>
 
     <!-- Arrow out -->
     <div style="flex:1;position:relative;padding:0 12px;display:flex;flex-direction:column;align-items:center;gap:6px;">
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;color:rgba(255,255,255,.5);">in ~10 seconds</div>
+      <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(255,255,255,.5);">in ~10 seconds</div>
       <div style="width:100%;height:2px;background:linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.55));position:relative;">
         <div style="position:absolute;right:-8px;top:-8px;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-left:12px solid rgba(255,255,255,.55);"></div>
       </div>
@@ -321,7 +321,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
         <span style="font-size:34px;">🏆</span>
         <div style="font-family:var(--H);font-weight:900;font-size:15px;color:var(--yl);">One Pick</div>
       </div>
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;color:rgba(255,255,255,.6);">+ live prices</div>
+      <div style="font-family:var(--H);font-size:13px;font-weight:800;color:rgba(255,255,255,.6);">+ live prices</div>
     </div>
   </div>
 </div>
@@ -339,7 +339,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:0 18px;height:50px;box-shadow:0 6px 24px rgba(26,26,46,.1);border:1.5px solid rgba(26,26,46,.08);">
         <span style="font-size:15px;opacity:.35;">🔍</span>
         <span style="font-family:var(--B);font-size:13px;color:#6B7280;flex:1;">best wireless headphones for commuting</span>
-        <span style="background:var(--pk);color:#fff;font-family:var(--H);font-weight:800;font-size:11px;padding:6px 16px;border-radius:999px;">Go →</span>
+        <span style="background:var(--pk);color:#fff;font-family:var(--H);font-weight:800;font-size:14px;padding:6px 16px;border-radius:999px;">Go →</span>
       </div>
       <div style="background:#fff;border-radius:20px;padding:16px 18px;border:1.5px solid rgba(26,26,46,.07);box-shadow:0 8px 32px rgba(26,26,46,.09);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -347,7 +347,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
             <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);display:flex;align-items:center;justify-content:center;font-size:22px;">🎧</div>
             <div>
               <div style="font-family:var(--H);font-size:14px;font-weight:800;color:var(--dark);">Sony WH-1000XM5</div>
-              <div style="font-size:11px;color:#9CA3AF;">picked from 847 community mentions</div>
+              <div style="font-size:14px;color:#9CA3AF;">picked from 847 community mentions</div>
             </div>
           </div>
           <div style="position:relative;width:50px;height:50px;flex-shrink:0;">
@@ -374,27 +374,27 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
     <div style="flex:.65;display:flex;flex-direction:column;gap:10px;">
       <div style="border-radius:20px;background:var(--dark);padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:6px;">
         <div style="font-family:var(--H);font-weight:900;font-size:52px;color:var(--g);line-height:1;">10s</div>
-        <div style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;">vs. 2–3 hours</div>
+        <div style="font-family:var(--H);font-size:13px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;">vs. 2–3 hours</div>
         <div style="width:100%;margin-top:8px;display:flex;flex-direction:column;gap:5px;">
-          <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:var(--H);font-size:9px;font-weight:700;color:var(--pk);width:40px;">Before</span><div style="flex:1;height:7px;border-radius:4px;background:var(--pk);"></div></div>
-          <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:var(--H);font-size:9px;font-weight:700;color:var(--g);width:40px;">Picksy</span><div style="width:7%;height:7px;border-radius:4px;background:var(--g);"></div></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:var(--H);font-size:12px;font-weight:700;color:var(--pk);width:40px;">Before</span><div style="flex:1;height:7px;border-radius:4px;background:var(--pk);"></div></div>
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:var(--H);font-size:12px;font-weight:700;color:var(--g);width:40px;">Picksy</span><div style="width:7%;height:7px;border-radius:4px;background:var(--g);"></div></div>
         </div>
       </div>
       <div style="border-radius:16px;background:rgba(26,26,46,.06);border:1.5px solid rgba(26,26,46,.1);padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="10" fill="#FF4500"/><path d="M7.5 13 Q10 15 12.5 13" stroke="white" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="7.2" cy="9.5" r="1.3" fill="white"/><circle cx="12.8" cy="9.5" r="1.3" fill="white"/></svg>
           <span style="font-family:var(--H);font-weight:900;font-size:18px;color:rgba(255,100,50,.9);">247</span>
-          <span style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(26,26,46,.4);">Reddit posts</span>
+          <span style="font-family:var(--H);font-size:13px;font-weight:700;color:rgba(26,26,46,.4);">Reddit posts</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#000"/><path d="M36 14c-3.3 0-6-2.7-6-6h-5v21c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4c.5 0 .9.1 1.3.2v-5.3c-.4-.1-.8-.1-1.3-.1-4.9 0-9 4.1-9 9s4.1 9 9 9 9-4.1 9-9V18.2c1.9 1.1 4 1.8 6.3 1.8V14H36z" fill="white"/></svg>
           <span style="font-family:var(--H);font-weight:900;font-size:18px;color:rgba(105,201,208,.9);">83</span>
-          <span style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(26,26,46,.4);">TikTok clips</span>
+          <span style="font-family:var(--H);font-size:13px;font-weight:700;color:rgba(26,26,46,.4);">TikTok clips</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#FF0000"/><polygon points="19,16 19,32 33,24" fill="white"/></svg>
           <span style="font-family:var(--H);font-weight:900;font-size:18px;color:rgba(255,100,100,.9);">41</span>
-          <span style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(26,26,46,.4);">YT reviews</span>
+          <span style="font-family:var(--H);font-size:13px;font-weight:700;color:rgba(26,26,46,.4);">YT reviews</span>
         </div>
       </div>
     </div>
@@ -412,84 +412,37 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
       <div style="width:68px;height:68px;border-radius:50%;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.3);display:flex;align-items:center;justify-content:center;font-size:32px;">🛒</div>
       <div style="font-family:var(--H);font-weight:900;font-size:18px;color:#fff;text-align:center;line-height:1.1;">Affiliate<br/>Commissions</div>
       <div style="width:100%;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-family:var(--H);font-size:10px;font-weight:700;opacity:.45;">1%</span><span style="font-family:var(--H);font-size:10px;font-weight:700;opacity:.45;">8%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-family:var(--H);font-size:13px;font-weight:700;opacity:.45;">1%</span><span style="font-family:var(--H);font-size:13px;font-weight:700;opacity:.45;">8%</span></div>
         <div style="height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(46,204,113,.3),var(--g));"></div>
-        <div style="text-align:center;margin-top:5px;font-family:var(--H);font-size:10px;font-weight:700;color:var(--g);">per sale driven</div>
+        <div style="text-align:center;margin-top:5px;font-family:var(--H);font-size:13px;font-weight:700;color:var(--g);">per sale driven</div>
       </div>
-      <span class="tag tag-g" style="font-size:10px;">Live now</span>
+      <span class="tag tag-yl" style="font-size:13px;">Coming soon</span>
     </div>
     <div style="flex:1;border-radius:22px;background:rgba(255,255,255,.05);border:2px solid rgba(255,217,61,.28);padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;">
       <div style="width:68px;height:68px;border-radius:50%;background:rgba(255,217,61,.15);border:2px solid rgba(255,217,61,.3);display:flex;align-items:center;justify-content:center;font-size:32px;">⭐</div>
       <div style="font-family:var(--H);font-weight:900;font-size:18px;color:#fff;text-align:center;line-height:1.1;">Picksy<br/>Pro</div>
       <div style="font-family:var(--H);font-weight:900;font-size:36px;color:var(--yl);line-height:1;">$7<span style="font-size:18px;opacity:.5;">/mo</span></div>
-      <span class="tag tag-yl" style="font-size:10px;">Q2 2026</span>
+      <span class="tag tag-yl" style="font-size:13px;">Q2 2026</span>
     </div>
     <div style="flex:1;border-radius:22px;background:rgba(255,255,255,.05);border:2px solid rgba(255,107,138,.25);padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;">
       <div style="width:68px;height:68px;border-radius:50%;background:rgba(255,107,138,.12);border:2px solid rgba(255,107,138,.25);display:flex;align-items:center;justify-content:center;font-size:32px;">🏷️</div>
       <div style="font-family:var(--H);font-weight:900;font-size:18px;color:#fff;text-align:center;line-height:1.1;">Brand<br/>Insights API</div>
       <div style="font-family:var(--H);font-size:12px;font-weight:700;color:rgba(255,255,255,.45);text-align:center;">Community sentiment<br/>sold to brands</div>
-      <span class="tag tag-pk" style="font-size:10px;">Q3 2026</span>
+      <span class="tag tag-pk" style="font-size:13px;">Q3 2026</span>
     </div>
   </div>
-  <div style="margin-top:16px;display:flex;align-items:center;gap:8px;">
-    <span style="font-size:15px;">🎯</span>
-    <span style="font-family:var(--H);font-size:12px;font-weight:800;color:var(--g);">North-star metric: buy-click CVR</span>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════
-     S6 — MODEL (Unit Economics)
-═══════════════════════════════════════ -->
-<div class="slide s-d" id="s6">
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 40% 50%,rgba(46,204,113,.09) 0%,transparent 55%);pointer-events:none;"></div>
-  <div class="deco" style="width:55px;height:55px;top:8%;right:8%;background:rgba(46,204,113,.18);animation-delay:.5s;"></div>
-  <div class="hero" style="margin-bottom:36px;">One search. <em>One click. Real money.</em></div>
-
-  <!-- Big equation visualization -->
-  <div style="display:flex;align-items:center;justify-content:center;gap:20px;width:100%;max-width:840px;margin-bottom:28px;">
-    <div style="border-radius:24px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);padding:24px 28px;text-align:center;min-width:160px;">
-      <div style="font-family:var(--H);font-weight:900;font-size:40px;color:#fff;line-height:1;">$180</div>
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-top:6px;">AVG ORDER VALUE</div>
+  <div style="margin-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;">
+    <div style="display:flex;align-items:center;gap:8px;border-radius:14px;background:rgba(46,204,113,.1);border:1.5px solid rgba(46,204,113,.25);padding:10px 20px;">
+      <span style="font-family:var(--H);font-weight:900;font-size:28px;color:var(--g);">$5.40</span>
+      <span style="font-family:var(--H);font-size:13px;font-weight:700;color:rgba(255,255,255,.55);">avg per buy-click<br/><span style="font-size:14px;">$180 order × 3% commission</span></span>
     </div>
-    <div style="font-family:var(--H);font-weight:900;font-size:36px;color:rgba(255,255,255,.25);">×</div>
-    <div style="border-radius:24px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);padding:24px 28px;text-align:center;min-width:160px;">
-      <div style="font-family:var(--H);font-weight:900;font-size:40px;color:#fff;line-height:1;">3%</div>
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-top:6px;">AVG COMMISSION</div>
-    </div>
-    <div style="font-family:var(--H);font-weight:900;font-size:36px;color:rgba(255,255,255,.25);">=</div>
-    <div style="border-radius:24px;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.4);padding:24px 28px;text-align:center;min-width:180px;box-shadow:0 0 40px rgba(46,204,113,.15);">
-      <div style="font-family:var(--H);font-weight:900;font-size:48px;color:var(--g);line-height:1;">$5.40</div>
-      <div style="font-family:var(--H);font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(46,204,113,.7);margin-top:6px;">PER BUY-CLICK</div>
-    </div>
-  </div>
-
-  <!-- Scale bar -->
-  <div style="width:100%;max-width:700px;border-radius:20px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.09);padding:18px 24px;">
-    <div style="font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:14px;">SCALE</div>
-    <div style="display:flex;gap:0;align-items:stretch;">
-      <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid rgba(255,255,255,.08);">
-        <div style="font-family:var(--H);font-weight:900;font-size:22px;color:#fff;">100</div>
-        <div style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(255,255,255,.35);margin:4px 0;">clicks/day</div>
-        <div style="font-family:var(--H);font-weight:900;font-size:18px;color:var(--g);">$540<span style="font-size:11px;opacity:.6;">/day</span></div>
-      </div>
-      <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid rgba(255,255,255,.08);">
-        <div style="font-family:var(--H);font-weight:900;font-size:22px;color:#fff;">1K</div>
-        <div style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(255,255,255,.35);margin:4px 0;">clicks/day</div>
-        <div style="font-family:var(--H);font-weight:900;font-size:18px;color:var(--g);">$5.4K<span style="font-size:11px;opacity:.6;">/day</span></div>
-      </div>
-      <div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid rgba(255,255,255,.08);">
-        <div style="font-family:var(--H);font-weight:900;font-size:22px;color:#fff;">10K</div>
-        <div style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(255,255,255,.35);margin:4px 0;">clicks/day</div>
-        <div style="font-family:var(--H);font-weight:900;font-size:18px;color:var(--g);">$54K<span style="font-size:11px;opacity:.6;">/day</span></div>
-      </div>
-      <div style="flex:1;text-align:center;padding:12px 8px;background:rgba(46,204,113,.08);border-radius:0 10px 10px 0;">
-        <div style="font-family:var(--H);font-weight:900;font-size:22px;color:var(--g);">100K</div>
-        <div style="font-family:var(--H);font-size:10px;font-weight:700;color:rgba(255,255,255,.35);margin:4px 0;">clicks/day</div>
-        <div style="font-family:var(--H);font-weight:900;font-size:18px;color:var(--g);">$540K<span style="font-size:11px;opacity:.6;">/day</span></div>
-      </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:16px;">🎯</span>
+      <span style="font-family:var(--H);font-size:14px;font-weight:800;color:var(--g);">North-star metric: buy-click CVR</span>
     </div>
   </div>
 </div>
+
 
 <!-- ═══════════════════════════════════════
      S7 — TRACTION
@@ -500,19 +453,19 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
   <div style="display:flex;gap:12px;width:100%;max-width:840px;margin-bottom:18px;">
     <div style="flex:1;border-radius:18px;background:rgba(46,204,113,.1);border:2px solid rgba(46,204,113,.25);padding:18px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:40px;color:var(--g);line-height:1;">5</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">TEAM MEMBERS</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">TEAM MEMBERS</div>
     </div>
     <div style="flex:1;border-radius:18px;background:rgba(255,217,61,.08);border:2px solid rgba(255,217,61,.22);padding:18px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:40px;color:var(--yl);line-height:1;">~10s</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">TIME TO A PICK</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">TIME TO A PICK</div>
     </div>
     <div style="flex:1;border-radius:18px;background:rgba(255,107,138,.08);border:2px solid rgba(255,107,138,.22);padding:18px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:40px;color:var(--pkl);line-height:1;">100+</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">CATEGORIES</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">CATEGORIES</div>
     </div>
     <div style="flex:1;border-radius:18px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);padding:18px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:30px;color:#fff;line-height:1;">Live 🟢</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">ON VERCEL NOW</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:5px;">ON VERCEL NOW</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px 20px;width:100%;max-width:840px;">
@@ -544,9 +497,9 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
       <div style="position:absolute;width:210px;height:210px;top:55px;left:55px;border-radius:50%;background:rgba(46,204,113,.13);border:2px solid rgba(46,204,113,.35);"></div>
       <!-- SOM inner — solid green -->
       <div style="position:absolute;width:120px;height:120px;top:100px;left:100px;border-radius:50%;background:var(--g);border:3px solid rgba(255,255,255,.2);box-shadow:0 0 50px rgba(46,204,113,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-family:var(--H);font-size:9px;font-weight:800;letter-spacing:.1em;color:rgba(26,26,46,.7);">SOM Y3</div>
+        <div style="font-family:var(--H);font-size:12px;font-weight:800;letter-spacing:.1em;color:rgba(26,26,46,.7);">SOM Y3</div>
         <div style="font-family:var(--H);font-weight:900;font-size:20px;color:var(--dark);line-height:1.1;">$420M</div>
-        <div style="font-family:var(--H);font-size:9px;font-weight:700;color:rgba(26,26,46,.6);">1% of SAM</div>
+        <div style="font-family:var(--H);font-size:12px;font-weight:700;color:rgba(26,26,46,.6);">1% of SAM</div>
       </div>
     </div>
 
@@ -555,25 +508,25 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
       <div style="display:flex;align-items:flex-start;gap:14px;">
         <div style="width:14px;height:14px;border-radius:50%;background:rgba(46,204,113,.22);border:2px solid rgba(46,204,113,.4);flex-shrink:0;margin-top:3px;"></div>
         <div>
-          <div style="font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:3px;">TOTAL ADDRESSABLE MARKET</div>
+          <div style="font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:3px;">TOTAL ADDRESSABLE MARKET</div>
           <div style="font-family:var(--H);font-weight:900;font-size:36px;color:var(--g);line-height:1;">$500B+</div>
-          <div style="font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.35);margin-top:2px;">US e-commerce affiliate</div>
+          <div style="font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.35);margin-top:2px;">US e-commerce affiliate</div>
         </div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:14px;">
         <div style="width:14px;height:14px;border-radius:50%;background:rgba(46,204,113,.4);border:2px solid rgba(46,204,113,.65);flex-shrink:0;margin-top:3px;"></div>
         <div>
-          <div style="font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:3px;">SERVICEABLE ADDRESSABLE MARKET</div>
+          <div style="font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:3px;">SERVICEABLE ADDRESSABLE MARKET</div>
           <div style="font-family:var(--H);font-weight:900;font-size:36px;color:var(--g);line-height:1;">$42B</div>
-          <div style="font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.35);margin-top:2px;">Consumer tech + home goods</div>
+          <div style="font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.35);margin-top:2px;">Consumer tech + home goods</div>
         </div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:14px;">
         <div style="width:14px;height:14px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:3px;box-shadow:0 0 10px rgba(46,204,113,.5);"></div>
         <div>
-          <div style="font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:3px;">SERVICEABLE OBTAINABLE MARKET</div>
+          <div style="font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;color:rgba(255,255,255,.4);margin-bottom:3px;">SERVICEABLE OBTAINABLE MARKET</div>
           <div style="font-family:var(--H);font-weight:900;font-size:36px;color:var(--g);line-height:1;">$420M</div>
-          <div style="font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.35);margin-top:2px;">Year 3 target · 1% of SAM</div>
+          <div style="font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.35);margin-top:2px;">Year 3 target · 1% of SAM</div>
         </div>
       </div>
     </div>
@@ -583,15 +536,15 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
   <div style="display:flex;gap:14px;margin-top:22px;">
     <div style="border-radius:14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);padding:12px 20px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:26px;color:var(--g);line-height:1;">160M+</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-top:4px;">REDDIT USERS / DAY</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-top:4px;">REDDIT USERS / DAY</div>
     </div>
     <div style="border-radius:14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);padding:12px 20px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:26px;color:var(--yl);line-height:1;">78%</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-top:4px;">GEN Z CHECK REDDIT FIRST</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-top:4px;">GEN Z CHECK REDDIT FIRST</div>
     </div>
     <div style="border-radius:14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);padding:12px 20px;text-align:center;">
       <div style="font-family:var(--H);font-weight:900;font-size:26px;color:var(--pkl);line-height:1;">$5.40</div>
-      <div style="font-family:var(--H);font-size:9px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-top:4px;">AVG REVENUE / BUY CLICK</div>
+      <div style="font-family:var(--H);font-size:12px;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-top:4px;">AVG REVENUE / BUY CLICK</div>
     </div>
   </div>
 </div>
@@ -610,17 +563,17 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
     <div style="flex:1;border-radius:26px;background:rgba(255,217,61,.08);border:2px solid rgba(255,217,61,.25);padding:28px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;transition:transform .2s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
       <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,217,61,.15);border:2px solid rgba(255,217,61,.3);display:flex;align-items:center;justify-content:center;font-size:40px;">🧠</div>
       <div style="font-family:var(--H);font-weight:900;font-size:20px;color:var(--yl);text-align:center;line-height:1.15;">LLMs can now<br/>read context</div>
-      <span class="tag tag-yl" style="font-size:10px;">2024 unlock</span>
+      <span class="tag tag-yl" style="font-size:13px;">2024 unlock</span>
     </div>
     <div style="flex:1;border-radius:26px;background:rgba(46,204,113,.08);border:2px solid rgba(46,204,113,.25);padding:28px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;transition:transform .2s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
       <div style="width:80px;height:80px;border-radius:50%;background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.3);display:flex;align-items:center;justify-content:center;font-size:40px;">📱</div>
       <div style="font-family:var(--H);font-weight:900;font-size:20px;color:var(--g);text-align:center;line-height:1.15;">Gen Z shops<br/>via community</div>
-      <span class="tag tag-g" style="font-size:10px;">78% use Reddit first</span>
+      <span class="tag tag-g" style="font-size:13px;">78% use Reddit first</span>
     </div>
     <div style="flex:1;border-radius:26px;background:rgba(255,107,138,.08);border:2px solid rgba(255,107,138,.25);padding:28px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;transition:transform .2s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
       <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,107,138,.15);border:2px solid rgba(255,107,138,.3);display:flex;align-items:center;justify-content:center;font-size:40px;">💀</div>
       <div style="font-family:var(--H);font-weight:900;font-size:20px;color:var(--pk);text-align:center;line-height:1.15;">Paid reviews<br/>are dead</div>
-      <span class="tag tag-pk" style="font-size:10px;">Amazon fake reviews</span>
+      <span class="tag tag-pk" style="font-size:13px;">Amazon fake reviews</span>
     </div>
   </div>
 </div>
@@ -634,10 +587,10 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
 
   <div style="width:100%;max-width:800px;border-radius:22px;overflow:hidden;border:1.5px solid rgba(255,255,255,.1);">
     <div style="display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;background:rgba(255,255,255,.04);">
-      <div style="padding:13px 20px;font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.4;border-right:1px solid rgba(255,255,255,.07);">Platform</div>
-      <div style="padding:13px;font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.4;text-align:center;border-right:1px solid rgba(255,255,255,.07);">One clear pick</div>
-      <div style="padding:13px;font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.4;text-align:center;border-right:1px solid rgba(255,255,255,.07);">Community signal</div>
-      <div style="padding:13px;font-family:var(--H);font-size:11px;font-weight:800;letter-spacing:.08em;opacity:.4;text-align:center;">Live prices</div>
+      <div style="padding:13px 20px;font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;opacity:.4;border-right:1px solid rgba(255,255,255,.07);">Platform</div>
+      <div style="padding:13px;font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;opacity:.4;text-align:center;border-right:1px solid rgba(255,255,255,.07);">One clear pick</div>
+      <div style="padding:13px;font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;opacity:.4;text-align:center;border-right:1px solid rgba(255,255,255,.07);">Community signal</div>
+      <div style="padding:13px;font-family:var(--H);font-size:14px;font-weight:800;letter-spacing:.08em;opacity:.4;text-align:center;">Live prices</div>
     </div>
     <!-- Picksy -->
     <div style="display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;background:rgba(46,204,113,.1);border-top:1px solid rgba(46,204,113,.2);border-bottom:1px solid rgba(46,204,113,.15);">
@@ -725,7 +678,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
     </div>
   </div>
 
-  <div style="margin-top:16px;font-family:var(--H);font-size:11px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.03em;">UC Berkeley · We use Picksy ourselves · Built in weeks</div>
+  <div style="margin-top:16px;font-family:var(--H);font-size:14px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:.03em;">UC Berkeley · We use Picksy ourselves · Built in weeks</div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -754,17 +707,17 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
     <div style="flex:1;border-radius:22px;background:rgba(255,255,255,.05);border:2px solid rgba(46,204,113,.2);padding:22px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
       <div style="font-family:var(--H);font-weight:900;font-size:44px;color:var(--g);line-height:1;">1</div>
       <div style="font-family:var(--H);font-weight:800;font-size:16px;color:#fff;line-height:1.2;">Try Picksy<br/>today</div>
-      <span class="tag tag-g" style="font-size:10px;">Real shopping list = best test</span>
+      <span class="tag tag-g" style="font-size:13px;">Real shopping list = best test</span>
     </div>
     <div style="flex:1;border-radius:22px;background:rgba(255,255,255,.05);border:2px solid rgba(255,217,61,.2);padding:22px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
       <div style="font-family:var(--H);font-weight:900;font-size:44px;color:var(--yl);line-height:1;">2</div>
       <div style="font-family:var(--H);font-weight:800;font-size:16px;color:#fff;line-height:1.2;">Affiliate intros:<br/>Amazon, Best Buy</div>
-      <span class="tag tag-yl" style="font-size:10px;">Unlocks first revenue</span>
+      <span class="tag tag-yl" style="font-size:13px;">Setting up now</span>
     </div>
     <div style="flex:1;border-radius:22px;background:rgba(255,255,255,.05);border:2px solid rgba(255,107,138,.2);padding:22px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
       <div style="font-family:var(--H);font-weight:900;font-size:44px;color:var(--pk);line-height:1;">3</div>
       <div style="font-family:var(--H);font-weight:800;font-size:16px;color:#fff;line-height:1.2;">Monetization<br/>feedback</div>
-      <span class="tag tag-pk" style="font-size:10px;">Affiliate → Pro → API</span>
+      <span class="tag tag-pk" style="font-size:13px;">Affiliate → Pro → API</span>
     </div>
   </div>
 
@@ -783,7 +736,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
   <button class="nbtn" id="prev" onclick="go(-1)" disabled>← Prev</button>
   <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
     <div class="dots" id="dots"></div>
-    <div class="snum" id="ctr">1 / 12</div>
+    <div class="snum" id="ctr">1 / 11</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <button id="notesBtn" onclick="toggleNotes()">📋 Notes</button>
@@ -798,14 +751,13 @@ const NOTES = [
   `SLIDE 2 — PROBLEM\n\nPoint at each platform icon left to right. "Reddit. TikTok. YouTube. Three different places, three different opinions on the same product. The info exists — there's just too much of it. 2-3 hours. Tab after tab. And you still end up here." Point at the 🤯 emoji. "No answer."`,
   `SLIDE 3 — SOLUTION\n\nTrace the flow with your hand. "Picksy reads all three — Reddit threads, TikTok videos, YouTube reviews. An AI weighs the signal and scores every product. In about 10 seconds, you get one pick. Not a list of 50. One. With the evidence to back it up."`,
   `SLIDE 4 — PRODUCT (LIVE DEMO)\n\nSwitch to picksy.app tab NOW. Type something real you're shopping for, or use "best wireless headphones for commuting." Show the search. If it routes to Refine, walk through the 3 questions. Show the winner — point to the score, the Reddit quote, the buy buttons. "247 Reddit posts, 83 TikToks, 41 YouTube reviews. One answer. Ten seconds."`,
-  `SLIDE 5 — BUSINESS MODEL\n\nPoint left to right. "Three revenue streams. Affiliate commissions — live today. Every buy-click earns us 1 to 8 percent. Phase two, Picksy Pro for power users. Phase three, selling the community intelligence back to brands who want to know what Reddit really says about them."`,
-  `SLIDE 6 — MODEL (UNIT ECONOMICS)\n\nWalk the equation. "$180 average order. 3% average commission. $5.40 per buy-click." Then look at the scale table. "At 1,000 clicks a day, that's $5,400 a day. At 10,000 — $54K. The model is simple and it compounds."`,
-  `SLIDE 7 — TRACTION\n\n"We're 5 people. We shipped a working product in weeks — not a prototype, a product. It's live right now at picksy.app." Walk the checkmarks quickly. Don't dwell. The point is speed and execution credibility.`,
-  `SLIDE 8 — FINANCIALS\n\nPoint to circles outside-in. "TAM: $500 billion — the entire US e-commerce affiliate market. We focus on consumer tech and home goods — $42 billion. Year three, we're targeting 1% of that: $420 million." Then the stat pills: "160 million Reddit users are already asking buy questions every day. We just make the answer visible."`,
-  `SLIDE 9 — WHY NOW?\n\nPoint to each tile. "Three things converged. LLMs can now understand Reddit slang — impossible two years ago. Gen Z already goes to Reddit before Amazon — 78%. And trust in paid reviews is dead. Amazon fake reviews, sponsored lists — people have stopped believing them. We built for exactly this moment."`,
-  `SLIDE 10 — COMPETITION\n\n"Wirecutter gives you one pick — but a journalist decided, not your community. Google Shopping shows prices, no recommendation. ChatGPT guesses with no sourcing. Reddit is the signal source we use, but manually it takes hours. We're the only three-green-check row in this table."`,
-  `SLIDE 11 — TEAM\n\n"Five of us, Berkeley. Richard, Harshit, Martha, Mathieu, Shayan. We're fast because we use Picksy ourselves. Every feature we shipped was something we were frustrated by first. That feedback loop is why the product is this far along."`,
-  `SLIDE 12 — ASK\n\n"Three things. One — try Picksy today with something you're actually shopping for. That's the best test I have. Two — introductions to affiliate program managers at Amazon or Best Buy would unlock our first real revenue fast. Three — we're sequencing affiliate, then Pro, then the brand API. If you've seen this model work or break, tell us." Then stop and open the room.`,
+  `SLIDE 5 — BUSINESS MODEL\n\nPoint left to right. "Three revenue streams. Affiliate commissions — in progress, setting up partnerships now. Every buy-click earns us 1 to 8 percent — at our average order value that's $5.40 per click. Phase two, Picksy Pro for power users. Phase three, selling the community intelligence back to brands who want to know what Reddit really says about them."`,
+  `SLIDE 6 — TRACTION\n\n"We're 5 people. We shipped a working product in weeks — not a prototype, a product. It's live right now at picksy.app." Walk the checkmarks quickly. Don't dwell. The point is speed and execution credibility.`,
+  `SLIDE 7 — FINANCIALS\n\nPoint to circles outside-in. "TAM: $500 billion — the entire US e-commerce affiliate market. We focus on consumer tech and home goods — $42 billion. Year three, we're targeting 1% of that: $420 million." Then the stat pills: "160 million Reddit users are already asking buy questions every day. We just make the answer visible."`,
+  `SLIDE 8 — WHY NOW?\n\nPoint to each tile. "Three things converged. LLMs can now understand Reddit slang — impossible two years ago. Gen Z already goes to Reddit before Amazon — 78%. And trust in paid reviews is dead. Amazon fake reviews, sponsored lists — people have stopped believing them. We built for exactly this moment."`,
+  `SLIDE 9 — COMPETITION\n\n"Wirecutter gives you one pick — but a journalist decided, not your community. Google Shopping shows prices, no recommendation. ChatGPT guesses with no sourcing. Reddit is the signal source we use, but manually it takes hours. We're the only three-green-check row in this table."`,
+  `SLIDE 10 — TEAM\n\n"Five of us, Berkeley. Richard, Harshit, Martha, Mathieu, Shayan. We're fast because we use Picksy ourselves. Every feature we shipped was something we were frustrated by first. That feedback loop is why the product is this far along."`,
+  `SLIDE 11 — ASK\n\n"Three things. One — try Picksy today with something you're actually shopping for. That's the best test I have. Two — introductions to affiliate program managers at Amazon or Best Buy would help us set up our first revenue stream fast. Three — we're sequencing affiliate, then Pro, then the brand API. If you've seen this model work or break, tell us." Then stop and open the room.`,
 ];
 
 const slides = Array.from(document.querySelectorAll('.slide'));
