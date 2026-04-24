@@ -728,6 +728,47 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
   </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════
+     S12 — Q&A
+═══════════════════════════════════════ -->
+<div class="slide s-g" id="s12">
+  <div class="deco" style="width:130px;height:130px;top:4%;left:2%;background:rgba(255,255,255,.1);animation-delay:0s;animation-duration:6s;"></div>
+  <div class="deco" style="width:60px;height:60px;top:10%;right:5%;background:rgba(255,217,61,.25);animation-delay:.6s;"></div>
+  <div class="deco" style="width:34px;height:34px;bottom:16%;left:5%;background:rgba(255,107,138,.3);animation-delay:1s;animation-duration:4s;"></div>
+  <div class="deco" style="width:100px;height:100px;bottom:8%;right:4%;background:rgba(255,255,255,.08);animation-delay:.3s;animation-duration:7s;"></div>
+  <svg class="star" style="top:9%;left:18%;width:28px;" viewBox="0 0 32 32" fill="none"><path d="M16 2L18.5 13.5L30 16L18.5 18.5L16 30L13.5 18.5L2 16L13.5 13.5Z" fill="white"/></svg>
+  <svg class="star starr" style="top:7%;right:22%;width:20px;" viewBox="0 0 32 32" fill="none"><path d="M16 2L18.5 13.5L30 16L18.5 18.5L16 30L13.5 18.5L2 16L13.5 13.5Z" fill="white"/></svg>
+  <svg class="star" style="bottom:20%;left:30%;width:22px;animation-duration:20s;" viewBox="0 0 32 32" fill="none"><path d="M16 2L18.5 13.5L30 16L18.5 18.5L16 30L13.5 18.5L2 16L13.5 13.5Z" fill="white"/></svg>
+
+  <div style="margin-bottom:24px;animation:plop .65s var(--spring) both;">
+    <svg width="80" height="80" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="60" fill="#1B7A3E"/><circle cx="60" cy="60" r="52" fill="#229950"/>
+      <circle cx="60" cy="60" r="47" fill="#25A855" opacity=".5"/><circle cx="60" cy="63" r="36" fill="#FF9EC8"/>
+      <ellipse cx="44" cy="72" rx="8" ry="5" fill="#FF6B8A" opacity=".4"/><ellipse cx="76" cy="72" rx="8" ry="5" fill="#FF6B8A" opacity=".4"/>
+      <path d="M44 61 Q51.5 53.5 59 61" stroke="#1A1A2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M61 61 Q68.5 53.5 76 61" stroke="#1A1A2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M48 70 Q60 82 72 70" stroke="#1A1A2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M22 16L25 23L32 26L25 29L22 36L19 29L12 26L19 23Z" fill="white"/>
+      <path d="M90 10L92 15L97 17L92 19L90 24L88 19L83 17L88 15Z" fill="white" opacity=".9"/>
+    </svg>
+  </div>
+
+  <div style="font-family:var(--H);font-weight:900;font-size:clamp(72px,11vw,130px);color:#fff;letter-spacing:-4px;line-height:1;animation:plop .65s .1s var(--spring) both;">Q&A</div>
+  <div style="font-family:var(--H);font-weight:800;font-size:clamp(16px,2.2vw,24px);color:rgba(255,255,255,.65);margin-top:10px;letter-spacing:.02em;animation:up .55s .3s both;">Ask us anything.</div>
+
+  <div style="display:flex;gap:16px;margin-top:32px;animation:up .55s .45s both;flex-wrap:wrap;justify-content:center;">
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(26,26,46,.45);border:1.5px solid rgba(255,255,255,.18);border-radius:16px;padding:12px 22px;">
+      <span style="font-size:18px;">🌐</span>
+      <span style="font-family:var(--H);font-weight:800;font-size:16px;color:#fff;">picksy.app</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(26,26,46,.45);border:1.5px solid rgba(255,255,255,.18);border-radius:16px;padding:12px 22px;">
+      <span style="font-size:18px;">✉️</span>
+      <span style="font-family:var(--H);font-weight:800;font-size:15px;color:rgba(255,255,255,.8);">richardazucenas@berkeley.edu</span>
+    </div>
+  </div>
+</div>
+
 </div><!-- /stage -->
 
 <div id="notes"></div>
@@ -736,7 +777,7 @@ html,body { height:100%; width:100%; overflow:hidden; background:var(--dark); fo
   <button class="nbtn" id="prev" onclick="go(-1)" disabled>← Prev</button>
   <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
     <div class="dots" id="dots"></div>
-    <div class="snum" id="ctr">1 / 11</div>
+    <div class="snum" id="ctr">1 / 12</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <button id="notesBtn" onclick="toggleNotes()">📋 Notes</button>
@@ -758,6 +799,7 @@ const NOTES = [
   `SLIDE 9 — COMPETITION\n\n"Wirecutter gives you one pick — but a journalist decided, not your community. Google Shopping shows prices, no recommendation. ChatGPT guesses with no sourcing. Reddit is the signal source we use, but manually it takes hours. We're the only three-green-check row in this table."`,
   `SLIDE 10 — TEAM\n\n"Five of us, Berkeley. Richard, Harshit, Martha, Mathieu, Shayan. We're fast because we use Picksy ourselves. Every feature we shipped was something we were frustrated by first. That feedback loop is why the product is this far along."`,
   `SLIDE 11 — ASK\n\n"Three things. One — try Picksy today with something you're actually shopping for. That's the best test I have. Two — introductions to affiliate program managers at Amazon or Best Buy would help us set up our first revenue stream fast. Three — we're sequencing affiliate, then Pro, then the brand API. If you've seen this model work or break, tell us." Then stop and open the room.`,
+  `SLIDE 12 — Q&A\n\nOpen the floor. Stay on this slide. The URL and email are visible for anyone who wants to follow up. Don't rush to fill silence — let the questions come.`,
 ];
 
 const slides = Array.from(document.querySelectorAll('.slide'));
