@@ -360,6 +360,98 @@ async function fetchTikTokContent(query: string): Promise<TikTokVideo[]> {
   }
 }
 
+// ─── YouTube Content via YouTube Data API v3 ──────────────────────────────────
+
+interface YouTubeVideo {
+  author: string;
+  title: string;
+  description: string;
+  likes: number;
+  views: number;
+  topComments: string[];
+  videoUrl: string;
+}
+
+async function fetchYouTubeContent(query: string): Promise<YouTubeVideo[]> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const controller = new AbortController();
+    // 25s total — transcript fetching adds latency but runs in parallel
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    // Step 1: Search for review videos
+    const searchRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(`${query} review`)}&type=video&maxResults=5&relevanceLanguage=en&key=${apiKey}`,
+      { signal: controller.signal, cache: "no-store" }
+    );
+    if (!searchRes.ok) { clearTimeout(timeout); return []; }
+
+    const searchData = await searchRes.json();
+    const items = searchData.items ?? [];
+    if (items.length === 0) { clearTimeout(timeout); return []; }
+
+    const videoIds: string[] = items.map((v: Record<string, unknown>) =>
+      (v.id as Record<string, string>)?.videoId
+    ).filter(Boolean);
+
+    // Step 2: Get video stats (views, likes) for all videos in one call
+    const statsRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds.join(",")}&key=${apiKey}`,
+      { signal: controller.signal, cache: "no-store" }
+    );
+    if (!statsRes.ok) { clearTimeout(timeout); return []; }
+
+    const statsData = await statsRes.json();
+    const videos: YouTubeVideo[] = (statsData.items ?? []).map((v: Record<string, unknown>, i: number) => {
+      const snippet = v.snippet as Record<string, unknown>;
+      const stats = v.statistics as Record<string, unknown>;
+      return {
+        author: String(snippet?.channelTitle ?? "unknown"),
+        title: String(snippet?.title ?? "").slice(0, 120),
+        // 600 chars — descriptions often contain a full review summary paragraph
+        description: String(snippet?.description ?? "").slice(0, 600),
+        likes: Number(stats?.likeCount ?? 0),
+        views: Number(stats?.viewCount ?? 0),
+        topComments: [],
+        videoUrl: `https://www.youtube.com/watch?v=${videoIds[i]}`,
+      };
+    });
+
+    // Step 3: Fetch comments for top 3 videos in parallel
+    // 8 comments × 3 videos = up to 24 viewer opinions feeding the AI
+    await Promise.all(
+      videos.slice(0, 3).map(async (video, i) => {
+        const videoId = videoIds[i];
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=8&order=relevance&key=${apiKey}`,
+          { signal: controller.signal, cache: "no-store" }
+        ).catch(() => null);
+
+        if (res?.ok) {
+          const commentsData = await res.json().catch(() => null);
+          if (commentsData) {
+            video.topComments = (commentsData.items ?? [])
+              .map((c: Record<string, unknown>) => {
+                const topSnippet = (
+                  (c.snippet as Record<string, unknown>)?.topLevelComment as Record<string, unknown>
+                )?.snippet as Record<string, unknown>;
+                return String(topSnippet?.textDisplay ?? "").trim().slice(0, 200);
+              })
+              .filter((t: string) => t.length > 10);
+          }
+        }
+      })
+    );
+
+    clearTimeout(timeout);
+    return videos;
+  } catch {
+    return []; // fail silently — YouTube is best-effort enrichment
+  }
+}
+
 // ─── Gemini Full Analysis ──────────────────────────────────────────────────────
 
 interface AnalysisOutput {
@@ -456,7 +548,8 @@ async function analyzeWithGemini(
   tiktokVideos?: TikTokVideo[],
   budget?: number | null,
   model = GEMINI_MODEL,
-  budgetStrict = true
+  budgetStrict = true,
+  youtubeVideos?: YouTubeVideo[]
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -503,15 +596,24 @@ async function analyzeWithGemini(
       }).join("\n\n")}\n`
     : "";
 
-  const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions and TikTok reviews.
+  const youtubeBlock = youtubeVideos && youtubeVideos.length > 0
+    ? `\nYOUTUBE REVIEW CONTENT (description + viewer comments — medium signal):\n${youtubeVideos.map((v, i) => {
+        const commentsLine = v.topComments.length > 0
+          ? `\n   Viewer comments: ${v.topComments.map((c) => `"${c}"`).join(" | ")}`
+          : "";
+        return `[${i + 1}] "${v.title}" by ${v.author} (${v.views.toLocaleString()} views, ${v.likes.toLocaleString()} likes): ${v.description}${commentsLine}`;
+      }).join("\n\n")}\n`
+    : "";
+
+  const prompt = `You are the recommendation engine for Picksy, a product research tool that analyzes Reddit discussions, TikTok reviews, and YouTube reviews.
 
 A user searched for: "${query}"${budgetBlock}${preferencesBlock}
-${actualCommentsBlock}${tiktokBlock}
+${actualCommentsBlock}${tiktokBlock}${youtubeBlock}
 REDDIT SEARCH SNIPPETS (${redditResults.length} found):
 ${formatResults(redditResults)}
 
 Your job:
-1. Identify the most recommended product. Priority order: ACTUAL REDDIT COMMENTS (highest) → TIKTOK REVIEW CONTENT (medium) → Reddit search snippets (supporting context).
+1. Identify the most recommended product. Priority order: ACTUAL REDDIT COMMENTS (highest) → TIKTOK REVIEW CONTENT (medium) → YOUTUBE REVIEW CONTENT (medium) → Reddit search snippets (supporting context).
 2. If TikTok creators mention a specific product positively with high engagement, factor that into your recommendation.
 3. If no results were found, use your training knowledge about this product category.
 4. Do NOT bias toward any specific store. Focus on the best product based on community trust and reviews.
@@ -626,7 +728,8 @@ async function analyzeWithGroq(
   preferencesSummary?: string,
   actualComments?: ActualComment[],
   tiktokVideos?: TikTokVideo[],
-  budget?: number | null
+  budget?: number | null,
+  youtubeVideos?: YouTubeVideo[]
 ): Promise<AnalysisOutput | null> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
@@ -659,8 +762,15 @@ async function analyzeWithGroq(
     ? `\nTIKTOK REVIEWS:\n${tiktokVideos.map((v, i) => `[${i + 1}] @${v.author} (${v.likes} likes): ${v.description}`).join("\n\n")}\n`
     : "";
 
+  const youtubeBlock = youtubeVideos && youtubeVideos.length > 0
+    ? `\nYOUTUBE REVIEWS:\n${youtubeVideos.map((v, i) => {
+        const commentsLine = v.topComments.length > 0 ? `\n   Comments: ${v.topComments.map((c) => `"${c}"`).join(" | ")}` : "";
+        return `[${i + 1}] "${v.title}" by ${v.author} (${v.views.toLocaleString()} views): ${v.description}${commentsLine}`;
+      }).join("\n\n")}\n`
+    : "";
+
   const prompt = `You are the recommendation engine for Picksy. A user searched for: "${query}"${budgetBlock}${preferencesBlock}
-${actualCommentsBlock}${tiktokBlock}
+${actualCommentsBlock}${tiktokBlock}${youtubeBlock}
 REDDIT SNIPPETS (${redditResults.length} found):
 ${formatResults(redditResults)}
 
@@ -837,9 +947,10 @@ export async function POST(req: NextRequest) {
       .filter((r) => r.source === "reddit" && r.url.includes("/comments/"))
       .map((r) => r.url)
       .slice(0, 3);
-    const [directComments, tiktokVideos] = await Promise.all([
+    const [directComments, tiktokVideos, youtubeVideos] = await Promise.all([
       fetchActualRedditComments(threadUrls),
       fetchTikTokContent(query),
+      fetchYouTubeContent(query),
     ]);
 
     // Fall back to Tavily snippets when direct Reddit fetch returns empty
@@ -863,7 +974,7 @@ export async function POST(req: NextRequest) {
     const dedupeKey = `${query}|${preferencesSummary || ""}`;
     let geminiPromise = inFlight.get(dedupeKey);
     if (!geminiPromise) {
-      geminiPromise = analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_MODEL, budgetStrict);
+      geminiPromise = analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_MODEL, budgetStrict, youtubeVideos);
       inFlight.set(dedupeKey, geminiPromise);
       geminiPromise.finally(() => inFlight.delete(dedupeKey));
     }
@@ -887,7 +998,7 @@ export async function POST(req: NextRequest) {
     // - other: different model may handle the request better
     if (!analysis) {
       try {
-        analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_FALLBACK_MODEL, budgetStrict);
+        analysis = await analyzeWithGemini(query, results, preferencesSummary, actualComments, tiktokVideos, budget, GEMINI_FALLBACK_MODEL, budgetStrict, youtubeVideos);
         geminiStatus = 0; // reset so we don't return 429 below
       } catch (retryErr) {
         geminiStatus = (retryErr as Error & { status?: number }).status ?? geminiStatus;
@@ -896,7 +1007,7 @@ export async function POST(req: NextRequest) {
 
     if (!analysis && geminiStatus === 429) {
       // Both Gemini models rate-limited — try Groq as final fallback (separate free tier)
-      analysis = await analyzeWithGroq(query, results, preferencesSummary, actualComments, tiktokVideos, budget);
+      analysis = await analyzeWithGroq(query, results, preferencesSummary, actualComments, tiktokVideos, budget, youtubeVideos);
     }
 
     if (!analysis) {
@@ -963,6 +1074,7 @@ export async function POST(req: NextRequest) {
       alternatives,
       comments: actualComments,
       tiktokVideos,
+      youtubeVideos,
       meta: {
         query,
         category: "general",
@@ -972,6 +1084,7 @@ export async function POST(req: NextRequest) {
         postsAnalyzed: results.length,
         redditResults: redditCount,
         tiktokResults: tiktokVideos.length,
+        youtubeResults: youtubeVideos.length,
         redditThreadUrls,
         mode: detectedStore ? "store-specific" : "general",
         llmProvider: "gemini",
